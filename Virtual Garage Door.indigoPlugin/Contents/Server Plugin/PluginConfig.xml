@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<!--
+ PACKAGE:  indigo plugin interface to PiDACS (PiDACS-Bridge)
+  MODULE:  PluginConfig.xml
+   TITLE:  Define and initialize PiDACS-Bridge options (PluginConfig.xml)
+FUNCTION:  PluginConfig.xml defines the structure of the PiDACS-Bridge
+           configuration GUI, specifies GUI labels, and sets default values.
+   USAGE:  PluginConfig.xml is read by the indigo server during plugin startup.
+  AUTHOR:  papamac
+ VERSION:  1.0.0
+    DATE:  May 23, 2020
+-->
+
+<PluginConfig>
+
+    <Field type="menu" id="loggingLevel" defaultValue="INFO">
+        <Label>Logging Level:</Label>
+        <List>
+            <Option value="THREAD">Thread Debug</Option>
+            <Option value="DEBUG">Debug</Option>
+            <Option value="INFO">Info</Option>
+            <Option value="WARNING">Warning</Option>
+            <Option value="ERROR">Error</Option>
+            <Option value="CRITICAL">Critical</Option>
+        </List>
+    </Field>
+
+    <Field type="label" id="threaddebug" alignWithControl="true"
+           fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="THREAD">
+        <Label>Log threaddebug messages and higher</Label>
+    </Field>
+
+    <Field type="label" id="debug" alignWithControl="true" fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="DEBUG">
+        <Label>Log debug messages and higher</Label>
+    </Field>
+
+    <Field type="label" id="info" alignWithControl="true" fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="INFO">
+        <Label>Log info messages and higher</Label>
+    </Field>
+
+    <Field type="label" id="warning" alignWithControl="true"
+           fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="WARNING">
+        <Label>Log warning messages and higher</Label>
+    </Field>
+
+    <Field type="label" id="error" alignWithControl="true" fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="ERROR">
+        <Label>Log error and critical messages only</Label>
+    </Field>
+
+    <Field type="label" id="critical" alignWithControl="true"
+           fontColor="darkgray"
+           visibleBindingId="loggingLevel" visibleBindingValue="CRITICAL">
+        <Label>Log critical messages only</Label>
+    </Field>
+
+</PluginConfig>

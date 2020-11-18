@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!--
+ PACKAGE:  indigo plugin bridge to Nu Tech AlarmDecoder alarm panel interface
+           devices (AlarmDecoder-Bridge)
+  MODULE:  Actions.xml
+   TITLE:  Define and initialize AlarmDecoder action objects (Actions.xml)
+FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
+           specifies GUI labels, and sets default values.
+   USAGE:  Actions.xml is read by the indigo server during plugin startup.
+ AUTHORS:  Originally developed and copyrighted by Richard Perlman
+           (indigo@perlman.com); the ad2usb version (v1.6.0) is currently
+           distributed and managed by berkinet on the indigo plugin store.
+           This AlarmDecoder-Bridge version was substantially refactored/
+           rewritten by David A. Krause, aka papamac (dkrause@mac.com).
+ VERSION:  1.0.1
+    DATE:  May 18, 2020
+-->
+
+<Actions>
+
+	<!-- ...Close/Open the Garage Door... -->
+
+	<Action id="closeDoor" uiPath="DeviceActions" deviceFilter="self">
+		<Name>Close Garage Door</Name>
+		<CallbackMethod>closeGarageDoor</CallbackMethod>
+	</Action>
+
+	<Action id="openDoor" uiPath="DeviceActions" deviceFilter="self">
+		<Name>Open Garage Door</Name>
+		<CallbackMethod>openGarageDoor</CallbackMethod>
+	</Action>
+
+</Actions>
+

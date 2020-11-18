@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<!--
+ PACKAGE:  indigo plugin interface to PiDACS (PiDACS-Bridge)
+  MODULE:  Devices.xml
+   TITLE:  Define and initialize PiDACS-Bridge device objects (Devices.xml)
+FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
+           objects, specifies GUI labels, and sets default values.
+   USAGE:  Devices.xml is read by the indigo server during plugin startup.
+  AUTHOR:  papamac
+ VERSION:  1.0.8
+    DATE:  June 4, 2020
+-->
+
+<Devices>
+
+    <!-- ################### Garage Door Opener Device #################### -->
+
+    <Device id="opener" type="custom">
+        <Name>Garage Door Opener</Name>
+        <ConfigUI>
+
+            <!-- ################ Required Settings Label ################# -->
+
+            <Field id="title1" type="label" alignText="center">
+                <Label>Required Settings</Label>
+            </Field>
+
+            <!-- ################ Closed Sensor ConfigUI ################## -->
+
+            <Field id="closedSensor" type="menu">
+                <Label>Closed Sensor:</Label>
+                <List class="self" method="getSensors"
+                      dynamicReload="yes"/>
+            </Field>
+
+            <Field id="invertClosedSensorState" type="checkbox" defaultValue="false">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="label1" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an on/off sensor that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
+            </Field>
+
+            <!-- ################ Optional Settings Label ################# -->
+
+            <Field id="separator1" type="separator"> </Field>
+
+            <Field id="title2" type="label" alignText="center">
+                <Label>Optional Settings</Label>
+            </Field>
+
+            <!-- ################# Open Sensor ConfigUI ################### -->
+
+            <Field id="openSensor" type="menu">
+                <Label>Open Sensor:</Label>
+                <List class="self" method="getSensors"
+                      dynamicReload="yes"/>
+            </Field>
+
+            <Field id="invertOpenSensorState" type="checkbox"
+                   defaultValue="false">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="label3" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select an on/off sensor that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
+            </Field>
+
+            <!-- ############### Open/Close Timer ConfigUI ################ -->
+
+            <Field id="label4" type="label">
+                <Label></Label>
+            </Field>
+
+            <Field id="timer" type="menu">
+                <Label>Open/Close Timer:</Label>
+                <List class="self" method="getTimers"
+                      dynamicReload="yes"/>
+            </Field>
+
+            <Field id="timeoutValue" type="textfield" defaultValue="12">
+                <Label>Open/Close Timeout (sec):</Label>
+            </Field>
+
+            <Field id="label5" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select a timer device and a timeout value in seconds for typical opening/closing.</Label>
+            </Field>
+
+            <!-- ################ Actuator Relay ConfigUI ################# -->
+
+            <Field id="label6" type="label">
+                <Label></Label>
+            </Field>
+
+            <Field id="actuatorRelay" type="menu">
+                <Label>Actuator Relay</Label>
+                <List class="self" method="getRelays"
+                      dynamicReload="yes"/>
+            </Field>
+
+            <Field id="label2" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally elect a momentary contact relay device that actuates the garage door opener.</Label>
+            </Field>
+
+        </ConfigUI>
+
+        <!-- ##################### State Definitions ###################### -->
+
+        <UiDisplayStateId>displayState</UiDisplayStateId>
+        <States>
+
+            <State id="doorState">
+                <ValueType>Number</ValueType>
+                <TriggerLabel>Door State</TriggerLabel>
+                <ControlPageLabel>Door State</ControlPageLabel>
+            </State>
+
+            <State id="doorStatus">
+                <ValueType>
+                    <List>
+                        <Option value="open">Open</Option>
+                        <Option value="closed">Closed</Option>
+                        <Option value="stopped">Stopped</Option>
+                        <Option value="opening">Opening</Option>
+                        <Option value="closing">Closing</Option>
+                        <Option value="stopped">Stopped</Option>
+                        <Option value="reversing">Reversing</Option>
+                    </List>
+                </ValueType>
+                <TriggerLabel>Door Status Changed</TriggerLabel>
+                <TriggerLabelPrefix>Door Status is</TriggerLabelPrefix>
+                <ControlPageLabel>Door Status</ControlPageLabel>
+                <ControlPageLabelPrefix>Door Status is</ControlPageLabelPrefix>
+            </State>
+
+            <State id="displayState">
+				<ValueType>String</ValueType>
+				<TriggerLabel> </TriggerLabel>
+				<ControlPageLabel> </ControlPageLabel>
+			</State>
+
+            <State id="onOffState">
+				<ValueType boolType="onOff">Boolean</ValueType>
+				<TriggerLabel>On Off State</TriggerLabel>
+				<ControlPageLabel>On Off State</ControlPageLabel>
+			</State>
+
+        </States>
+    </Device>
+
+</Devices>
