@@ -7,8 +7,8 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
            objects, specifies GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.0.8
-    DATE:  June 4, 2020
+ VERSION:  0.1.0
+    DATE:  December 27, 2020
 -->
 
 <Devices>
@@ -19,13 +19,22 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
         <Name>Garage Door Opener</Name>
         <ConfigUI>
 
-            <!-- ################ Required Settings Label ################# -->
+            <!-- ############ Open/Close Travel Time ConfigUI ############# -->
 
-            <Field id="title1" type="label" alignText="center">
-                <Label>Required Settings</Label>
+            <Field id="travelTime" type="textfield" defaultValue="12">
+                <Label>Open/Close Travel Time:</Label>
+            </Field>
+
+            <Field id="label1" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Specify the door's maximum open/close travel time in seconds.</Label>
             </Field>
 
             <!-- ################ Closed Sensor ConfigUI ################## -->
+
+            <Field id="label2" type="label">
+                <Label></Label>
+            </Field>
 
             <Field id="closedSensor" type="menu">
                 <Label>Closed Sensor:</Label>
@@ -37,20 +46,16 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="label1" type="label" fontSize="small"
+            <Field id="label3" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Select an on/off sensor that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
-            </Field>
-
-            <!-- ################ Optional Settings Label ################# -->
-
-            <Field id="separator1" type="separator"> </Field>
-
-            <Field id="title2" type="label" alignText="center">
-                <Label>Optional Settings</Label>
+                <Label>Optionally select an on/off sensor that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
             </Field>
 
             <!-- ################# Open Sensor ConfigUI ################### -->
+
+            <Field id="label4" type="label">
+                <Label></Label>
+            </Field>
 
             <Field id="openSensor" type="menu">
                 <Label>Open Sensor:</Label>
@@ -63,30 +68,9 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="label3" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
-            </Field>
-
-            <!-- ############### Open/Close Timer ConfigUI ################ -->
-
-            <Field id="label4" type="label">
-                <Label></Label>
-            </Field>
-
-            <Field id="timer" type="menu">
-                <Label>Open/Close Timer:</Label>
-                <List class="self" method="getTimers"
-                      dynamicReload="yes"/>
-            </Field>
-
-            <Field id="timeoutValue" type="textfield" defaultValue="12">
-                <Label>Open/Close Timeout (sec):</Label>
-            </Field>
-
             <Field id="label5" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a timer device and a timeout value in seconds for typical opening/closing.</Label>
+                <Label>Optionally select an on/off sensor that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
             </Field>
 
             <!-- ################ Actuator Relay ConfigUI ################# -->
@@ -101,9 +85,9 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
                       dynamicReload="yes"/>
             </Field>
 
-            <Field id="label2" type="label" fontSize="small"
+            <Field id="label7" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally elect a momentary contact relay device that actuates the garage door opener.</Label>
+                <Label>Optionally select a momentary contact relay that actuates the garage door opener.</Label>
             </Field>
 
         </ConfigUI>

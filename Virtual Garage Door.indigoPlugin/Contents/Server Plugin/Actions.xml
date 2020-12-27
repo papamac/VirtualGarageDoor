@@ -12,22 +12,27 @@ FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
            distributed and managed by berkinet on the indigo plugin store.
            This AlarmDecoder-Bridge version was substantially refactored/
            rewritten by David A. Krause, aka papamac (dkrause@mac.com).
- VERSION:  1.0.1
-    DATE:  May 18, 2020
+ VERSION:  1.1.0
+    DATE:  December 27, 2020
 -->
 
 <Actions>
 
 	<!-- ...Close/Open the Garage Door... -->
 
-	<Action id="closeDoor" uiPath="DeviceActions" deviceFilter="self">
+	<Action id="closeGarageDoor" uiPath="DeviceActions" deviceFilter="self">
 		<Name>Close Garage Door</Name>
 		<CallbackMethod>closeGarageDoor</CallbackMethod>
 	</Action>
 
-	<Action id="openDoor" uiPath="DeviceActions" deviceFilter="self">
+	<Action id="openGarageDoor" uiPath="DeviceActions" deviceFilter="self">
 		<Name>Open Garage Door</Name>
 		<CallbackMethod>openGarageDoor</CallbackMethod>
+	</Action>
+
+	<Action id="toggleGarageDoor" uiPath="DeviceActions" deviceFilter="self">
+		<Name>Toggle Garage Door</Name>
+		<CallbackMethod>toggleGarageDoor</CallbackMethod>
 	</Action>
 
 </Actions>
