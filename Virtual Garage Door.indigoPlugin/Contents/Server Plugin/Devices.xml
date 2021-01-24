@@ -38,7 +38,7 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
 
             <Field id="closedSensor" type="menu">
                 <Label>Closed Sensor:</Label>
-                <List class="self" method="getSensors"
+                <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
             </Field>
 
@@ -59,7 +59,7 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
 
             <Field id="openSensor" type="menu">
                 <Label>Open Sensor:</Label>
-                <List class="self" method="getSensors"
+                <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
             </Field>
 
@@ -81,7 +81,7 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
 
             <Field id="actuatorRelay" type="menu">
                 <Label>Actuator Relay</Label>
-                <List class="self" method="getRelays"
+                <List class="self" method="getRelayDeviceList"
                       dynamicReload="yes"/>
             </Field>
 
