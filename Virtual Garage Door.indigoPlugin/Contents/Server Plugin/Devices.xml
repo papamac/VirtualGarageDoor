@@ -7,8 +7,17 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
            objects, specifies GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  0.1.0
-    DATE:  December 27, 2020
+ VERSION:  1.0.1
+    DATE:  January 24, 2020
+
+
+CHANGE LOG:
+
+v1.0.1   2/16/2021  Add fields to name the on/off sensor/actuator states
+                    defaulting with the usual "onOffState".  This allows the
+                    use of EasyDAQ digital input/output/relay devices that
+                    include the channel number in the state name, e.g.,
+                    "channel01".
 -->
 
 <Devices>
@@ -33,7 +42,7 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
             <!-- ################ Closed Sensor ConfigUI ################## -->
 
             <Field id="label2" type="label">
-                <Label></Label>
+                <Label> </Label>
             </Field>
 
             <Field id="closedSensor" type="menu">
@@ -42,25 +51,35 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
                       dynamicReload="yes"/>
             </Field>
 
+            <Field id="closedSensorStateName" type="textfield"
+                   defaultValue="onOffState">
+                <Label>on/off State Name:</Label>
+            </Field>
+
             <Field id="invertClosedSensorState" type="checkbox" defaultValue="false">
                 <Label>Invert on/off State:</Label>
             </Field>
 
             <Field id="label3" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
+                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
             </Field>
 
             <!-- ################# Open Sensor ConfigUI ################### -->
 
             <Field id="label4" type="label">
-                <Label></Label>
+                <Label> </Label>
             </Field>
 
             <Field id="openSensor" type="menu">
                 <Label>Open Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
+            </Field>
+
+            <Field id="openSensorStateName" type="textfield"
+                   defaultValue="onOffState">
+                <Label>on/off State Name:</Label>
             </Field>
 
             <Field id="invertOpenSensorState" type="checkbox"
@@ -70,13 +89,13 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
 
             <Field id="label5" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
+                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
             </Field>
 
             <!-- ################ Actuator Relay ConfigUI ################# -->
 
             <Field id="label6" type="label">
-                <Label></Label>
+                <Label> </Label>
             </Field>
 
             <Field id="actuatorRelay" type="menu">
@@ -85,9 +104,14 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
                       dynamicReload="yes"/>
             </Field>
 
+            <Field id="actuatorRelayStateName" type="textfield"
+                   defaultValue="onOffState">
+                <Label>on/off State Name:</Label>
+            </Field>
+
             <Field id="label7" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a momentary contact relay that actuates the garage door opener.</Label>
+                <Label>Optionally select a momentary contact relay that actuates the garage door opener; enter a state name that indicates the actuator on/off state.</Label>
             </Field>
 
         </ConfigUI>
