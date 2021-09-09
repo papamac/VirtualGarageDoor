@@ -18,7 +18,7 @@ FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
 
 <Actions>
 
-	<!-- ...Close/Open the Garage Door... -->
+	<!-- ...Close/Open/Toggle the Garage Door... -->
 
 	<Action id="closeGarageDoor" uiPath="DeviceActions" deviceFilter="self">
 		<Name>Close Garage Door</Name>

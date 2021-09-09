@@ -7,8 +7,8 @@ FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
            objects, specifies GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.0.1
-    DATE:  January 24, 2020
+ VERSION:  1.1.2
+    DATE:  September 9, 2021
 
 
 CHANGE LOG:
@@ -18,13 +18,15 @@ v1.0.1   2/16/2021  Add fields to name the on/off sensor/actuator states
                     use of EasyDAQ digital input/output/relay devices that
                     include the channel number in the state name, e.g.,
                     "channel01".
--->
+v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
+                    the HomeKit Bridge plugin.  Eliminate the numeric door
+                    state and change it to a descriptive door status.
 
 <Devices>
 
     <!-- ################### Garage Door Opener Device #################### -->
 
-    <Device id="opener" type="custom">
+    <Device id="opener" type="relay">
         <Name>Garage Door Opener</Name>
         <ConfigUI>
 
@@ -111,53 +113,32 @@ v1.0.1   2/16/2021  Add fields to name the on/off sensor/actuator states
 
             <Field id="label7" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a momentary contact relay that actuates the garage door opener; enter a state name that indicates the actuator on/off state.</Label>
+                <Label>Optionally select a relay that actuates the garage door opener and a state name that indicates the relay on/off state.</Label>
             </Field>
 
         </ConfigUI>
 
         <!-- ##################### State Definitions ###################### -->
 
-        <UiDisplayStateId>displayState</UiDisplayStateId>
         <States>
 
-            <State id="doorState">
-                <ValueType>Number</ValueType>
-                <TriggerLabel>Door State</TriggerLabel>
-                <ControlPageLabel>Door State</ControlPageLabel>
-            </State>
-
-            <State id="doorStatus">
+            <State id="state">
                 <ValueType>
                     <List>
-                        <Option value="open">Open</Option>
                         <Option value="closed">Closed</Option>
-                        <Option value="stopped">Stopped</Option>
                         <Option value="opening">Opening</Option>
+                        <Option value="open">Open</Option>
                         <Option value="closing">Closing</Option>
                         <Option value="stopped">Stopped</Option>
                         <Option value="reversing">Reversing</Option>
                     </List>
                 </ValueType>
-                <TriggerLabel>Door Status Changed</TriggerLabel>
-                <TriggerLabelPrefix>Door Status is</TriggerLabelPrefix>
-                <ControlPageLabel>Door Status</ControlPageLabel>
-                <ControlPageLabelPrefix>Door Status is</ControlPageLabelPrefix>
+                <TriggerLabel>Door State</TriggerLabel>
+                <TriggerLabelPrefix>Door State</TriggerLabelPrefix>
+                <ControlPageLabel>Door State</ControlPageLabel>
+                <ControlPageLabelPrefix>Door State</ControlPageLabelPrefix>
             </State>
-
-            <State id="displayState">
-				<ValueType>String</ValueType>
-				<TriggerLabel> </TriggerLabel>
-				<ControlPageLabel> </ControlPageLabel>
-			</State>
-
-            <State id="onOffState">
-				<ValueType boolType="onOff">Boolean</ValueType>
-				<TriggerLabel>On Off State</TriggerLabel>
-				<ControlPageLabel>On Off State</ControlPageLabel>
-			</State>
 
         </States>
     </Device>
-
 </Devices>
