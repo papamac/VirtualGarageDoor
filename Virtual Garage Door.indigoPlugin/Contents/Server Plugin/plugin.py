@@ -1,26 +1,26 @@
 # coding=utf-8
-"""
 ###############################################################################
 #                                                                             #
 #                             MODULE plugin.py                                #
 #                                                                             #
 ###############################################################################
-
- PACKAGE:  Virtual Garage Door
+"""
+ PACKAGE:  Monitoring and control of conventional garage door openers for
+           Indigo (Virtual Garage Door)
   MODULE:  plugin.py
-   TITLE:  primary module in the Virtual Garage Door indigo plugin bundle
-FUNCTION:  Monitors multiple indigo devices to track garage door motion
+   TITLE:  primary module in the Virtual Garage Door Indigo plugin bundle
+FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            and report the door state in the states dictionary of an opener
            device.
-   USAGE:  plugin.py is included in a standard indigo plugin bundle.
+   USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.1.2
-    DATE:  September 9, 2021
+ VERSION:  1.2
+    DATE:  April 30, 2022
 
 
 MIT LICENSE:
 
-Copyright (c) 2020-2021 David A. Krause, aka papamac
+Copyright (c) 2021-2022 David A. Krause, aka papamac
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -52,16 +52,32 @@ DEPENDENCIES/LIMITATIONS:
 
 CHANGE LOG:
 
+Major changes to the Virtual Garage Door plugin are described in the CHANGES.md
+file in the top level bundle directory.  Changes of lesser importance may be
+described in individual module docstrings if appropriate.
+
 v1.1.1   2/16/2021  Allow the plugin to utilize on/off state names other than
                     the usual "onOffState".  This allows the use of EasyDAQ
                     digital input/output/relay devices that include the channel
                     number in the state name, e.g., "channel01".
-v1.1.2    9/9/2021  Eliminate the numeric door state and change it to a
+v1.1.2   9/ 9/2021  Eliminate the numeric door state and change it to a
                     descriptive door status.  Improve the state display in the
-                    primary indigo display.  Delete the travel timer device in
+                    primary Indigo display.  Delete the travel timer device in
                     the deviceStopCom method to avoid the accumulation of
                     orphan timers.
-
+v1.1.3   4/13/2022  Perform error checking for travel timer creation.  Abort
+                    device startup on timer error.
+v1.1.4   4/20/2022  Change the travelTimer state name from the text value
+                    "timerStatus" to the boolean value "timerStatus.active"
+                    for symmetry in device monitoring.
+v1.2     4/30/2022  Revise the door state transition processing to use a state
+                    transition model based on the behavior of LiftMaster garage
+                    door openers.  A state transition diagram is included in
+                    README file that is included in this bundle.  It is encoded
+                    in the DOOR_STATE_TRANSITIONS dictionary in this module
+                    with references to the state transition diagram.  LOG
+                    warning messages for monitored device state changes that
+                    are inconsistent with the model.
 """
 ###############################################################################
 #                                                                             #
@@ -70,25 +86,54 @@ v1.1.2    9/9/2021  Eliminate the numeric door state and change it to a
 ###############################################################################
 
 __author__ = u'papamac'
-__version__ = u'1.1.2'
-__date__ = u'September 9, 2021'
+__version__ = u'1.2'
+__date__ = u'April 30, 2022'
 
+from datetime import datetime
 from logging import getLogger, NOTSET
 
 import indigo
 
 # Globals:
 
-LOG = getLogger(u'Plugin')                # Standard logger.
+LOG = getLogger(u'Plugin')  # Standard logger.
 EASYDAQ_DEVICE_TYPE_IDs = (u'easyDaq4r4io',    u'easyDaq16r8io',
                            u'easyDaq24r',      u'easyDaq24io',
-                           u'easyDaq8r',       u'easyDaq8ii4io4r'
+                           u'easyDaq8r',       u'easyDaq8ii4io4r',
                            u'easyDaqDo24Stack')
 SENSOR_DEVICE_TYPE_IDs = ((u'alarmZone',       u'contactSensor',
                            u'digitalInput',    u'zwOnOffSensorType')
                           + EASYDAQ_DEVICE_TYPE_IDs)
 RELAY_DEVICE_TYPE_IDs = ((u'digitalOutput',   u'relay')
                          + EASYDAQ_DEVICE_TYPE_IDs)
+
+DOOR_STATE_TRANSITIONS = {
+
+    # doorState    mDevEvent+condition                new doorState   ref no
+
+    u'closed':    {u'travelTimerOff':                 u'noChange',     # 1
+                   u'closedSensorOff':                u'opening',      # 2
+                   u'openSensorOn':                   u'open',         # 3
+                   u'actuatorRelayOn':                u'opening'},     # 4
+    u'opening':   {u'travelTimerOff+noOpenSensor':    u'open',         # 5
+                   u'travelTimerOff':                 u'stopped',      # 6
+                   u'closedSensorOff':                u'noChange',     # 7
+                   u'openSensorOn':                   u'open',         # 8
+                   u'actuatorRelayOn':                u'stopped'},     # 8
+    u'open':      {u'travelTimerOff':                 u'noChange',     # 10
+                   u'closedSensorOn':                 u'closed',       # 11
+                   u'openSensorOff':                  u'closing',      # 12
+                   u'actuatorRelayOn':                u'closing'},     # 13
+    u'closing':   {u'travelTimerOff+noClosingSensor': u'closed',       # 14
+                   u'travelTimerOff':                 u'opening',      # 15
+                   u'closedSensorOn':                 u'closed',       # 16
+                   u'openSensorOff':                  u'noChange',     # 17
+                   u'openSensorOn':                   u'open',         # 18
+                   u'actuatorRelayOn':                u'opening'},     # 19
+    u'stopped':   {u'travelTimerOff':                 u'noChange',     # 20
+                   u'closedSensorOn':                 u'closed',       # 21
+                   u'openSensorOn':                   u'open',         # 22
+                   u'actuatorRelayOn':                u'closing'}}     # 23
 
 
 ###############################################################################
@@ -101,6 +146,7 @@ class Plugin(indigo.PluginBase):
     """
     **************************** needs work ***********************************
     """
+
     ###########################################################################
     #                                                                         #
     #                               CLASS Plugin                              #
@@ -124,41 +170,45 @@ class Plugin(indigo.PluginBase):
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
 
-        # The devices dictionary is a local (non-persistent), compound
-        # dictionary that stores device id's and properties for devices that
-        # are monitored by the virtual garage door opener plugin.  It has the
-        # following structure:
+        # The monitored devices dictionary is a local (non-persistent),
+        # compound dictionary that stores device id's and properties for
+        # devices that are monitored by the virtual garage door opener plugin.
+        # It has the following structure:
         #
-        # self.devices = {devId: {mDevId: {mDevState: mDevType}}}
+        # self._monitoredDevices = {devId: {mDevId: {mDevState: mDevType}}}
         # where:
         #    devId     is the device id of the opener device.
-        #    mDevId    is the device id of a sensor or timer to be monitored by
-        #              the opener plugin to determine the garage door state.
-        #              Sensors must have an on/off bool state defined by
+        #    mDevId    is the device id of a timer, sensor, or relay device to
+        #              be monitored by the opener plugin to determine the
+        #              garage door state.  All monitored devices must have an
+        #              on/off bool state defined in the devices xml by
         #              <ValueType boolType="OnOff">Boolean</ValueType>.
         #    mDevState is the state name to be monitored by the plugin.  For
         #              most sensor devices it is typically "onOffState".  For
         #              EasyDAQ devices it is "channelnn" where nn is the
         #              numeric channel number.  For timers the state name is
-        #              "timerStatus".
-        #    mDevType  is the type of the monitored sensor/timer device
-        #              that allows the plugin to interpret state changes. Types
-        #              are "travelTimer", "closedSensor", "openSensor", and
+        #              "timerStatus.active".
+        #    mDevType  is the type of the monitored device that allows the
+        #              plugin to interpret state changes. Types are
+        #              "travelTimer", "closedSensor", "openSensor", and
         #              "actuatorRelay".
         #
-        # self.devices is created/updated by the deviceStartComm method and
-        # used by the deviceUpdated method to select devices of interest and
-        # determine how to interpret their state changes.  self.devices is also
-        # used in the validateDeviceConfigUi method to ensure that mDevId/
-        # mDevState combinations are not reused across the various opener
-        # devices/sensors.  Timers are exempt from this checking because they
-        # are created by the deviceStartComm method and are thus guaranteed to
-        # be unique for each opener device.
+        # self._monitoredDevices is created by the deviceStartComm method and
+        # used by the deviceUpdated method to select monitored devices and
+        # interpret their state changes.  self._monitoredDevices is also used
+        # in the validateDeviceConfigUi method to ensure that mDevId/mDevState
+        # combinations are not reused across the various opener devices/
+        # sensors.  Timers are exempt from this checking because they are
+        # created by the deviceStartComm method and are thus guaranteed to be
+        # unique for each opener device.
 
-        self.devices = {}
+        self._monitoredDevices = {}
+
         pluginId = u'com.perceptiveautomation.indigoplugin.timersandpesters'
-        self.timerPlugin = indigo.server.getPlugin(pluginId)
-        self.timerDevIds = {}
+        self._timerPlugin = indigo.server.getPlugin(pluginId)
+        self._timerDevices = {}
+
+        self._priorEventTime = datetime.now()
 
     def __del__(self):
         LOG.threaddebug(u'Plugin.__del__ called')
@@ -175,8 +225,11 @@ class Plugin(indigo.PluginBase):
             dev.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
         LOG.info(u'"%s" update to %s', dev.name, doorState)
 
-    def _timerAction(self, timerDevId, action):
-        self.timerPlugin.executeAction(action, deviceId=timerDevId)
+    def _timerAction(self, devId, action):
+        tDevId = self._timerDevices[devId]
+        tDev = indigo.devices[tDevId]
+        LOG.debug(u'"%s" %s', tDev.name, action)
+        self._timerPlugin.executeAction(action, deviceId=tDevId)
 
     # Indigo plugin.py standard public instance methods:
 
@@ -190,34 +243,48 @@ class Plugin(indigo.PluginBase):
 
     def deviceStartComm(self, dev):
         LOG.threaddebug(u'Plugin.deviceStartComm called "%s"', dev.name)
+
+        # Create a new monitored devices dictionary entry for this opener
+        # device.
+
         devId = dev.id
+        self._monitoredDevices[devId] = {}
 
-        # Clear the devices dictionary for this opener device.
-
-        self.devices[devId] = {}
-
-        # Create an open/close travel timer and add it to the devices
-        # dictionary.
+        # Check for an existing travel timer device.
 
         travelTimer = u'%s-timer' % devId
-        description = (u'Automatically generated timer for "%s"'
-                       % dev.name)
-        pluginId = (u'com.perceptiveautomation.indigoplugin.'
-                    u'timersandpesters')
-        props = dict(amount=dev.pluginProps[u'travelTime'],
-                     amountType=u'seconds')
-        indigo.device.create(protocol=indigo.kProtocol.Plugin,
-                             name=travelTimer,
-                             description=description,
-                             pluginId=pluginId,
-                             deviceTypeId=u'timer',
-                             props=props,
-                             folder=u'doors')
-        timerDev = indigo.devices[travelTimer]
+        if travelTimer not in indigo.devices:
 
-        self.devices[devId][timerDev.id] = {}
-        self.devices[devId][timerDev.id][u'timerStatus'] = u'travelTimer'
-        self.timerDevIds[devId] = timerDev.id
+            # No timer device found, create a new one.
+
+            description = (u'Automatically generated timer for "%s"'
+                           % dev.name)
+            pluginId = (u'com.perceptiveautomation.indigoplugin.'
+                        u'timersandpesters')
+            props = dict(amount=dev.pluginProps[u'travelTime'],
+                         amountType=u'seconds')
+
+            try:
+                indigo.device.create(protocol=indigo.kProtocol.Plugin,
+                                     name=travelTimer,
+                                     description=description,
+                                     pluginId=pluginId,
+                                     deviceTypeId=u'timer',
+                                     props=props,
+                                     folder=u'doors')
+            except Exception as errorMessage:
+                LOG.error(u'"%s" timer error: %s; device start aborted',
+                          dev, errorMessage)
+                self.deviceStopComm(dev)
+                return
+
+        # Good timer; add it to the devices dictionary.
+
+        tDev = indigo.devices[travelTimer]
+        self._monitoredDevices[devId][tDev.id] = {}
+        self._monitoredDevices[devId][tDev.id][u'timerStatus.active'] = \
+            u'travelTimer'
+        self._timerDevices[devId] = tDev.id
 
         # Optionally add entries to the devices dictionary for monitored
         # devices that are specified in the ConfigUi.  Return the current state
@@ -232,14 +299,15 @@ class Plugin(indigo.PluginBase):
 
                 # Add a new entry in the devices dictionary.
 
-                if not self.devices[devId].get(mDevId):
-                    self.devices[devId][mDevId] = {}
-                self.devices[devId][mDevId][mDevState] = mDevType
+                if not self._monitoredDevices[devId].get(mDevId):
+                    self._monitoredDevices[devId][mDevId] = {}
+                self._monitoredDevices[devId][mDevId][mDevState] = mDevType
 
                 # Return the normalized state of the monitored device.
 
-                p = u'invert' + mDevType[0].upper() + mDevType[1:] + u'State'
-                invert = dev.pluginProps.get(p, False)
+                invName = u'invert%s%sState' % (mDevType[0].upper(),
+                                                mDevType[1:])
+                invert = dev.pluginProps.get(invName, False)
                 return mDev.states[mDevState] ^ invert
 
         # Optionally add entries for a closedSensor, openSensor, and
@@ -248,144 +316,121 @@ class Plugin(indigo.PluginBase):
         closedSensorState = addToDevicesDict(u'closedSensor')
         openSensorState = addToDevicesDict(u'openSensor')
         addToDevicesDict(u'actuatorRelay')
-        LOG.debug(self.devices[devId])
+        LOG.debug(self._monitoredDevices[devId])
 
-        # Initialize status/state for the opener device.  Assume that door is
-        # not in motion and that its status is closed unless the closedSensor
-        # or openSensor indicate otherwise.
+        # Initialize the state of the opener device.  Assume that door is
+        # not in motion and that it is closed unless the closedSensor and
+        # openSensor indicate otherwise.
 
         doorState = u'closed'
-        if not closedSensorState or openSensorState:
+        if not closedSensorState and openSensorState:
             doorState = u'open'
         self._updateDoorStates(dev, doorState)
 
     def deviceStopComm(self, dev):
         LOG.threaddebug(u'Plugin.deviceStopComm called "%s"', dev.name)
 
-        # Find the timer device in the devices dictionary and delete it.
+        # Delete the entry in the devices dictionary, if present.
 
-        for mDevId in self.devices[dev.id]:
-            mDev = indigo.devices[mDevId]
-            if mDev.deviceTypeId == u'timer':
-                indigo.device.delete(mDevId)
-                break
-
-        # Delete the device's entry in the devices dictionary.
-
-        del self.devices[dev.id]
+        if dev.id in self._monitoredDevices:
+            del self._monitoredDevices[dev.id]
 
     def deviceUpdated(self, oldDev, newDev):
         indigo.PluginBase.deviceUpdated(self, oldDev, newDev)
-        for devId in self.devices:
-            if oldDev.id in self.devices[devId]:
+        for devId in self._monitoredDevices:
+            if oldDev.id in self._monitoredDevices[devId]:
+                dev = indigo.devices[devId]
                 mDevId = oldDev.id
-                for mDevState in self.devices[devId][mDevId]:
-                    if mDevState in oldDev.states:
+                for mDevState in self._monitoredDevices[devId][mDevId]:
 
-                        # Both the oldDev and an oldDev state are in the
-                        # monitored device dictionary.
+                    # Check to ensure that mDevState is in the oldDev states
+                    # dictionary.
 
-                        dev = indigo.devices[devId]
-                        priorDoorState = dev.states[u'state']
-                        openSensor = dev.pluginProps.get(u'openSensor')
-                        closedSensor = dev.pluginProps.get(u'closedSensor')
-                        mDevType = self.devices[devId][mDevId][mDevState]
-                        timerDevId = self.timerDevIds[devId]
+                    if mDevState not in oldDev.states:
+                        LOG.warning(u'"%s" monitored device "%s" has no '
+                                    u'state %s',
+                                    dev.name, oldDev.name, mDevState)
+                        continue
 
-                        if mDevType == u'travelTimer':
-                            oldState = oldDev.states[mDevState]
-                            newState = newDev.states[mDevState]
+                    # Both the oldDev and an oldDev state are in the
+                    # monitored devices dictionary.  Get the mDevStates
+                    # for both the old (unchanged) device object and the
+                    # new (updated) device object.
 
-                            LOG.debug(u'received "%s" state change %s --> %s'
-                                      % (oldDev.name, oldState, newState))
+                    mDevType = (self._monitoredDevices
+                               [devId][mDevId][mDevState])
+                    invName = u'invert%s%sState' % (mDevType[0].upper(),
+                                                    mDevType[1:])
+                    invert = dev.pluginProps.get(invName, False)
+                    oldState = oldDev.states[mDevState] ^ invert
+                    newState = newDev.states[mDevState] ^ invert
 
-                            if oldState == (u'active'
-                                            and newState == u'inactive'):
+                    # Ignore most mDevState state changes that don't affect the
+                    # doorState.  These include:
+                    #   No change (oldState == newState).
+                    #   travelTimer changed to on (active).
+                    #   actuatorRelay changed to off (open).
 
-                                # Timer has expired.
+                    doorState = dev.states[u'state']
+                    if (oldState == newState
+                            or (mDevType == u'travelTimer'
+                                and newState)
+                            or (mDevType == u'actuatorRelay'
+                                and not newState)):
+                        continue
 
-                                if priorDoorState == u'opening':
-                                    if openSensor:
-                                        self._updateDoorStates(dev, u'stopped')
-                                    else:
-                                        self._updateDoorStates(dev, u'open')
-                                elif priorDoorState == u'closing':
-                                    if closedSensor:
-                                        self._updateDoorStates(dev,
-                                                               u'reversing')
-                                    else:
-                                        self._updateDoorStates(dev, u'closed')
+                    # Log relevant mDevState change for debug.
 
-                        elif mDevType == u'closedSensor':
-                            invert = dev.pluginProps[u'invertClosedSensorState'
-                                                     ]
-                            oldState = oldDev.states[mDevState] ^ invert
-                            newState = newDev.states[mDevState] ^ invert
+                    LOG.debug(u'"%s" %s updated to %s',
+                              dev.name, mDevType, (u'off', u'on')[newState])
 
-                            # state == 0 <--> door not closed.
-                            # state == 1 <--> door closed.
+                    # Create a key and look up the new doorState in the
+                    # doorStates dictionary.
 
-                            LOG.debug(u'received "%s" state change %s --> %s'
-                                      % (oldDev.name, oldState, newState))
+                    mDevEvent = mDevType + (u'Off', u'On')[newState]
 
-                            if oldState < newState:  # not closed --> closed.
-                                self._updateDoorStates(dev, u'closed')
-                                self._timerAction(timerDevId, u'stopTimer')
-                            elif oldState > newState:  # closed --> not closed.
-                                self._updateDoorStates(dev, u'opening')
-                                self._timerAction(timerDevId, u'restartTimer')
+                    # Add "noSensor" conditions for travelTimerOff events that
+                    # have different meanings for opening and closing
+                    # doorStates.
 
-                        elif mDevType == u'openSensor':
-                            invert = dev.pluginProps[u'invertOpenSensorState']
-                            oldState = oldDev.states[mDevState] ^ invert
-                            newState = newDev.states[mDevState] ^ invert
+                    if mDevEvent == u'travelTimerOff':
+                        if doorState == u'opening':
+                            openSensor = dev.pluginProps.get(u'openSensor')
+                            mDevEvent += (u'+noOpenSensor' if not openSensor
+                                          else u'')
+                        elif doorState == u'closing':
+                            closedSensor = dev.pluginProps.get(u'closedSensor')
+                            mDevEvent += (u'+noClosedSensor'
+                                          if not closedSensor else u'')
 
-                            # state == 0 <--> door not open.
-                            # state == 1 <--> door open.
+                    # Update doorState using the DOOR_STATE_TRANSITIONS
+                    # dictionary.
 
-                            LOG.debug(u'received "%s" state change %s --> %s'
-                                      % (oldDev.name, oldState, newState))
+                    try:
+                        newDoorState = (DOOR_STATE_TRANSITIONS
+                                        [doorState][mDevEvent])
+                    except KeyError:
+                        LOG.warning(u'"%s" mDevEvent %s is inconsistent '
+                                    u'with doorState %s',
+                                    dev.name, mDevEvent, doorState)
+                        continue
+                    if newDoorState == u'noChange':
+                        continue
 
-                            if oldState < newState:  # Not open --> open.
-                                if priorDoorState == u'closing':
-                                    self._updateDoorStates(dev, u'reversing')
-                                self._updateDoorStates(dev, u'open')
-                                self._timerAction(timerDevId, u'stopTimer')
-                            elif oldState > newState:  # open --> not open.
-                                self._updateDoorStates(dev, u'closing')
-                                self._timerAction(timerDevId, u'startTimer')
+                    self._updateDoorStates(dev, newDoorState)
 
-                        elif mDevType == u'actuatorRelay':
-                            oldState = oldDev.states[u'onOffState']
-                            newState = newDev.states[u'onOffState']
+                    eventTime = datetime.now()
+                    dt = (eventTime - self._priorEventTime).total_seconds()
+                    self._priorEventTime = eventTime
+                    if dt > 100:
+                        dt = 0
+                    LOG.warning(u'%s %5.2f %s %s %s', str(eventTime)[-15:], dt,
+                                doorState, mDevEvent, newDoorState)
 
-                            # state == 0 <--> actuatorRelay is open.
-                            # state == 1 <--> actuatorRelay is closed.
-
-                            # The actuatorRelay is assumed to be momentary; it
-                            # closes to start the actuator and then opens in a
-                            # second or less to prepare for the next actuation.
-                            # The following code ignores the closing event
-                            # (oldState > newState) and uses the opening event
-                            # (oldState < newState) as an indicator of opener
-                            # actuation.
-
-                            LOG.debug(u'received "%s" state change %s --> %s'
-                                      % (oldDev.name, oldState, newState))
-
-                            if oldState < newState:  # actuatorRelay opened.
-                                if priorDoorState == u'closed':
-                                    if not closedSensor:
-                                        # Ignore if closedSensor.
-                                        self._updateDoorStates(dev, u'opening')
-                                        self._timerAction(timerDevId,
-                                                          u'restartTimer')
-                                else:  # Assume that door is open.
-                                    if not openSensor:
-                                        # Ignore if openSensor.
-                                        self._updateDoorStates(dev, u'closing')
-                                        self._timerAction(timerDevId,
-                                                          u'restartTimer')
+                    if newDoorState.endswith(u'ing'):
+                        self._timerAction(devId, u'restartTimer')
+                    else:
+                        self._timerAction(devId, u'stopTimer')
 
     ###########################################################################
     #                                                                         #
@@ -419,10 +464,10 @@ class Plugin(indigo.PluginBase):
         LOG.debug(valuesDict)
         errors = indigo.Dict()
 
-        # Clear self.devices for this opener to prevent previous device
-        # configurations from generating ConfigUi errors.
+        # Clear self._monitoredDevices for this opener to prevent previous
+        # device configurations from generating ConfigUi errors.
 
-        self.devices[devId] = {}
+        self._monitoredDevices[devId] = {}
 
         # Validate open/close travel time entry.
 
@@ -457,24 +502,25 @@ class Plugin(indigo.PluginBase):
                 # by this opener or other openers.
 
                 mDevId = indigo.devices[mDevName].id
-                for devId_ in self.devices:
-                    for mDevId_ in self.devices[devId_]:
-                        for mDevState_ in self.devices[devId_][mDevId_]:
+                for devId_ in self._monitoredDevices:
+                    for mDevId_ in self._monitoredDevices[devId_]:
+                        for mDevState_ in self._monitoredDevices[devId_]\
+                                [mDevId_]:
                             if mDevId == mDevId_ and mDevState == mDevState_:
                                 err = u'Device/state already in use'
                                 errors[mDevType] = err
                                 errors[mDevTypeStateName] = err
                                 return
 
-                # Add keys/values to self.devices to mark this device/state
-                # combination as used.  Note that these additions are
-                # overwritten (with the same data) when the opener device is
-                # initialized by the deviceStartComm method.
+                # Add keys/values to self._monitoredDevices to mark this
+                # device/state combination as used.  Note that these additions
+                # are overwritten (with the same data) when the opener device
+                # is initialized by the deviceStartComm method.
 
-                if not self.devices[devId].get(mDevId):
-                    self.devices[devId][mDevId] = {}
-                self.devices[devId][mDevId][mDevState] = mDevType
-                LOG.debug(self.devices[devId])
+                if not self._monitoredDevices[devId].get(mDevId):
+                    self._monitoredDevices[devId][mDevId] = {}
+                self._monitoredDevices[devId][mDevId][mDevState] = mDevType
+                LOG.debug(self._monitoredDevices[devId])
 
         validateMonitoredDeviceEntry(u'closedSensor')
         validateMonitoredDeviceEntry(u'openSensor')
@@ -498,6 +544,11 @@ class Plugin(indigo.PluginBase):
     #                             III   III   III                             #
     #                                                                         #
     #                      CONFIG UI CALLBACK METHODS                         #
+    #                                                                         #
+    #  def getSensorDeviceList(filter="", valuesDict=None, typeId="",         #
+    #                          targetId=0)                                    #
+    #  def getRelayDeviceList(filter="", valuesDict=None, typeId="",          #
+    #                         targetId=0)                                     #
     #                                                                         #
     ###########################################################################
 
@@ -532,6 +583,15 @@ class Plugin(indigo.PluginBase):
     #                             III       III                               #
     #                                                                         #
     #                         ACTION CALLBACK METHODS                         #
+    #                                                                         #
+    # def _closeGarageDoor(dev)                                               #
+    # def _openGarageDoor(dev)                                                #
+    # def _toggleGarageDoor(dev)                                              #
+    # def closeGarageDoor(self, pluginAction)                                 #
+    # def openGarageDoor(self, pluginAction)                                  #
+    # def toggleGarageDoor(self, pluginAction)                                #
+    # def actionControlDevice(self, action, dev)                              #
+    # def actionControlUniversal(action, dev)                                 #
     #                                                                         #
     ###########################################################################
 

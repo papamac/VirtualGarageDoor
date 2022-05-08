@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  indigo plugin bridge to Nu Tech AlarmDecoder alarm panel interface
-           devices (AlarmDecoder-Bridge)
+ PACKAGE:  Monitoring and control of conventional garage door openers for
+           Indigo (Virtual Garage Door)
   MODULE:  Actions.xml
    TITLE:  Define and initialize AlarmDecoder action objects (Actions.xml)
 FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,

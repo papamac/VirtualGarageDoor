@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  indigo plugin interface to PiDACS (PiDACS-Bridge)
+ PACKAGE:  Monitoring and control of conventional garage door openers for
+           Indigo (Virtual Garage Door)
   MODULE:  PluginConfig.xml
    TITLE:  Define and initialize PiDACS-Bridge options (PluginConfig.xml)
 FUNCTION:  PluginConfig.xml defines the structure of the PiDACS-Bridge

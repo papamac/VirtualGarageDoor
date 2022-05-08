@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  indigo plugin interface to PiDACS (PiDACS-Bridge)
+ PACKAGE:  Monitoring and control of conventional garage door openers for
+           Indigo (Virtual Garage Door)
   MODULE:  Devices.xml
    TITLE:  Define and initialize PiDACS-Bridge device objects (Devices.xml)
 FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
@@ -21,6 +22,7 @@ v1.0.1   2/16/2021  Add fields to name the on/off sensor/actuator states
 v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
                     the HomeKit Bridge plugin.  Eliminate the numeric door
                     state and change it to a descriptive door status.
+-->
 
 <Devices>
 
@@ -30,20 +32,19 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
         <Name>Garage Door Opener</Name>
         <ConfigUI>
 
-            <!-- ############ Open/Close Travel Time ConfigUI ############# -->
+            <!-- ################# Open/Close Travel Time ################# -->
 
             <Field id="travelTime" type="textfield" defaultValue="12">
                 <Label>Open/Close Travel Time:</Label>
             </Field>
 
-            <Field id="label1" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
+            <Field id="travelTimeLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
                 <Label>Specify the door's maximum open/close travel time in seconds.</Label>
             </Field>
 
-            <!-- ################ Closed Sensor ConfigUI ################## -->
+            <!-- ##################### Closed Sensor ###################### -->
 
-            <Field id="label2" type="label">
+            <Field id="closedSensorSpacer" type="label">
                 <Label> </Label>
             </Field>
 
@@ -62,14 +63,13 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="label3" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
+            <Field id="closedSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
                 <Label>Optionally select/enter an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
             </Field>
 
-            <!-- ################# Open Sensor ConfigUI ################### -->
+            <!-- ###################### Open Sensor ####################### -->
 
-            <Field id="label4" type="label">
+            <Field id="openSensorSpacer" type="label">
                 <Label> </Label>
             </Field>
 
@@ -89,14 +89,13 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="label5" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
+            <Field id="openSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
                 <Label>Optionally select/enter an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
             </Field>
 
-            <!-- ################ Actuator Relay ConfigUI ################# -->
+            <!-- ##################### Actuator Relay ##################### -->
 
-            <Field id="label6" type="label">
+            <Field id="actuatorRelaySpacer" type="label">
                 <Label> </Label>
             </Field>
 
@@ -111,14 +110,13 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
                 <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="label7" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
+            <Field id="actuatorRelayLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
                 <Label>Optionally select a relay that actuates the garage door opener and a state name that indicates the relay on/off state.</Label>
             </Field>
 
         </ConfigUI>
 
-        <!-- ##################### State Definitions ###################### -->
+        <!-- ########################## States ############################ -->
 
         <States>
 
