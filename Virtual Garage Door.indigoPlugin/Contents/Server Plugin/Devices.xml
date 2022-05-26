@@ -1,45 +1,67 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  Monitoring and control of conventional garage door openers for
-           Indigo (Virtual Garage Door)
+ PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
+           door openers for Indigo
   MODULE:  Devices.xml
    TITLE:  Define and initialize PiDACS-Bridge device objects (Devices.xml)
 FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
            objects, specifies GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.1.2
-    DATE:  September 9, 2021
+ VERSION:  0.8
+    DATE:  May 31, 2022
 
 
 CHANGE LOG:
 
-v1.0.1   2/16/2021  Add fields to name the on/off sensor/actuator states
+v0.5.0  12/27/2020  Initial beta version.
+v0.6.0   2/16/2021  Add fields to name the on/off sensor/actuator states
                     defaulting with the usual "onOffState".  This allows the
                     use of EasyDAQ digital input/output/relay devices that
                     include the channel number in the state name, e.g.,
                     "channel01".
-v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
+v0.7.0    9/9/2021  Change opener device type to relay for compatibility with
                     the HomeKit Bridge plugin.  Eliminate the numeric door
                     state and change it to a descriptive door status.
+v0.9.0   5/31/2022  Add a new monitored device called activationSensor that
+                    turns on when the garage door opener is activated.  Keep
+                    the openerRelay (formally actuatorRelay) only for use in
+                    controlling the door.  Add a field to specify the relay
+                    channel number for EasyDAQ relays.
 -->
 
 <Devices>
 
-    <!-- ################### Garage Door Opener Device #################### -->
+    <!-- ############### Virtual Garage Door Opener Device ################ -->
 
     <Device id="opener" type="relay">
-        <Name>Garage Door Opener</Name>
+        <Name>Virtual Garage Door Opener</Name>
         <ConfigUI>
 
-            <!-- ################# Open/Close Travel Time ################# -->
+            <!-- ################ Garage Door Travel Time ################# -->
+
+            <Field id="timerTitle" type="label" alignText="center">
+                <Label>Garage Door Travel Time</Label>
+            </Field>
+
+            <Field id="timerSpacer" type="label">
+                <Label> </Label>
+            </Field>
 
             <Field id="travelTime" type="textfield" defaultValue="12">
-                <Label>Open/Close Travel Time:</Label>
+                <Label>Open/Close Travel Time (sec):</Label>
             </Field>
 
             <Field id="travelTimeLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
                 <Label>Specify the door's maximum open/close travel time in seconds.</Label>
+            </Field>
+
+            <!-- ################## Sensor Devices Header ################# -->
+
+            <Field id="sensorSeparator" type="separator"> </Field>
+
+            <Field id="sensorTitle" type="label" alignText="center">
+                <Label>Garage Door Sensor Devices (select at least one)</Label>
             </Field>
 
             <!-- ##################### Closed Sensor ###################### -->
@@ -64,7 +86,7 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
             </Field>
 
             <Field id="closedSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.</Label>
+                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
             </Field>
 
             <!-- ###################### Open Sensor ####################### -->
@@ -90,28 +112,60 @@ v1.1.2    9/9/2021  Change opener device type to relay for compatibility with
             </Field>
 
             <Field id="openSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.</Label>
+                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
             </Field>
 
-            <!-- ##################### Actuator Relay ##################### -->
+             <!-- ################### Activation Sensor ################### -->
 
-            <Field id="actuatorRelaySpacer" type="label">
+            <Field id="activationSensorSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="actuatorRelay" type="menu">
-                <Label>Actuator Relay</Label>
-                <List class="self" method="getRelayDeviceList"
+            <Field id="activationSensor" type="menu">
+                <Label>Activation Sensor:</Label>
+                <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
             </Field>
 
-            <Field id="actuatorRelayStateName" type="textfield"
+            <Field id="activationSensorStateName" type="textfield"
                    defaultValue="onOffState">
                 <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="actuatorRelayLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a relay that actuates the garage door opener and a state name that indicates the relay on/off state.</Label>
+            <Field id="invertActivationSensorState" type="checkbox"
+                   defaultValue="false">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="activationSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select/enter an on/off sensor and state name that captures an opener activation event.  Check "Invert" if the sensor is "off" when the door opener is activated; uncheck it if not.  The activation sensor may be the same device as the opener relay for activations performed by relay action.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            </Field>
+
+            <!-- ###################### Opener Relay ###################### -->
+
+            <Field id="relaySeparator" type="separator"> </Field>
+
+            <Field id="relayTitle" type="label" alignText="center">
+                <Label>Garage Door Opener Relay Device</Label>
+            </Field>
+
+            <Field id="relaySpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="openerRelay" type="menu">
+                <Label>Opener Relay</Label>
+                <List class="self" method="getRelayDeviceList"
+                      dynamicReload="yes"/>
+            </Field>
+
+            <Field id="easyDAQRelayChannel" type="textfield"
+                   defaultValue="None">
+                <Label>EasyDAQ Relay Channel (1-16):</Label>
+            </Field>
+
+            <Field id="relayLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select a momentary contact relay that activates the garage door opener.  For an EasyDAQ relay, provide the relay channel number.</Label>
             </Field>
 
         </ConfigUI>

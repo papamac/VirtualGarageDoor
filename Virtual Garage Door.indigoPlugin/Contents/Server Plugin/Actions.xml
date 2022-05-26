@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  Monitoring and control of conventional garage door openers for
-           Indigo (Virtual Garage Door)
+ PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
+           door openers for Indigo
   MODULE:  Actions.xml
    TITLE:  Define and initialize AlarmDecoder action objects (Actions.xml)
 FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
@@ -12,8 +12,13 @@ FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
            distributed and managed by berkinet on the indigo plugin store.
            This AlarmDecoder-Bridge version was substantially refactored/
            rewritten by David A. Krause, aka papamac (dkrause@mac.com).
- VERSION:  1.1.0
+ VERSION:  0.5.0
     DATE:  December 27, 2020
+
+
+CHANGE LOG:
+
+v0.5.0  12/27/2020  Initial beta version.
 -->
 
 <Actions>
