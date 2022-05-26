@@ -12,7 +12,7 @@
    TITLE:  primary module in the Virtual Garage Door Indigo plugin bundle
 FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            and report the door state in the states dictionary of an opener
-           device.  Provides actions to open/close/toggle the garage door.
+           device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
  VERSION:  0.9.0
