@@ -3,13 +3,13 @@
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
            door openers for Indigo
   MODULE:  Devices.xml
-   TITLE:  Define and initialize PiDACS-Bridge device objects (Devices.xml)
-FUNCTION:  Devices.xml defines the structure of the PiDACS-Bridge device
-           objects, specifies GUI labels, and sets default values.
+   TITLE:  Define and initialize the Virtual Garage Door device objects
+FUNCTION:  Devices.xml defines the structure of the device objects, specifies
+           GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  0.8
-    DATE:  May 31, 2022
+ VERSION:  0.9.3
+    DATE:  June 30, 2022
 
 
 CHANGE LOG:
@@ -28,144 +28,215 @@ v0.9.0   5/31/2022  Add a new monitored device called activationSensor that
                     the openerRelay (formally actuatorRelay) only for use in
                     controlling the door.  Add a field to specify the relay
                     channel number for EasyDAQ relays.
+v0.9.2   6/13/2022  Add a new vibration sensor to the monitored devices. Change
+                    the opener relay to the activation relay and recognize its
+                    role as a sensor device as well as an activation control
+                    device.  Replace the full sensor names with two character
+                    abbreviated names to simplify the state processing code in
+                    plugin.py.
+v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
+                    ConfigUI to allow common initialization and validation
+                    methods to be used for all monitored devices.  Add hidden
+                    xxConfig fields for other monitored device fields to
+                    manage ConfigUI visibility for optional devices.
 -->
 
 <Devices>
 
     <!-- ############### Virtual Garage Door Opener Device ################ -->
 
-    <Device id="opener" type="relay">
+    <Device id="opener" type="relay"
+            subType="kRelayDeviceSubType.GarageController">
         <Name>Virtual Garage Door Opener</Name>
         <ConfigUI>
 
-            <!-- ################ Garage Door Travel Time ################# -->
+            <!-- ############ Garage Door Travel Time (tTime) ############# -->
 
-            <Field id="timerTitle" type="label" alignText="center">
+            <Field id="tTimeTitle" type="label" alignText="center">
                 <Label>Garage Door Travel Time</Label>
             </Field>
 
-            <Field id="timerSpacer" type="label">
+            <Field id="tTimeSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="travelTime" type="textfield" defaultValue="12">
+            <Field id="tTime" type="textfield" defaultValue="12">
                 <Label>Open/Close Travel Time (sec):</Label>
             </Field>
 
-            <Field id="travelTimeLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Specify a time that is slghtly longer than the door's nominal open/close travel time.</Label>
+            <Field id="tTimeLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Specify a time that is slightly longer than the door's nominal open/close travel time.</Label>
             </Field>
 
-            <!-- ################## Sensor Devices Header ################# -->
+            <!-- ##################### Devices Header ##################### -->
 
-            <Field id="sensorSeparator" type="separator"> </Field>
+            <Field id="devicesSeparator" type="separator"> </Field>
 
-            <Field id="sensorTitle" type="label" alignText="center">
-                <Label>Garage Door Sensor Devices (select at least one)</Label>
+            <Field id="devicesTitle" type="label" alignText="center">
+                <Label>Garage Door Sensor/Control Devices (select at least one)</Label>
             </Field>
 
-            <!-- ##################### Closed Sensor ###################### -->
+            <!-- #################### Travel Timer (tt) ################### -->
 
-            <Field id="closedSensorSpacer" type="label">
+            <Field id="tt" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="closedSensor" type="menu">
+            <Field id="ttState" type="textfield"
+                   defaultValue="timerStatus.active" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ttDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <!-- ################### Closed Sensor (cs) ################### -->
+
+            <Field id="csSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="csConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="cs" type="menu">
                 <Label>Closed Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
+                <CallbackMethod>setCsConfig</CallbackMethod>
             </Field>
 
-            <Field id="closedSensorStateName" type="textfield"
-                   defaultValue="onOffState">
+            <Field id="csState" type="textfield" defaultValue="onOffState"
+                    visibleBindingId="csConfig" visibleBindingValue="true">
                 <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="invertClosedSensorState" type="checkbox" defaultValue="false">
+            <Field id="csInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="csConfig" visibleBindingValue="true">
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="closedSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            <Field id="csLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="csConfig" visibleBindingValue="true">
+                <Label>Optionally select an on/off sensor and state name that indicates the door's closed state.  Check "Invert" if the sensor is "off" when the door is fully closed; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
             </Field>
 
-            <!-- ###################### Open Sensor ####################### -->
-
-            <Field id="openSensorSpacer" type="label">
+            <Field id="csDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="openSensor" type="menu">
+            <!-- #################### Open Sensor (os) #################### -->
+
+            <Field id="osSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="osConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="os" type="menu">
                 <Label>Open Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
+                <CallbackMethod>setOsConfig</CallbackMethod>
             </Field>
 
-            <Field id="openSensorStateName" type="textfield"
-                   defaultValue="onOffState">
+            <Field id="osState" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="osConfig" visibleBindingValue="true">
                 <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="invertOpenSensorState" type="checkbox"
-                   defaultValue="false">
+            <Field id="osInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="osConfig" visibleBindingValue="true">
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="openSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select/enter an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            <Field id="osLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="osConfig" visibleBindingValue="true">
+                <Label>Optionally select an on/off sensor and state name that indicates the door's open state.  Check "Invert" if the sensor is "off" when the door is fully open; uncheck it if not.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
             </Field>
 
-             <!-- ################### Activation Sensor ################### -->
-
-            <Field id="activationSensorSpacer" type="label">
+            <Field id="osDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="activationSensor" type="menu">
-                <Label>Activation Sensor:</Label>
+             <!-- ################# Vibration Sensor (vs) ################# -->
+
+            <Field id="vsSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="vsConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="vs" type="menu">
+                <Label>Vibration Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
+                <CallbackMethod>setVsConfig</CallbackMethod>
             </Field>
 
-            <Field id="activationSensorStateName" type="textfield"
-                   defaultValue="onOffState">
+            <Field id="vsState" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="vsConfig" visibleBindingValue="true">
                 <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="invertActivationSensorState" type="checkbox"
-                   defaultValue="false">
+            <Field id="vsInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="vsConfig" visibleBindingValue="true">
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="activationSensorLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select/enter an on/off sensor and state name that captures an opener activation event.  Check "Invert" if the sensor is "off" when the door opener is activated; uncheck it if not.  The activation sensor may be the same device as the opener relay for activations performed by relay action.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            <Field id="vsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.</Label>
             </Field>
 
-            <!-- ###################### Opener Relay ###################### -->
-
-            <Field id="relaySeparator" type="separator"> </Field>
-
-            <Field id="relayTitle" type="label" alignText="center">
-                <Label>Garage Door Opener Relay Device</Label>
-            </Field>
-
-            <Field id="relaySpacer" type="label">
+            <Field id="vsDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="openerRelay" type="menu">
-                <Label>Opener Relay</Label>
+            <!-- ################## Activation Relay (ar) ################# -->
+
+            <Field id="arSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="arConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ar" type="menu">
+                <Label>Activation Relay</Label>
                 <List class="self" method="getRelayDeviceList"
                       dynamicReload="yes"/>
+                <CallbackMethod>setArConfig</CallbackMethod>
             </Field>
 
-            <Field id="easyDAQRelayChannel" type="textfield"
-                   defaultValue="None">
-                <Label>EasyDAQ Relay Channel (1-16):</Label>
+            <Field id="arState" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="arConfig" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
             </Field>
 
-            <Field id="relayLabel" type="label" fontSize="small" fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a momentary contact relay that activates the garage door opener.  For an EasyDAQ relay, provide the relay channel number.</Label>
+            <Field id="arLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="arConfig" visibleBindingValue="true">
+                <Label>Optionally select a normally open momentary contact relay that activates the garage door opener.  The relay device state is off if the relay is open and on if it is closed; there is no invert option.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            </Field>
+
+            <Field id="arDevId" type="textfield" hidden="true">
+                <Label> </Label>
             </Field>
 
         </ConfigUI>
@@ -174,23 +245,28 @@ v0.9.0   5/31/2022  Add a new monitored device called activationSensor that
 
         <States>
 
-            <State id="state">
+            <State id="doorStatus">
                 <ValueType>
                     <List>
-                        <Option value="closed">Closed</Option>
-                        <Option value="opening">Opening</Option>
                         <Option value="open">Open</Option>
-                        <Option value="closing">Closing</Option>
+                        <Option value="closed">Closed</Option>
                         <Option value="stopped">Stopped</Option>
-                        <Option value="reversing">Reversing</Option>
+                        <Option value="opening">Opening</Option>
+                        <Option value="closing">Closing</Option>
+                        <Option value="autoreverse">Unknown</Option>
+                        <Option value="unknown">Unknown</Option>
+                        <Option value="transition">Transition</Option>
                     </List>
                 </ValueType>
-                <TriggerLabel>Door State</TriggerLabel>
-                <TriggerLabelPrefix>Door State</TriggerLabelPrefix>
-                <ControlPageLabel>Door State</ControlPageLabel>
-                <ControlPageLabelPrefix>Door State</ControlPageLabelPrefix>
+                <TriggerLabel>Door Status Changed</TriggerLabel>
+                <TriggerLabelPrefix>Door Status is</TriggerLabelPrefix>
+                <ControlPageLabel>Door Status</ControlPageLabel>
+                <ControlPageLabelPrefix>Door Status is</ControlPageLabelPrefix>
             </State>
 
         </States>
+
+        <UiDisplayStateId>doorStatus</UiDisplayStateId>
+
     </Device>
 </Devices>

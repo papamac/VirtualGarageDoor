@@ -3,15 +3,11 @@
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
            door openers for Indigo
   MODULE:  Actions.xml
-   TITLE:  Define and initialize AlarmDecoder action objects (Actions.xml)
-FUNCTION:  Actions.xml defines the structure of AlarmDecoder action objects,
-           specifies GUI labels, and sets default values.
+   TITLE:  Define and initialize the Virtual Garage Door action objects
+FUNCTION:  Actions.xml defines the structure of the action objects, specifies
+           GUI labels, and sets default values.
    USAGE:  Actions.xml is read by the indigo server during plugin startup.
- AUTHORS:  Originally developed and copyrighted by Richard Perlman
-           (indigo@perlman.com); the ad2usb version (v1.6.0) is currently
-           distributed and managed by berkinet on the indigo plugin store.
-           This AlarmDecoder-Bridge version was substantially refactored/
-           rewritten by David A. Krause, aka papamac (dkrause@mac.com).
+  AUTHOR:  papamac
  VERSION:  0.5.0
     DATE:  December 27, 2020
 
@@ -23,7 +19,7 @@ v0.5.0  12/27/2020  Initial beta version.
 
 <Actions>
 
-	<!-- ...Close/Open/Toggle the Garage Door... -->
+	<!-- ############### Close/Open/Toggle the Garage Door ################ -->
 
 	<Action id="closeGarageDoor" uiPath="DeviceActions" deviceFilter="self">
 		<Name>Close Garage Door</Name>
