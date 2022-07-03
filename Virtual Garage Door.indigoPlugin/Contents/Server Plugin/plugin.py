@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  0.9.3
-    DATE:  June 30, 2022
+ VERSION:  0.9.4
+    DATE:  July 2, 2022
 
 
 UNLICENSE:
@@ -106,6 +106,8 @@ v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUi
                     name.  Add device selection menu callback methods for all
                     monitored device types to facilitate optional device
                     selection in the opener ConfigaUi.
+v0.9.4    7/2/2022  Change monitored device event names to be compatible with
+                    the new README.md figures.
 """
 ###############################################################################
 #                                                                             #
@@ -114,8 +116,8 @@ v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUi
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '0.9.3'
-__date__ = 'June 30, 2022'
+__version__ = '0.9.4'
+__date__ = 'July 2, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -133,37 +135,37 @@ TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
 
 DOOR_STATE_TRANSITIONS = {
 
-    #  door         event              new door        reference
-    # status    + qualifiers            status          number
+    #  door         event               new door        reference
+    # status    + qualifiers             status          number
 
-    'closed':    {'ttOff':            'noChange',        # 1
-                  'csOff':            'opening',         # 2
-                  'osOn+noCS+noVS':   'open',            # 3
-                  'vsOn':             'opening',
-                  'arOn':             'opening'},        # 4
-    'opening':   {'ttOff+noOS':       'open',            # 5
-                  'ttOff':            'stopped',         # 6
-                  'csOff':            'noChange',        # 7
-                  'osOn':             'open',            # 8
-                  'vsOn':             'noChange',
-                  'arOn':             'stopped'},        # 9
-    'open':      {'ttOff':            'noChange',        # 10
-                  'csOn+noOS+noVS':   'closed',          # 11
-                  'osOff':            'closing',         # 12
-                  'vsOn':             'closing',
-                  'arOn':             'closing'},        # 13
-    'closing':   {'ttOff+noCS':       'closed',          # 14
-                  'ttOff':            'opening',         # 15
-                  'csOn':             'closed',          # 16
-                  'osOff':            'noChange',        # 17
-                  'osOn':             'open',            # 18
-                  'vsOn':             'noChange',
-                  'arOn':             'opening'},        # 19
-    'stopped':   {'ttOff':            'noChange',        # 20
-                  'csOn+noVS':        'closed',          # 21
-                  'osOn+noVS':        'open',            # 22
-                  'vsOn':             'closing',
-                  'arOn':             'closing'}}        # 23
+    'closed':    {'ar-on':             'opening',         # 1
+                  'cs-off':            'opening',         # 2
+                  'vs-on':             'opening',         # 3
+                  'os-on':             'open',            # 4
+                  'tt-off':            'noChange'},       # 5
+    'opening':   {'os-on':             'open',            # 6
+                  'tt-off !os':        'open',            # 7
+                  'ar-on':             'stopped',         # 8
+                  'tt-off':            'stopped',         # 9
+                  'cs-off':            'noChange',        # 10
+                  'vs-on':             'noChange'},       # 11
+    'open':      {'ar-on':             'closing',         # 12
+                  'os-off':            'closing',         # 13
+                  'vs-on':             'closing',         # 14
+                  'cs-on':             'closed',          # 15
+                  'tt-off':            'noChange'},       # 16
+    'closing':   {'cs-on':             'closed',          # 17
+                  'tt-off !cs':        'closed',          # 18
+                  'ar-on':             'opening',         # 19
+                  'tt-off':            'opening',         # 20
+                  'os-on':             'open',            # 21
+                  'os-off':            'noChange',        # 22
+                  'vs-on':             'noChange'},       # 23
+    'stopped':   {'ar-on':             'closing',         # 24
+                  'vs-on':             'closing',         # 25
+                  'cs-on':             'closed',          # 26
+                  'os-on':             'open',            # 27
+                  'tt-off':            'noChange'}}       # 28
 
 # Sensor and relay device type id tuples used by the dynamic list callback
 # methods in Plugin Part III.
@@ -181,7 +183,7 @@ SENSOR_DEVICE_TYPE_IDs = (('alarmZone',        'contactSensor',
 # Monitored device types used in deviceStartComm and validateDeviceConfigUi
 # methods.
 
-MONITORED_DEVICE_TYPES = ('tt', 'cs', 'os', 'vs', 'ar')
+MONITORED_DEVICE_TYPES = ('ar', 'cs', 'os', 'vs', 'tt')
 
 
 ###############################################################################
@@ -269,8 +271,7 @@ class Plugin(indigo.PluginBase):
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
         self._monitoredDevices = {}
-        self._lastEventTime = {}
-        self._lastVsOnTime = {}
+        self._lastEventTime = datetime.now()
 
     def __del__(self):
         """
@@ -315,12 +316,6 @@ class Plugin(indigo.PluginBase):
         devId = dev.id
         self._monitoredDevices[devId] = {}
 
-        # Initialize the last event time and last vsOn time dictionaries for
-        # this device.
-
-        now = datetime.now()
-        self._lastEventTime[devId] = self._lastVsOnTime[devId] = now
-
         # Add all monitored devices that are selected in the opener device
         # ConfigUi to the monitored devices dictionary.  Save the initial
         # states of the devices for use in setting the initial device opener
@@ -354,7 +349,7 @@ class Plugin(indigo.PluginBase):
                     self._monitoredDevices[devId][mDevId] = {}
                 self._monitoredDevices[devId][mDevId][mDevState] = mDevType
 
-                # Capture the normalized state of the device.
+                # Get the normalized state of the device.
 
                 invert = dev.pluginProps.get(mDevType + 'Invert', False)
                 states[mDevType] = mDev.states[mDevState] ^ invert
@@ -372,7 +367,9 @@ class Plugin(indigo.PluginBase):
         # motion and that it is closed unless the closedSensor is off and
         # openSensor is on.
 
-        doorStatus = 'open' if not states['cs'] and states['os'] else 'closed'
+        csState = states.get('cs')
+        osState = states.get('os')
+        doorStatus = 'open' if not csState and osState else 'closed'
         self._updateDoorStates(dev, doorStatus)
 
     def deviceStopComm(self, dev):
@@ -408,49 +405,33 @@ class Plugin(indigo.PluginBase):
                     if oldState == newState:
                         continue
 
-                    # Create the monitored device event name and compute the
-                    # time since the last event and the time since the last
-                    # vsOn event.
+                    # Create the monitored device event name and add qualifiers
+                    # for travel timer off events that have different meanings
+                    # during opening and closing.
 
-                    mDevEvent = mDevType + ('Off', 'On')[newState]
-                    eventTime = datetime.now()
-                    dtEvent = ((eventTime - self._lastEventTime[devId])
-                               .total_seconds())
-                    self._lastEventTime[devId] = eventTime
-                    dtVsOn = ((eventTime - self._lastVsOnTime[devId])
-                              .total_seconds())
-                    
-                    # Filter vibration sensor responses by marking the first
-                    # vsOn event in a sequence and subsequently ignoring it.
-                    # This effectively redefines a vsOn event to be two
-                    # consecutive sensor responses in less than 5 seconds,
-                    # reducing false events and incorrect state changes.
-
-                    if mDevEvent == 'vsOn' and dtVsOn > 5:
-                        mDevEvent = 'firstVsOn'
-                        indigo.device.turnOff(mDevId)
-                        self._lastVsOnTime[devId] = eventTime
-
+                    mDevEvent = mDevType + ('-off', '-on')[newState]
                     doorStatus = dev.states['doorStatus']
-                    LOG.warning('"%s" %s %s at %s %5.3f %5.3f',
-                                dev.name, doorStatus, mDevEvent,
-                                str(eventTime)[-15:-3], dtEvent, dtVsOn)
+                    if mDevEvent == 'tt-off':
+                        if doorStatus == 'opening':
+                            os = dev.pluginProps.get('os')
+                            mDevEvent += ' !os' if not os else ''
+                        elif doorStatus == 'closing':
+                            cs = dev.pluginProps.get('cs')
+                            mDevEvent += ' !cs' if not cs else ''
+
+                    # Get the event time and the time since the last event.
+                    # LOG event data for debug.
+
+                    eventTime = datetime.now()
+                    dt = ((eventTime - self._lastEventTime).total_seconds())
+                    self._lastEventTime = eventTime
+                    LOG.debug('"%s" %s at %s %5.3f', dev.name, mDevEvent,
+                              str(eventTime)[-15:-3], dt)
 
                     # Ignore events that don't affect the door status.
 
-                    if mDevEvent in ('ttOn', 'firstVsOn', 'vsOff', 'arOff'):
+                    if mDevEvent in ('ar-off', 'vs-off', 'tt-on'):
                         continue
-
-                    # Add "noSensor" qualifiers for travel timer off events
-                    # that have different meanings for opening and closing.
-
-                    if mDevEvent == 'ttOff':
-                        if doorStatus == 'opening':
-                            os = dev.pluginProps.get('os')
-                            mDevEvent += ('+noOS' if not os else '')
-                        elif doorStatus == 'closing':
-                            cs = dev.pluginProps.get('cs')
-                            mDevEvent += ('+noCS' if not cs else '')
 
                     # Update doorStatus using the DOOR_STATE_TRANSITIONS
                     # dictionary.
@@ -465,7 +446,6 @@ class Plugin(indigo.PluginBase):
                         continue
                     if newDoorStatus == 'noChange':
                         continue
-
                     self._updateDoorStates(dev, newDoorStatus)
 
                     # Conclude with timer and vibration sensor actions for the
@@ -479,7 +459,7 @@ class Plugin(indigo.PluginBase):
                         if vsDevIdStr:
                             vsDevId = int(vsDevIdStr)
                             if vsDevId in indigo.devices:
-                                indigo.device.turnOff(vsDevId)
+                                indigo.device.turnOff(vsDevId, delay=1)
                     ttDevId = int(dev.pluginProps['ttDevId'])
                     if ttDevId in indigo.devices:
                         TIMER.executeAction(action, deviceId=ttDevId)
@@ -502,6 +482,9 @@ class Plugin(indigo.PluginBase):
     #                                III   III                                #
     #                                                                         #
     #                      CONFIG UI VALIDATION METHODS                       #
+    #                                                                         #
+    #  def validatePrefsConfigUi(valuesDict)                                  #
+    #  def validateDeviceConfigUi(self, valuesDict, typeId, devId)            #
     #                                                                         #
     ###########################################################################
 

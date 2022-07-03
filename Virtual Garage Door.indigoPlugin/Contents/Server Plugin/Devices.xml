@@ -253,9 +253,6 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                         <Option value="stopped">Stopped</Option>
                         <Option value="opening">Opening</Option>
                         <Option value="closing">Closing</Option>
-                        <Option value="autoreverse">Unknown</Option>
-                        <Option value="unknown">Unknown</Option>
-                        <Option value="transition">Transition</Option>
                     </List>
                 </ValueType>
                 <TriggerLabel>Door Status Changed</TriggerLabel>
