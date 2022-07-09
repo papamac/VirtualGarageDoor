@@ -15,11 +15,12 @@ FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,
 CHANGE LOG:
 
 v0.5.0  12/27/2020  Initial beta version.
+v0.9.5   7/10/2022  Add logAll checkbox.
 -->
 
 <PluginConfig>
 
-    <Field type="menu" id="loggingLevel" defaultValue="INFO">
+    <Field id="loggingLevel" type="menu" defaultValue="INFO">
         <Label>Logging Level:</Label>
         <List>
             <Option value="THREAD">Thread Debug</Option>
@@ -31,34 +32,40 @@ v0.5.0  12/27/2020  Initial beta version.
         </List>
     </Field>
 
-    <Field type="label" id="threaddebug" alignWithControl="true"
+    <Field id="logAll" type="checkbox" defaultValue="false"
+           visibleBindingId="loggingLevel"
+           visibleBindingValue="(THREAD, DEBUG)">
+        <Label>Log all monitored device events</Label>
+    </Field>
+
+    <Field id="threaddebug" type="label" alignWithControl="true"
            fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="THREAD">
         <Label>Log threaddebug messages and higher</Label>
     </Field>
 
-    <Field type="label" id="debug" alignWithControl="true" fontColor="darkgray"
+    <Field id="debug" type="label" alignWithControl="true" fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="DEBUG">
         <Label>Log debug messages and higher</Label>
     </Field>
 
-    <Field type="label" id="info" alignWithControl="true" fontColor="darkgray"
+    <Field id="info" type="label" alignWithControl="true" fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="INFO">
         <Label>Log info messages and higher</Label>
     </Field>
 
-    <Field type="label" id="warning" alignWithControl="true"
+    <Field id="warning" type="label" alignWithControl="true"
            fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="WARNING">
         <Label>Log warning messages and higher</Label>
     </Field>
 
-    <Field type="label" id="error" alignWithControl="true" fontColor="darkgray"
+    <Field id="error" type="label" alignWithControl="true" fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="ERROR">
         <Label>Log error and critical messages only</Label>
     </Field>
 
-    <Field type="label" id="critical" alignWithControl="true"
+    <Field id="critical" type="label" alignWithControl="true"
            fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="CRITICAL">
         <Label>Log critical messages only</Label>

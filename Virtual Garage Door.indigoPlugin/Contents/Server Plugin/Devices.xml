@@ -77,18 +77,40 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                 <Label>Garage Door Sensor/Control Devices (select at least one)</Label>
             </Field>
 
-            <!-- #################### Travel Timer (tt) ################### -->
-
-            <Field id="tt" type="textfield" hidden="true">
+             <Field id="mDevConfig" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="ttState" type="textfield"
-                   defaultValue="timerStatus.active" hidden="true">
+             <!-- ################## Activation Relay (ar) ################# -->
+
+            <Field id="arSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="ttDevId" type="textfield" hidden="true">
+            <Field id="arConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ar" type="menu">
+                <Label>Activation Relay</Label>
+                <List class="self" method="getRelayDeviceList"
+                      dynamicReload="yes"/>
+                <CallbackMethod>setArConfig</CallbackMethod>
+            </Field>
+
+            <Field id="arState" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="arConfig" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+            <Field id="arLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="arConfig" visibleBindingValue="true">
+                <Label>Optionally select a normally open momentary contact relay that activates the garage door opener.  The relay device state is off if the relay is open and on if it is closed; there is no invert option.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
+            </Field>
+
+            <Field id="arDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
@@ -206,36 +228,18 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                 <Label> </Label>
             </Field>
 
-            <!-- ################## Activation Relay (ar) ################# -->
+           <!-- #################### Travel Timer (tt) ################### -->
 
-            <Field id="arSpacer" type="label">
+            <Field id="tt" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="arConfig" type="checkbox" defaultValue="false"
-                   hidden="true">
+            <Field id="ttState" type="textfield"
+                   defaultValue="timerStatus.active" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="ar" type="menu">
-                <Label>Activation Relay</Label>
-                <List class="self" method="getRelayDeviceList"
-                      dynamicReload="yes"/>
-                <CallbackMethod>setArConfig</CallbackMethod>
-            </Field>
-
-            <Field id="arState" type="textfield" defaultValue="onOffState"
-                   visibleBindingId="arConfig" visibleBindingValue="true">
-                <Label>on/off State Name:</Label>
-            </Field>
-
-            <Field id="arLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="arConfig" visibleBindingValue="true">
-                <Label>Optionally select a normally open momentary contact relay that activates the garage door opener.  The relay device state is off if the relay is open and on if it is closed; there is no invert option.  For EasyDAQ devices, the on/off state name is the channel number "channelnn" (nn = 01-24).</Label>
-            </Field>
-
-            <Field id="arDevId" type="textfield" hidden="true">
+            <Field id="ttDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
@@ -255,10 +259,10 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                         <Option value="closing">Closing</Option>
                     </List>
                 </ValueType>
-                <TriggerLabel>Door Status Changed</TriggerLabel>
-                <TriggerLabelPrefix>Door Status is</TriggerLabelPrefix>
-                <ControlPageLabel>Door Status</ControlPageLabel>
-                <ControlPageLabelPrefix>Door Status is</ControlPageLabelPrefix>
+                <TriggerLabel>Door State Changed</TriggerLabel>
+                <TriggerLabelPrefix>Door State is</TriggerLabelPrefix>
+                <ControlPageLabel>Door State</ControlPageLabel>
+                <ControlPageLabelPrefix>Door State is</ControlPageLabelPrefix>
             </State>
 
         </States>

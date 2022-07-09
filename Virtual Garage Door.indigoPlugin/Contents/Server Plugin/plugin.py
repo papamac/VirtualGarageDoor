@@ -11,12 +11,12 @@
   MODULE:  plugin.py
    TITLE:  primary module in the Virtual Garage Door Indigo plugin bundle
 FUNCTION:  Monitors multiple Indigo devices to track garage door motion
-           and report the door status in the states dictionary of an opener
+           and report the door state in the states dictionary of an opener
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  0.9.4
-    DATE:  July 2, 2022
+ VERSION:  0.9.5
+    DATE:  July 10, 2022
 
 
 UNLICENSE:
@@ -68,7 +68,7 @@ v0.6.0   2/16/2021  Allow the plugin to utilize on/off state names other than
                     digital input/output/relay devices that include the channel
                     number in the state name, e.g., "channel01".
 v0.7.0   9/ 9/2021  Eliminate the numeric door state and change it to a
-                    descriptive door status.  Improve the state display in the
+                    descriptive door state.  Improve the state display in the
                     primary Indigo display.  Delete the travel timer device in
                     the deviceStopCom method to avoid the accumulation of
                     orphan timers.
@@ -108,6 +108,9 @@ v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUi
                     selection in the opener ConfigaUi.
 v0.9.4    7/2/2022  Change monitored device event names to be compatible with
                     the new README.md figures.
+v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
+                    state updates.  Optionally log all monitored device events,
+                    even if they don't result in state changes.
 """
 ###############################################################################
 #                                                                             #
@@ -116,8 +119,8 @@ v0.9.4    7/2/2022  Change monitored device event names to be compatible with
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '0.9.4'
-__date__ = 'July 2, 2022'
+__version__ = '0.9.5'
+__date__ = 'July 10, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -131,41 +134,42 @@ TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
 TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
 
 # Valid door state transitions used by the deviceUpdated method to select a new
-# door status after the occurrence of a monitored device event.
+# door state after the occurrence of a monitored device event.
 
 DOOR_STATE_TRANSITIONS = {
 
-    #  door         event               new door        reference
-    # status    + qualifiers             status          number
+    #  door       event          new door     reference       transition
+    # state    w/qualifiers       state        number          function
 
-    'closed':    {'ar-on':             'opening',         # 1
-                  'cs-off':            'opening',         # 2
-                  'vs-on':             'opening',         # 3
-                  'os-on':             'open',            # 4
-                  'tt-off':            'noChange'},       # 5
-    'opening':   {'os-on':             'open',            # 6
-                  'tt-off !os':        'open',            # 7
-                  'ar-on':             'stopped',         # 8
-                  'tt-off':            'stopped',         # 9
-                  'cs-off':            'noChange',        # 10
-                  'vs-on':             'noChange'},       # 11
-    'open':      {'ar-on':             'closing',         # 12
-                  'os-off':            'closing',         # 13
-                  'vs-on':             'closing',         # 14
-                  'cs-on':             'closed',          # 15
-                  'tt-off':            'noChange'},       # 16
-    'closing':   {'cs-on':             'closed',          # 17
-                  'tt-off !cs':        'closed',          # 18
-                  'ar-on':             'opening',         # 19
-                  'tt-off':            'opening',         # 20
-                  'os-on':             'open',            # 21
-                  'os-off':            'noChange',        # 22
-                  'vs-on':             'noChange'},       # 23
-    'stopped':   {'ar-on':             'closing',         # 24
-                  'vs-on':             'closing',         # 25
-                  'cs-on':             'closed',          # 26
-                  'os-on':             'open',            # 27
-                  'tt-off':            'noChange'}}       # 28
+    'closed':   {'ar-on':       'opening',      # 1      normal --> opening
+                 'cs-off':      'opening',      # 2      normal --> opening
+                 'vs-on':       'opening',      # 3      normal --> opening
+                 'tt-off':      'closed',       # 4      redundant event
+                 'os-on':       'open'},        # 5      recovery from anomaly
+    'opening':  {'os-on':       'open',         # 6      normal --> open
+                 'tt-off&!os':  'open',         # 7      normal --> open
+                 'ar-on':       'stopped',      # 8      interrupted opening
+                 'tt-off':      'stopped',      # 9      interrupted opening
+                 'cs-off':      'opening',      # 10     redundant event
+                 'vs-on':       'opening',      # 11     redundant event
+                 'cs-on':       'closed'},      # 12     recovery from anomaly
+    'open':     {'ar-on':       'closing',      # 13     normal --> closing
+                 'os-off':      'closing',      # 14     normal --> closing
+                 'vs-on':       'closing',      # 15     normal --> closing
+                 'tt-off':      'open',         # 16     redundant event
+                 'cs-on':       'closed'},      # 17     recovery from anomaly
+    'closing':  {'cs-on':       'closed',       # 18     normal --> closed
+                 'tt-off&!cs':  'closed',       # 19     normal --> closed
+                 'ar-on':       'opening',      # 20     interrupted closing
+                 'tt-off':      'opening',      # 21     interrupted closing
+                 'os-off':      'closing',      # 22     redundant event
+                 'vs-on':       'closing',      # 23     redundant event
+                 'os-on':       'open'},        # 24     recovery from anomaly
+    'stopped':  {'ar-on':       'closing',      # 25     normal --> closing
+                 'vs-on':       'closing',      # 26     normal --> closing
+                 'tt-off':      'stopped',      # 27     redundant event
+                 'cs-on':       'closed',       # 28     recovery from anomaly
+                 'os-on':       'open'}}        # 29     recovery from anomaly
 
 # Sensor and relay device type id tuples used by the dynamic list callback
 # methods in Plugin Part III.
@@ -221,7 +225,7 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                           SUPPORTING METHOD                             #
     #                                                                         #
-    #  def _updateDoorStates(dev, doorStatus)                                 #
+    #  def _updateDoorStates(dev, doorState)                                 #
     #                                                                         #
     ###########################################################################
 
@@ -249,7 +253,7 @@ class Plugin(indigo.PluginBase):
            devId     is the device id of the opener device.
            mDevId    is the device id of a timer, sensor, or relay device to be
                      monitored by the opener plugin to determine the garage
-                     door status.  All monitored devices must have an on/off
+                     door state.  All monitored devices must have an on/off
                      bool state defined in the devices xml by
                      <ValueType boolType="OnOff">Boolean</ValueType>.
            mDevState is the state name to be monitored by the plugin.  For
@@ -272,6 +276,7 @@ class Plugin(indigo.PluginBase):
                                    pluginVersion, pluginPrefs)
         self._monitoredDevices = {}
         self._lastEventTime = datetime.now()
+        self._sequences = {}
 
     def __del__(self):
         """
@@ -281,22 +286,22 @@ class Plugin(indigo.PluginBase):
         indigo.PluginBase.__del__(self)
 
     @staticmethod
-    def _updateDoorStates(dev, doorStatus):
+    def _updateDoorStates(dev, doorState):
         """
-        Update the doorStatus and the onOffState for an opener device.
+        Update the doorState and the onOffState for an opener device.
 
-        The doorStatus value can be closed, opening, open, closing, or stopped.
+        The doorState value can be closed, opening, open, closing, or stopped.
         Set the onOffState to on if the door is closed and off otherwise.  Set
         the user interface image to green if the onOffState is on (closed) and
         red otherwise.
         """
-        dev.updateStateOnServer('doorStatus', doorStatus)
-        onOffState = doorStatus == 'closed'
-        dev.updateStateOnServer('onOffState', onOffState, uiValue=doorStatus)
+        dev.updateStateOnServer('doorStatus', doorState)
+        onOffState = doorState == 'closed'
+        dev.updateStateOnServer('onOffState', onOffState, uiValue=doorState)
         image = (indigo.kStateImageSel.SensorOn if onOffState
                  else indigo.kStateImageSel.SensorTripped)
         dev.updateStateImageOnServer(image)
-        LOG.info('"%s" update to %s', dev.name, doorStatus)
+        LOG.info('"%s" update to %s', dev.name, doorState)
 
     # Indigo standard public instance methods:
 
@@ -319,7 +324,7 @@ class Plugin(indigo.PluginBase):
         # Add all monitored devices that are selected in the opener device
         # ConfigUi to the monitored devices dictionary.  Save the initial
         # states of the devices for use in setting the initial device opener
-        # status.
+        # state.
 
         errors = False
         states = {}
@@ -363,14 +368,15 @@ class Plugin(indigo.PluginBase):
             self.deviceStopComm(dev)
             return
 
-        # Initialize the opener device status.  Assume that door is not in
+        # Initialize the opener device state.  Assume that door is not in
         # motion and that it is closed unless the closedSensor is off and
         # openSensor is on.
 
         csState = states.get('cs')
         osState = states.get('os')
-        doorStatus = 'open' if not csState and osState else 'closed'
-        self._updateDoorStates(dev, doorStatus)
+        doorState = 'open' if not csState and osState else 'closed'
+        self._updateDoorStates(dev, doorState)
+        self._sequences[devId] = '<%s>' % doorState
 
     def deviceStopComm(self, dev):
         LOG.threaddebug('Plugin.deviceStopComm called "%s"', dev.name)
@@ -405,69 +411,76 @@ class Plugin(indigo.PluginBase):
                     if oldState == newState:
                         continue
 
-                    # Create the monitored device event name and add qualifiers
+                    # Create the monitored device event name.  Add qualifiers
                     # for travel timer off events that have different meanings
                     # during opening and closing.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    doorStatus = dev.states['doorStatus']
+                    doorState = dev.states['doorStatus']
                     if mDevEvent == 'tt-off':
-                        if doorStatus == 'opening':
+                        if doorState == 'opening':
                             os = dev.pluginProps.get('os')
-                            mDevEvent += ' !os' if not os else ''
-                        elif doorStatus == 'closing':
+                            mDevEvent += '&!os' if not os else ''
+                        elif doorState == 'closing':
                             cs = dev.pluginProps.get('cs')
-                            mDevEvent += ' !cs' if not cs else ''
+                            mDevEvent += '&!cs' if not cs else ''
 
-                    # Get the event time and the time since the last event.
-                    # LOG event data for debug.
+                    # Get the time since the last event.  LOG the event and
+                    # the time if the logAll preference is specified.
 
                     eventTime = datetime.now()
                     dt = ((eventTime - self._lastEventTime).total_seconds())
                     self._lastEventTime = eventTime
-                    LOG.debug('"%s" %s at %s %5.3f', dev.name, mDevEvent,
-                              str(eventTime)[-15:-3], dt)
+                    if self.pluginPrefs['logAll']:
+                        LOG.debug('"%s" %s %5.3f', dev.name, mDevEvent, dt)
 
-                    # Ignore events that don't affect the door status.
+                    # Ignore events that can't affect the door state.  For
+                    # events that might result in a change, look up the door
+                    # state using the DOOR_STATE_TRANSITIONS dictionary.
+                    # Ignore the event if it is not legal for the current door
+                    # state (key error).
 
                     if mDevEvent in ('ar-off', 'vs-off', 'tt-on'):
                         continue
-
-                    # Update doorStatus using the DOOR_STATE_TRANSITIONS
-                    # dictionary.
-
                     try:
-                        newDoorStatus = (DOOR_STATE_TRANSITIONS
-                                        [doorStatus][mDevEvent])
+                        newDoorState = (DOOR_STATE_TRANSITIONS
+                                        [doorState][mDevEvent])
                     except KeyError:
                         LOG.warning('"%s" mDevEvent %s is inconsistent '
-                                    'with doorStatus %s',
-                                    dev.name, mDevEvent, doorStatus)
+                                    'with door state %s',
+                                    dev.name, mDevEvent, doorState)
                         continue
-                    if newDoorStatus == 'noChange':
-                        continue
-                    self._updateDoorStates(dev, newDoorStatus)
 
-                    # Conclude with timer and vibration sensor actions for the
-                    # new door state.
+                    if newDoorState != doorState:  # door state has changed.
 
-                    if newDoorStatus.endswith('ing'):  # Opening or closing.
-                        action = 'restartTimer'
-                    else:  # Door is stopped (closed, open, stopped);
-                        action = 'stopTimer'
-                        vsDevIdStr = dev.pluginProps['vsDevId']
-                        if vsDevIdStr:
-                            vsDevId = int(vsDevIdStr)
-                            if vsDevId in indigo.devices:
-                                indigo.device.turnOff(vsDevId, delay=1)
-                    ttDevId = int(dev.pluginProps['ttDevId'])
-                    if ttDevId in indigo.devices:
-                        TIMER.executeAction(action, deviceId=ttDevId)
+                        # Update the door states on the server and perform new
+                        # state processing.
 
-                    # Log event transition data and timer action for debug.
+                        self._updateDoorStates(dev, newDoorState)
 
-                    LOG.debug('"%s" %s %s %s %s', dev.name, doorStatus,
-                              mDevEvent, newDoorStatus, action)
+                        if newDoorState.endswith('ing'):  # Door is moving.
+                            timerAction = 'restartTimer'
+                            self._sequences[devId] = '<%s>' % doorState
+
+                        else:  # Door is stationary (closed, open, stopped);
+                            timerAction = 'stopTimer'
+                            vsDevIdStr = dev.pluginProps['vsDevId']
+                            if vsDevIdStr:
+                                vsDevId = int(vsDevIdStr)
+                                if vsDevId in indigo.devices:
+                                    indigo.device.turnOff(vsDevId, delay=1)
+
+                        ttDevId = int(dev.pluginProps['ttDevId'])
+                        if ttDevId in indigo.devices:
+                            TIMER.executeAction(timerAction, deviceId=ttDevId)
+
+                    # Update and log the event/state sequence.
+
+                    self._sequences[devId] += (' %s <%s>'
+                                               % (mDevEvent, newDoorState))
+                    LOG.debug('"%s" %s| %s', dev.name,
+                              dev.pluginProps['mDevConfig'],
+                              self._sequences[devId])
 
     ###########################################################################
     #                                                                         #
@@ -547,6 +560,7 @@ class Plugin(indigo.PluginBase):
         # for all monitored device types in all opener devices.  Set the device
         # id fields in the values dictionary.
 
+        mDevConfig = ''
         for mDevType in MONITORED_DEVICE_TYPES:
             valuesDict[mDevType + 'DevId'] = ''
             mDevName = valuesDict.get(mDevType)
@@ -581,7 +595,12 @@ class Plugin(indigo.PluginBase):
                                 errors[mDevType] = err
                                 errors[mDevStateName] = err
                                 return
+
+                # No error, update derived values in the values dictionary.
+
                 valuesDict[mDevType + 'DevId'] = mDevId
+                mDevConfig += mDevType + ' '
+                valuesDict['mDevConfig'] = mDevConfig
 
                 # Add keys/values to self._monitoredDevices to mark this
                 # device/state combination as used.  Note that these additions

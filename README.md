@@ -12,9 +12,80 @@ Garage Door Opener device.  The states are displayed in the Indigo devices
 display and are available for use in triggers and scripts.  The plugin also
 provides actions to open, close and toggle the garage door.
 
+The plugin can monitor a wide variety of sensor devices to track the door
+state/status. The tracking accuracy will depend upon the selected sensor
+devices and the user's door operation modes (use cases). In general, accurate
+tracking through all use cases will require more sensors. Tracking performance
+is discussed in detail later in this README.
+
 Virtual Garage Door Opener devices are compatible with the HomeKit Bridge
 plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
 "Hey Siri, open the garage main door".
+
+Theory of Operation
+----------
+
+The end-to-end operation of the Virtual Garage Door plugin and its supporting
+plugins/devices is illustrated in Figure 1. It shows the data flow between the
+various Indigo plugins and z-wave drivers (yellow) and the Indigo device
+objects (green) that are needed for the overall Virtual Garage Door operation.
+All interaction between the Virtual Garage Door plugin and other plugin/driver
+software occurs through the attributes and methods of the Indigo device
+objects.
+
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure1.png)
+
+### Virtual Garage Door Plugin and Virtual Garage Door Opener Devices ###
+
+The Virtual Garage Door plugin creates Virtual Garage Door Opener devices using
+GUIs specified in the Devices.xml. The GUIs allow the user to specify the door
+travel time and identify all the sensor devices that are to be used by the
+plugin to monitor and control the door. The user can optionally select an
+activation relay (used as both a sensor and a control device), a closed sensor,
+an open sensor, and a vibration sensor. Each sensor (except the relay) can have
+a custom onOffState and a polarity inversion option. A travel timer is created
+by the plugin for each opener device and initialized with the specified door
+travel time. Data for these monitored devices are saved in the pluginProps
+for the opener device. During startup, the device id and state data for all
+selected devices are saved in a local monitored devices dictionary. 
+
+Once the opener device is started, the plugin uses the Indigo deviceUpdated
+callback to continuously monitor onOffState state changes for the monitored
+devices in the monitored devices dictionary. Selected transition events (e.g.,
+closedSensor off) are used along with the current door state (from the states
+directory) to dynamically update the door state as the door moves through its
+operational sequence. The new door state is obtained from a global
+DOOR_STATE_TRANSITIONS dictionary in plugin.py. The dictionary is keyed by the
+current door state and the monitored device transition events for that
+state.
+
+Note that the opener device state is called "doorStatus" in the states 
+dictionary for compatibility with other plugins. The door status can be open,
+closed, stopped, opening, or closing. The states dictionary also includes an
+"onOffState" that is set to on (True) when the door is closed and off (False)
+otherwise. This can be confusing in the Indigo device action display. The user
+must click "Turn Off" to open the garage door and "Turn On" to close it. 
+
+If an activation relay is selected the opener plugin can execute open, close,
+or toggle actions.  It does this through callback methods that invoke relay
+actions to activate the opener. The plugin also responds to device actions
+(turn on, turn off, toggle) and a universal status request.
+
+### Other Plugins and Monitored/Control Devices ###
+
+For completeness, Figure 1 shows the other plugins and devices that support the
+Virtual Garage Door plugin.  Monitored/control devices are managed by their
+plugins and/or z-wave drivers to interface to their respective device hardware.
+These devices then interact with the opener plugin through their device states
+and actions. Examples of actual device hardware are shown. All the examples
+have been tested with the Virtual Garage Door plugin except the Aeotec and
+FortrezZ devices.
+
+Finally, the HomeKit Bridge plugin provides the interface between the Virtual
+Garage Door opener devices and Apple HomeKit/Siri. Because the HomeKit Bridge 
+plugin only uses the opener device's onOffState, the HomeKit accessory
+only knows whether the door is open or closed. The opening, closing, and
+stopped states are ignored.
 
 Doors and Devices
 ----------
@@ -42,7 +113,7 @@ returns to open:
 >open ---> (activation) closing ---> (interrupting activation) opening ---> 
 >(travel time) open ---> (activation) closing ---> (travel time) closed
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure1.png)
+
 
 To track these cycles through their various states, the Virtual Garage Door
 plugin requires data from multiple sensor devices. It also requires an opener
@@ -122,35 +193,11 @@ OPERATION AS DEFINED ABOVE. IF YOU REALLY REQUIRE UNATTENDED OPERATION YOU
 SHOULD INVEST IN A NEWER DOOR OPENER THAT IS ACTIVATED VIA MOBILE PHONE AND
 HAS THE REQUIRED SAFETY FEATURES BUILT IN.**
 
-Theory of Operation
-----------
-
-The end-to-end operation of the Virtual Garage Door plugin and its supporting
-plugins/devices is illustrated in Figure 2. It shows the data flow between the
-various Indigo plugins and z-wave drivers (yellow) and the Indigo device
-objects (green) that are needed for the overall Virtual Garage Door operation.
-
 ![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure2.png)
 
-### Virtual Garage Door Plugin and Virtual Garage Door Opener Device ###
 
-The Virtual Garage Door plugin creates Virtual Garage Door Opener devices using
-GUIs specified by Indigo ConfigUI XML files. The GUIs allow the user to specify
-the door travel time and identify all the devices that are used by the plugin
-to monitor and control the door. These data are saved in the pluginProps for
-the opener device.
 
-Once the opener device is started, the plugin uses the Indigo deviceUpdated
-callback to continuously monitor state changes for the monitored devices
-specified in the opener device pluginProps. Selected transition events (e.g.,
-closedSensorOff) are used along with the current door state (from the states
-directory) to dynamically update the door state as the door moves through its
-operational sequence. The new door state is obtained from a global
-DOOR_STATE_TRANSITIONS dictionary in plugin.py. The dictionary is keyed by the
-current door state and the possible monitored device transition events for that
-state. Entries include transitions for all combinations of monitored devices
-and unexpected transitions resulting from undetected door activations (see 3.
-activation sensor above).
+
 
 Figure 3 illustrates the state transitions that are coded in the
 DOOR_STATE_TRANSITIONS dictionary. The blue and orange circles are the five
@@ -178,21 +225,7 @@ device actions, and universal action listed in Figure 2. Open and on actions
 are ignored if the door is not closed when the action is requested. Similarly,
 close and off actions only work if the door is open.
 
-### Other Plugins and Monitored/Control Devices ###
 
-For completeness, Figure 2 shows the other plugins and devices that support the
-Virtual Garage Door plugin.  Monitored devices and the opener relay device are
-managed by their plugins and/or z-wave drivers to interface to their respective
-device hardware. These devices then interact with the Virtual Garage Door
-plugin through their device states and actions. Examples of actual device
-hardware are shown. All the examples have been tested with the Virtual Garage
-Door plugin except the Aeotec and FortrezZ devices.
-
-Finally, the HomeKit Bridge plugin provides the interface between the Virtual
-Garage Door and its opener devices and Apple HomeKit/Siri. Because the HomeKit
-Bridge plugin only uses the opener device's onOffState, the HomeKit accessory
-only knows whether the door is closed or open. The opening, closing, and
-stopped states are ignored.
 
 User Guide
 ----------
