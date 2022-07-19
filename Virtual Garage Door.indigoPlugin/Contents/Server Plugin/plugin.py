@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  0.9.5
-    DATE:  July 10, 2022
+ VERSION:  0.9.6
+    DATE:  July 20, 2022
 
 
 UNLICENSE:
@@ -111,6 +111,8 @@ v0.9.4    7/2/2022  Change monitored device event names to be compatible with
 v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
                     state updates.  Optionally log all monitored device events,
                     even if they don't result in state changes.
+v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
+                    Updated README.md and its figures.
 """
 ###############################################################################
 #                                                                             #
@@ -119,11 +121,12 @@ v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '0.9.5'
-__date__ = 'July 10, 2022'
+__version__ = '0.9.6'
+__date__ = 'July 20, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
+from time import sleep
 
 import indigo
 
@@ -188,6 +191,14 @@ SENSOR_DEVICE_TYPE_IDs = (('alarmZone',        'contactSensor',
 # methods.
 
 MONITORED_DEVICE_TYPES = ('ar', 'cs', 'os', 'vs', 'tt')
+
+# vibration sensor turnOff delay after stop (seconds).
+
+VS_TURNOFF_DELAY = 1
+
+# activation relay momentary closure time (seconds).
+
+AR_CLOSURE_TIME = 1
 
 
 ###############################################################################
@@ -468,7 +479,8 @@ class Plugin(indigo.PluginBase):
                             if vsDevIdStr:
                                 vsDevId = int(vsDevIdStr)
                                 if vsDevId in indigo.devices:
-                                    indigo.device.turnOff(vsDevId, delay=1)
+                                    sleep(VS_TURNOFF_DELAY)
+                                    indigo.device.turnOff(vsDevId)
 
                         ttDevId = int(dev.pluginProps['ttDevId'])
                         if ttDevId in indigo.devices:
@@ -771,10 +783,11 @@ class Plugin(indigo.PluginBase):
                 props = dict(channelSel=int(dev.pluginProps['arState'][8:9]))
                 plugin.executeAction('turnOnOutput', deviceId=arDev.id,
                                      props=props)
+                sleep(AR_CLOSURE_TIME)
                 plugin.executeAction('turnOffOutput', deviceId=arDev.id,
                                      props=props)
             else:  # Standalone relay device.
-                indigo.device.turnOn(ar, duration=1)
+                indigo.device.turnOn(ar, duration=AR_CLOSURE_TIME)
         else:
             error = 'door action ignored; no activation relay specified.'
             LOG.error(error)

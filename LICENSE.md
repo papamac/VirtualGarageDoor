@@ -1,5 +1,4 @@
-THE UNLICENSE:
-==========
+# THE UNLICENSE #
 
 This is free and unencumbered software released into the public domain.
 
