@@ -15,7 +15,7 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  0.9.6
+ VERSION:  0.9.7
     DATE:  July 20, 2022
 
 
@@ -113,6 +113,7 @@ v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
                     even if they don't result in state changes.
 v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
                     Updated README.md and its figures.
+v0.9.7   7/20/2022  Update comments in plugin.py.
 """
 ###############################################################################
 #                                                                             #
@@ -121,7 +122,7 @@ v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '0.9.6'
+__version__ = '0.9.7'
 __date__ = 'July 20, 2022'
 
 from datetime import datetime
@@ -248,16 +249,15 @@ class Plugin(indigo.PluginBase):
         Initialize plugin data and private instance attributes for the Plugin
         class.
 
-        Three local dictionaries are private to the Plugin class: the monitored
-        devices dictionary, the last event time dictionary, and the last
-        vibration sensor on event time dictionary.  All are keyed by the device
-        id of a Plugin opener device.  Initialize these objects to empty
-        dictionaries to be filled later by Plugin methods.
+        Two local dictionaries are private to the Plugin class: the monitored
+        devices dictionary and the sequences dictionary.  Both are keyed by the
+        device id of a Plugin opener device.  self,__init__ initializes these
+        to empty dictionaries to be filled later by Plugin methods.
 
         The monitored devices dictionary is key to the operation of the Plugin
         class.  It is a compound dictionary that stores device id's and
-        properties for devices that are monitored by the Virtual Garage Door
-        plugin.  It has the following structure:
+        properties for devices that are monitored by the plugin.  It has the
+        following structure:
 
         self._monitoredDevices = {devId: {mDevId: {mDevState: mDevType}}}
         where:
@@ -282,6 +282,11 @@ class Plugin(indigo.PluginBase):
         interpret their state changes.  self._monitoredDevices is also used
         in the validateDeviceConfigUi method to ensure that mDevId/mDevState
         combinations are not reused across the various opener devices/sensors.
+
+        The self._sequences dictionary captures the current monitored device
+        event/door state sequence for each opener device. This sequence is used
+        in debug mode to ensure that the right door state transitions were
+        selected in response to the detected events.
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
