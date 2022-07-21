@@ -1,16 +1,6 @@
 ![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/DoubleDoor.png)
-# Monitoring and control of conventional garage door openers in Indigo #
 
 July 21, 2022 (v0.9.8)
-
-## Table of Contents ##
-1. Overview
-2. Theory of Operation
-3. Physical Door Events, States, and Transitions
-4. Sensor and Control Devices
-5. Door State Tracking
-6. User Notes
-7. Safety Issue: Unattended Operation
 
 ## 1. Overview ##
 

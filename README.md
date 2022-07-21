@@ -22,7 +22,7 @@ plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
 "Hey Siri, open the garage main door".
 
 Please see the
-[full documentation](https://www.github.com/papamac/VirtualGarageDoor/WIKI.md)
+[full documentation](https://www.github.com/papamac/VirtualGarageDoor.wiki.git)
 for details on the design, operation, and use of the plugin. Also, you can
 download the latest version of the plugin at the 
 [Indigo Plugin Store](http://www.indigodomo.com/pluginstore/).
