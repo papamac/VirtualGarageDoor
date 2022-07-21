@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers for Indigo
+           door openers in Indigo
   MODULE:  Actions.xml
    TITLE:  Define and initialize the Virtual Garage Door action objects
 FUNCTION:  Actions.xml defines the structure of the action objects, specifies

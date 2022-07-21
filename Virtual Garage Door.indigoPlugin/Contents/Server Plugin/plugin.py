@@ -7,7 +7,7 @@
 ###############################################################################
 """
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers for Indigo
+           door openers in Indigo
   MODULE:  plugin.py
    TITLE:  primary module in the Virtual Garage Door Indigo plugin bundle
 FUNCTION:  Monitors multiple Indigo devices to track garage door motion
@@ -237,7 +237,7 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                           SUPPORTING METHOD                             #
     #                                                                         #
-    #  def _updateDoorStates(dev, doorState)                                 #
+    #  def _updateDoorStates(dev, doorState)                                  #
     #                                                                         #
     ###########################################################################
 

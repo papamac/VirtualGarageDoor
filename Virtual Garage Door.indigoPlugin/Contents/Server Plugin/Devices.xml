@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers for Indigo
+           door openers in Indigo
   MODULE:  Devices.xml
    TITLE:  Define and initialize the Virtual Garage Door device objects
 FUNCTION:  Devices.xml defines the structure of the device objects, specifies

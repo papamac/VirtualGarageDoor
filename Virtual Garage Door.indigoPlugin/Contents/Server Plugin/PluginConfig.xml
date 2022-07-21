@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
  PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers for Indigo
+           door openers in Indigo
   MODULE:  PluginConfig.xml
    TITLE:  Define and initialize Virtual Garage Door logging options
 FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>PluginVersion</key>
-	<string>0.9.7</string>
+	<string>0.9.8</string>
 	<key>ServerApiVersion</key>
 	<string>3.0</string>
 	<key>IwsApiVersion</key>
@@ -11,7 +11,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>Virtual Garage Door</string>
 	<key>CFBundleName</key>
-	<string>Virtual Garage Door</string>
+	<string>VirtGarageDoor</string>
 	<key>CFBundleIdentifier</key>
 	<string>net.papamac.indigoplugin.virtualgaragedoor</string>
 	<key>CFBundleVersion</key>
