@@ -152,7 +152,7 @@ their events in detail.
 
 ![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Table1.png)
 
-### 1. activation relay (ar)
+### activation relay (ar)
 
 The activation relay is a normally open relay that is connected across the two
 wires of the activation wall switch. It is used in a momentary contact mode to
@@ -176,7 +176,7 @@ RF remote and there will be no ar-on event. This requires the plugin to monitor
 all potential activation sensors to ensure accurate tracking. Note that the
 ar-off event is not needed and is ignored.
 
-### 2. closed sensor (cs) ###
+### closed sensor (cs) ###
 
 The closed sensor is a device whose on/off state is on when the door is stopped
 and fully closed, and off otherwise.  It may be a z-wave/wired/custom contact
@@ -206,7 +206,7 @@ The cs-off event indicates an opening activation. The cs-on event indicates
 that the door is closed. This event is useful in re-syncing the tracking state
 with the physical door state if tracking fails.
 
-### 3. open sensor (os) ###
+### open sensor (os) ###
 
 The open sensor is a device whose on/off state is on when the door is stopped
 and fully open.  Like the closed sensor, it may be a z-wave/wired/custom
@@ -227,7 +227,7 @@ re-syncing the tracking state with the physical door state if tracking fails.
 This failure recovery feature makes it highly desirable to have a closed
 sensor, an open sensor, or both in your monitored device configuration.
 
-### 4. vibration sensor (vs) ###
+### vibration sensor (vs) ###
 
 The vibration sensor is an alternative activation sensor for use when other
 options are unavailable (e.g., no activation relay, the user prefers button/RF
@@ -248,7 +248,7 @@ event resulting from the turnOff command is ignored.
 It is conceivable that a false vs-on event could occur when the door has not
 been activated. This, however, has not happened during extensive testing.
 
-### 5. travel timer (tt) ###
+### travel timer (tt) ###
 
 The travel timer is an Indigo Timers and Pesters plugin device. A unique timer
 device is created by the Virtual Garage Door plugin for each door opener device
