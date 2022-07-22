@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/VirtualGarageDoor.iml" filepath="$PROJECT_DIR$/.idea/VirtualGarageDoor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../VirtualGarageDoor.wiki/.idea/VirtualGarageDoor.wiki.iml" filepath="$PROJECT_DIR$/../VirtualGarageDoor.wiki/.idea/VirtualGarageDoor.wiki.iml" />
     </modules>
   </component>
 </project>

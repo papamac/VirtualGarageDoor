@@ -1,7 +1,7 @@
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/DoubleDoor.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/doubleDoor.png)
 ## Monitoring and control of conventional garage door openers in Indigo ##
 
-July 21, 2022 (v0.9.8)
+Initial release v1.0.0, July 22, 2022
 
 The Virtual Garage Door plugin monitors one or more Indigo devices to track the
 garage door motion as it moves through its operational cycles. The plugin

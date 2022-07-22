@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  0.9.7
-    DATE:  July 20, 2022
+ VERSION:  1.0.0
+    DATE:  July 22, 2022
 
 
 UNLICENSE:
@@ -114,6 +114,7 @@ v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
 v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
                     Updated README.md and its figures.
 v0.9.7   7/20/2022  Update comments in plugin.py.
+v1.0.0   7/22/2022  Initial GitHub release.
 """
 ###############################################################################
 #                                                                             #
@@ -122,8 +123,8 @@ v0.9.7   7/20/2022  Update comments in plugin.py.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '0.9.7'
-__date__ = 'July 20, 2022'
+__version__ = '1.0.0'
+__date__ = 'July 22, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET

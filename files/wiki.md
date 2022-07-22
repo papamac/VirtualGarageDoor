@@ -1,6 +1,6 @@
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/DoubleDoor.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/doubleDoor.png)
 
-July 21, 2022 (v0.9.8)
+Initial release v1.0.0, July 22, 2022
 
 ## 1. Overview ##
 
@@ -32,7 +32,7 @@ All interaction between the Virtual Garage Door plugin and other plugin/driver
 software occurs through the attributes and methods of the Indigo device
 objects.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure1.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure1.png)
 
 ### Virtual Garage Door Plugin and Opener Devices ###
 
@@ -95,7 +95,7 @@ This door is sometimes referred to as an "auto-reversing" door because it
 automatically reverses if an interrupt occurs during closing. This plugin will
 not work with a door opener that is not auto-reversing.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure2.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure2.png)
 
 A normal opening cycle is initiated by the activation wall button (or an RF
 remote). The opener begins to raise the door from the closed position. It stops
@@ -115,7 +115,7 @@ Figure 3 summarizes the four operational cycles (1) normal opening, (2) normal
 closing, (3) interrupted opening, and (4) interrupted closing in a state
 transition diagram.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure3.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure3.png)
 
 The _real world events_ described in Figure 2 cause transitions among the five
 _physical door states_ (closed, opening, open, closing, and stopped), as the
@@ -141,7 +141,7 @@ available. Other devices may be specified in any combination. Each will offer
 advantages for particular operational cycles, to be discussed in Section 5
 below.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure4.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure4.png)
 
 Table 1 describes the monitored device events that are used to track the
 physical door states. Some events are not used by the tracking logic and are
@@ -150,7 +150,7 @@ change the way that they are used in tracking. These are given different event
 names to distinguish them. This section will describe the five devices and
 their events in detail.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Table1.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/table1.png)
 
 ### activation relay (ar)
 
@@ -296,7 +296,7 @@ door moves through its operational cycles. Tracking accuracy is a measure of
 how well the _virtual states_ and the _physical states_ match given a
 particular configuration of monitored devices and operational cycles/use cases.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure5.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure5.png)
 
 The plugin tracks states by using the global DOOR_STATE_TRANSITIONS dictionary
 which codifies the state transitions in Figure 5. The dictionary provides a new
@@ -357,7 +357,7 @@ Table 2 defines four color-coded levels of tracking performance, and shows the
 assessed performance for eight configurations of monitored devices each
 tracking through the eight use cases.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Table2.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/table2.png)
 
 The ar and tt are included in all the monitored device configurations. The tt
 is defined by the plugin and is always available. The ar is shown only because
@@ -422,22 +422,22 @@ user interfaces should provide all the guidance that you will need. The
 following figure shows the plugin configuration GUI. It is used to select the
 plugin logging level and a debug logging option.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure6.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure6.png)
 
 The following figure shows a Virtual Garage Door opener device configuration
 GUI immediately after device creation. There are no monitored devices selected.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure7.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure7.png)
 
 This figure shows the opener device configuration GUI after all four monitored
 devices have been selected.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure8.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure8.png)
 
 This figure shows the HomeKit Accessory Server device configuration GUI with
 the Virtual Garage Door opener device configured.
 
-![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/READMEfigures/Figure9.png)
+![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/figure9.png)
 
 ## 7. Safety Issue - Unattended Operation ##
 **Unattended operation is defined as activation of the garage door opener when
