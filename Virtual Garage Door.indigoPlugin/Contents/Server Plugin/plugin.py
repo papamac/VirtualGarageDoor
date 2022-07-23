@@ -115,6 +115,10 @@ v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
                     Updated README.md and its figures.
 v0.9.7   7/20/2022  Update comments in plugin.py.
 v1.0.0   7/22/2022  Initial GitHub release.
+v1.0.1   7/23/2022  Add a user specified vsResetDelay time to delay the vs
+                    reset after the door stops, preventing false vs activations
+                    from residual shaking.  Permit travel time to be a floating
+                    point number.
 """
 ###############################################################################
 #                                                                             #
@@ -193,10 +197,6 @@ SENSOR_DEVICE_TYPE_IDs = (('alarmZone',        'contactSensor',
 # methods.
 
 MONITORED_DEVICE_TYPES = ('ar', 'cs', 'os', 'vs', 'tt')
-
-# vibration sensor turnOff delay after stop (seconds).
-
-VS_TURNOFF_DELAY = 1
 
 # activation relay momentary closure time (seconds).
 
@@ -479,13 +479,15 @@ class Plugin(indigo.PluginBase):
                             timerAction = 'restartTimer'
                             self._sequences[devId] = '<%s>' % doorState
 
-                        else:  # Door is stationary (closed, open, stopped);
+                        else:  # Door is stationary (open, closed, or stopped);
                             timerAction = 'stopTimer'
                             vsDevIdStr = dev.pluginProps['vsDevId']
                             if vsDevIdStr:
                                 vsDevId = int(vsDevIdStr)
                                 if vsDevId in indigo.devices:
-                                    sleep(VS_TURNOFF_DELAY)
+                                    vsResetDelay = float(dev.pluginProps
+                                                         ['vsResetDelay'])
+                                    sleep(vsResetDelay)
                                     indigo.device.turnOff(vsDevId)
 
                         ttDevId = int(dev.pluginProps['ttDevId'])
@@ -535,14 +537,13 @@ class Plugin(indigo.PluginBase):
 
         # Validate open/close travel time entry.
 
-        tTime = valuesDict['tTime']
-        intTime = 0
+        tTime = 0
         try:
-            intTime = int(tTime)
+            tTime = float(valuesDict['tTime'])
         except ValueError:
             pass
-        if not 8 <= intTime <= 20:
-            error = 'Travel time must be an integer between 8 and 20 seconds'
+        if not 8 <= tTime <= 20:
+            error = 'Travel time must be a number between 8 and 20 seconds'
             errors['tTime'] = error
             return False, valuesDict, errors
 
@@ -590,7 +591,7 @@ class Plugin(indigo.PluginBase):
                 if not mDev:
                     err = 'Device not in devices dictionary'
                     errors[mDevType] = err
-                    return
+                    continue
 
                 # Validate the state name.
 
@@ -599,6 +600,7 @@ class Plugin(indigo.PluginBase):
                 if mDevState not in mDev.states:
                     err = 'on/off state not in device states dictionary'
                     errors[mDevStateName] = err
+                    continue
 
                 # Check to ensure that no device/state pairs are reused by this
                 # opener device or others.
@@ -612,9 +614,24 @@ class Plugin(indigo.PluginBase):
                                 err = 'Device/state already in use'
                                 errors[mDevType] = err
                                 errors[mDevStateName] = err
-                                return
+                                continue
 
-                # No error, update derived values in the values dictionary.
+                # Validate the vs reset delay time.
+
+                if mDevType == 'vs':
+                    vsResetDelay = 0
+                    try:
+                        vsResetDelay = float(valuesDict['vsResetDelay'])
+                    except ValueError:
+                        pass
+                    if not 0 <= vsResetDelay <= 2:
+                        error = ('Reset delay time must be a number between '
+                                 '0 and 2 seconds')
+                        errors['vsResetDelay'] = error
+                        continue
+
+                # No error for this monitored device/state; update derived
+                # values in the values dictionary.
 
                 valuesDict[mDevType + 'DevId'] = mDevId
                 mDevConfig += mDevType + ' '

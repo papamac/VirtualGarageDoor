@@ -39,6 +39,9 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                     methods to be used for all monitored devices.  Add hidden
                     xxConfig fields for other monitored device fields to
                     manage ConfigUI visibility for optional devices.
+v1.0.1   7/23/2022  Add a new vsResetDelay field to allow the user to set the
+                    time available for residual shaking after the door stops.
+                    Permit travel time to be a floating point number.
 -->
 
 <Devices>
@@ -60,8 +63,8 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                 <Label> </Label>
             </Field>
 
-            <Field id="tTime" type="textfield" defaultValue="12">
-                <Label>Open/Close Travel Time (sec):</Label>
+            <Field id="tTime" type="textfield" defaultValue="12.0">
+                <Label>Open/Close Travel Time (seconds):</Label>
             </Field>
 
             <Field id="tTimeLabel" type="label" fontSize="small"
@@ -218,10 +221,15 @@ v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                 <Label>Invert on/off State:</Label>
             </Field>
 
+            <Field id="vsResetDelay" type="textfield" defaultValue="1.5"
+                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                <Label>Reset Delay Time (seconds):</Label>
+            </Field>
+
             <Field id="vsLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
                    visibleBindingId="vsConfig" visibleBindingValue="true">
-                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.</Label>
+                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.  Set a reset delay time to prevent false activations from residual shaking after the door stops.</Label>
             </Field>
 
             <Field id="vsDevId" type="textfield" hidden="true">
