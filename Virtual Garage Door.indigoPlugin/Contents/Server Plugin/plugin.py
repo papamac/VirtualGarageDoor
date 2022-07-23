@@ -115,10 +115,10 @@ v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
                     Updated README.md and its figures.
 v0.9.7   7/20/2022  Update comments in plugin.py.
 v1.0.0   7/22/2022  Initial GitHub release.
-v1.0.1   7/23/2022  Add a user specified vsResetDelay time to delay the vs
-                    reset after the door stops, preventing false vs activations
-                    from residual shaking.  Permit travel time to be a floating
-                    point number.
+v1.0.1   7/23/2022  Add a user-specified vsResetDelay time to delay the
+                    vibration sensor reset after the door stops. This prevents
+                    false vibration sensor activations from residual shaking.
+                    Permit travel time to be a floating point number.
 """
 ###############################################################################
 #                                                                             #
@@ -392,8 +392,9 @@ class Plugin(indigo.PluginBase):
         csState = states.get('cs')
         osState = states.get('os')
         doorState = 'open' if not csState and osState else 'closed'
-        self._updateDoorStates(dev, doorState)
         self._sequences[devId] = '<%s>' % doorState
+        if doorState != dev.states.get('doorStatus'):
+            self._updateDoorStates(dev, doorState)
 
     def deviceStopComm(self, dev):
         LOG.threaddebug('Plugin.deviceStopComm called "%s"', dev.name)
@@ -537,7 +538,7 @@ class Plugin(indigo.PluginBase):
 
         # Validate open/close travel time entry.
 
-        tTime = 0
+        tTime = 0  # Force an error if try fails.
         try:
             tTime = float(valuesDict['tTime'])
         except ValueError:
@@ -619,7 +620,7 @@ class Plugin(indigo.PluginBase):
                 # Validate the vs reset delay time.
 
                 if mDevType == 'vs':
-                    vsResetDelay = 0
+                    vsResetDelay = -1  # Force an error if try fails.
                     try:
                         vsResetDelay = float(valuesDict['vsResetDelay'])
                     except ValueError:
