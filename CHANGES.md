@@ -4,6 +4,16 @@ Releases and major changes to the Virtual Garage Door plugin are described in
 this CHANGES.md file.  Changes of lesser importance may be described in the
 changes section of individual module docstrings if appropriate.
 
+Your bug reports, comments and suggestions will be greatly appreciated.  Please
+post them on papamac's
+[Indigo User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
+
+## GitHub Release v1.0.2, July 25, 2022 ##
+
+### Cleanup for the initial Indigo release ###
+
+This release changes some comments and URLs for the initial Indigo release.
+
 ## GitHub Release v1.0.1, July 23, 2022 ##
 
 ### vibration sensor reset bug fix ###
@@ -26,6 +36,3 @@ documentation in plugin.py is still in work.
 
 The activation sensor feature that was implemented in version 0.9.1 is no
 longer supported because of its limited usefulness.
-
-Your bug reports, comments and suggestions will be greatly appreciated.  Send
-them to papamac on the Indigo user forum.
