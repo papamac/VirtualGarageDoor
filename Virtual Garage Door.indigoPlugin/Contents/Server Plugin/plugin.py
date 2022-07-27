@@ -119,6 +119,8 @@ v1.0.1   7/23/2022  Add a user-specified vsResetDelay time to delay the
                     vibration sensor reset after the door stops. This prevents
                     false vibration sensor activations from residual shaking.
                     Permit travel time to be a floating point number.
+v1.0.3   7/27/2022  Increase the maximum value of the vsResetDelay time from 2
+                    to 5 seconds.
 """
 ###############################################################################
 #                                                                             #
@@ -625,9 +627,9 @@ class Plugin(indigo.PluginBase):
                         vsResetDelay = float(valuesDict['vsResetDelay'])
                     except ValueError:
                         pass
-                    if not 0 <= vsResetDelay <= 2:
+                    if not 0 <= vsResetDelay <= 5:
                         error = ('Reset delay time must be a number between '
-                                 '0 and 2 seconds')
+                                 '0 and 5 seconds')
                         errors['vsResetDelay'] = error
                         continue
 

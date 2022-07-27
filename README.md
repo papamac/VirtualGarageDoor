@@ -19,6 +19,15 @@ Virtual Garage Door opener devices are compatible with the HomeKit Bridge
 plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
 "Hey Siri, open the garage main door".
 
+| Requirement            |                       |
+|------------------------|-----------------------|
+| Minimum Indigo Version | 2022.1                |
+| Python Library (API)   | Official              |
+| Requires Local Network | Yes                   |
+| Requires Internet      | Yes                   |
+| Hardware Interface     | Various z-wave/custom |
+
+
 Please see the
 [full documentation](https://github.com/papamac/VirtualGarageDoor/wiki)
 for details on the design, operation, and use of the plugin.

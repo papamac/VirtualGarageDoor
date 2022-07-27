@@ -8,6 +8,19 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Indigo User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.0.3, July 27, 2022 ##
+
+### Increase maximum value of the vibration sensor reset delay time ###
+
+This release increases the maximum value of the vibration sensor reset delay
+time from 2 to 5 seconds. The default delay remains at 1.5 seconds. Recent
+experience with papamac's vibration sensor suggests that the user should have
+more lattitude in setting this value.
+
+v1.0.3 also removes the plugin bundle zip file from the repo. A new
+indigoplugin.zip file will now be attached to each release for the user's
+convenience when downloading from the Indigo Plugin Store.
+
 ## GitHub Release v1.0.2, July 25, 2022 ##
 
 ### Cleanup for the initial Indigo release ###
