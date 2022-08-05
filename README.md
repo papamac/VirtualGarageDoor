@@ -29,12 +29,12 @@ plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
 
 
 Please see the
-[full documentation](https://github.com/papamac/VirtualGarageDoor/wiki)
+[Virtual Garage Door Wiki](https://github.com/papamac/VirtualGarageDoor/wiki)
 for details on the design, operation, and use of the plugin.
 
 You can download the latest version of the plugin at the 
 [Indigo Plugin Store](https://indigodomo.com/pluginstore).
 Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
-[Indigo User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
+[Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 

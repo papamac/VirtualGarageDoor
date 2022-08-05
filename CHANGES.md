@@ -6,7 +6,11 @@ changes section of individual module docstrings if appropriate.
 
 Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
-[Indigo User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
+[Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
+
+## GitHub Release v1.0.4, August 5, 2022 ##
+
+### Improve the README and Wiki documentation ###
 
 ## GitHub Release v1.0.3, July 27, 2022 ##
 
