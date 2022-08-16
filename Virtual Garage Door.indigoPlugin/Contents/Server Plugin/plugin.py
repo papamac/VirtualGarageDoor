@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.0.0
-    DATE:  July 22, 2022
+ VERSION:  1.0.5
+    DATE:  August 16, 2022
 
 
 UNLICENSE:
@@ -78,13 +78,15 @@ v0.7.2   4/20/2022  Change the travel timer state name from the text value
                     "timerStatus" to the boolean value "timerStatus.active"
                     for symmetry in device monitoring.
 v0.8.0   4/30/2022  Revise the door state transition processing to use a state
-                    transition model based on the behavior of LiftMaster garage
-                    door openers.  A state transition diagram is included in
-                    README file that is included in this bundle.  It is encoded
-                    in the DOOR_STATE_TRANSITIONS dictionary in this module
-                    with references to the state transition diagram.  LOG
-                    warning messages for monitored device state changes that
-                    are inconsistent with the model.
+                    transition model based on the behavior of auto-reversing
+                    garage door openers.  The new state transition diagram is
+                    included in the plugin wiki.  The transitions are entered
+                    in a DOOR_STATE_TRANSITIONS dictionary that controls a
+                    table-driven state tracking algorithm.  The transitions in
+                    the dictionary are numbered to cross-reference them to
+                    the state transition diagram.  Also, LOG warning messages
+                    for monitored device state changes that are inconsistent
+                    with the new state transition model.
 v0.9.0   5/31/2022  (1) Add a new monitored device called an activation sensor
                     that turns on when the garage door opener is activated.
                     Keep the openerRelay (formally actuatorRelay) only for use
@@ -107,12 +109,13 @@ v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUi
                     monitored device types to facilitate optional device
                     selection in the opener ConfigaUi.
 v0.9.4    7/2/2022  Change monitored device event names to be compatible with
-                    the new README.md figures.
+                    the new wiki figures.
 v0.9.5   7/10/2022  Add debug logging of monitored event sequences and
                     state updates.  Optionally log all monitored device events,
                     even if they don't result in state changes.
-v0.9.6   7/20/2022  Use sleep for VS_TURNOFF vs Indigo device delayed action.
-                    Updated README.md and its figures.
+v0.9.6   7/20/2022  Use sleep for VS_TURNOFF instead of Indigo device delayed
+                    action which is less precise.  Update README.md and the
+                    wiki.
 v0.9.7   7/20/2022  Update comments in plugin.py.
 v1.0.0   7/22/2022  Initial GitHub release.
 v1.0.1   7/23/2022  Add a user-specified vsResetDelay time to delay the
@@ -121,6 +124,11 @@ v1.0.1   7/23/2022  Add a user-specified vsResetDelay time to delay the
                     Permit travel time to be a floating point number.
 v1.0.3   7/27/2022  Increase the maximum value of the vsResetDelay time from 2
                     to 5 seconds.
+v1.0.5   8/16/2022  Add 'zwRelayType' to RELAY_DEVICE_TYPE_IDs to permit z-wave
+                    relays to be used with the plugin.  Separate EasyDAQ
+                    deviceTypeIds into combo, relay, and sensor groups for
+                    more accurate dynamic list creation in relay and sensor
+                    device selection.
 """
 ###############################################################################
 #                                                                             #
@@ -129,8 +137,8 @@ v1.0.3   7/27/2022  Increase the maximum value of the vsResetDelay time from 2
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.0.0'
-__date__ = 'July 22, 2022'
+__version__ = '1.0.5'
+__date__ = 'August 16, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -185,15 +193,14 @@ DOOR_STATE_TRANSITIONS = {
 # Sensor and relay device type id tuples used by the dynamic list callback
 # methods in Plugin Part III.
 
-EASYDAQ_DEVICE_TYPE_IDs = ('easyDaq4r4io',     'easyDaq16r8io',
-                           'easyDaq24r',       'easyDaq24io',
-                           'easyDaq8r',        'easyDaq8ii4io4r',
-                           'easyDaqDo24Stack')
-RELAY_DEVICE_TYPE_IDs = (('digitalOutput',     'relay')
-                        + EASYDAQ_DEVICE_TYPE_IDs)
-SENSOR_DEVICE_TYPE_IDs = (('alarmZone',        'contactSensor',
-                           'digitalInput',     'zwOnOffSensorType')
-                          + RELAY_DEVICE_TYPE_IDs)
+comboDeviceTypeIds = ('easyDaq4r4io', 'easyDaq16r8io', 'easyDaq8ii4io4r')
+
+RELAY_DEVICE_TYPE_IDs = (('digitalOutput', 'zwRelayType', 'easyDaq8r',
+                          'easyDaq24r', 'easyDaqDo24Stack',
+                          'easyDaqOutputRelay') + comboDeviceTypeIds)
+SENSOR_DEVICE_TYPE_IDs = (('alarmZone', 'contactSensor', 'digitalInput',
+                           'zwOnOffSensorType', 'easyDaq24io')
+                          + comboDeviceTypeIds)
 
 # Monitored device types used in deviceStartComm and validateDeviceConfigUi
 # methods.
@@ -804,7 +811,7 @@ class Plugin(indigo.PluginBase):
         ar = dev.pluginProps.get('ar')
         if ar:
             arDev = indigo.devices[ar]
-            if arDev.deviceTypeId in EASYDAQ_DEVICE_TYPE_IDs:  # EasyDAQ relay.
+            if arDev.deviceTypeId.startswith('easyDaq'):  # EasyDAQ relay.
                 plugin = indigo.server.getPlugin(arDev.pluginId)
                 props = dict(channelSel=int(dev.pluginProps['arState'][8:9]))
                 plugin.executeAction('turnOnOutput', deviceId=arDev.id,

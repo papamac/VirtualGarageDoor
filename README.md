@@ -1,5 +1,5 @@
 ![](https://raw.githubusercontent.com/papamac/VirtualGarageDoor/master/files/doubleDoor.png)
-## Monitoring and control of conventional garage door openers in Indigo ##
+## Monitoring and control of conventional garage door openers in Indigo
 
 The Virtual Garage Door plugin monitors one or more Indigo devices to track the
 garage door motion as it moves through its operational cycles. The plugin
@@ -25,12 +25,12 @@ plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
 | Python Library (API)   | Official              |
 | Requires Local Network | Yes                   |
 | Requires Internet      | Yes                   |
-| Hardware Interface     | Various z-wave/custom |
+| Hardware Interfaces    | Various z-wave/custom |
 
 
 Please see the
-[Virtual Garage Door Wiki](https://github.com/papamac/VirtualGarageDoor/wiki)
-for details on the design, operation, and use of the plugin.
+[Virtual Garage Door wiki](https://github.com/papamac/VirtualGarageDoor/wiki)
+for details on the design, configuration, and use of the plugin.
 
 You can download the latest version of the plugin at the 
 [Indigo Plugin Store](https://indigodomo.com/pluginstore).
