@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.0.5
-    DATE:  August 16, 2022
+ VERSION:  1.0.6
+    DATE:  September 8, 2022
 
 
 UNLICENSE:
@@ -129,6 +129,14 @@ v1.0.5   8/16/2022  Add 'zwRelayType' to RELAY_DEVICE_TYPE_IDs to permit z-wave
                     deviceTypeIds into combo, relay, and sensor groups for
                     more accurate dynamic list creation in relay and sensor
                     device selection.
+v1.0.5a  8/27/2022  Improve debug reporting of the monitored device
+                    configuration and the door state transition sequence.
+v1.0.6    9/8/2022  Add deviceTypeIds for several new devices/plugins to make
+                    them available in device selection.  Fix a bug in state
+                    tracking that incorrectly equated a timer inactive event
+                    (tt-off) with an expired timer.  The fix definitively
+                    detects a new timer expired event (tt-exp) to simplify
+                    tracking.  The old tt-off event is ignored.
 """
 ###############################################################################
 #                                                                             #
@@ -137,8 +145,8 @@ v1.0.5   8/16/2022  Add 'zwRelayType' to RELAY_DEVICE_TYPE_IDs to permit z-wave
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.0.5'
-__date__ = 'August 16, 2022'
+__version__ = '1.0.6'
+__date__ = 'September 8, 2022'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -152,6 +160,15 @@ LOG = getLogger('Plugin')  # Standard logger.
 TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
 TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
 
+# Monitored device types used in deviceStartComm and validateDeviceConfigUi
+# methods.
+
+MONITORED_DEVICE_TYPES = ('ar', 'cs', 'os', 'vs', 'tt')
+
+# activation relay momentary closure time (seconds).
+
+AR_CLOSURE_TIME = 1
+
 # Valid door state transitions used by the deviceUpdated method to select a new
 # door state after the occurrence of a monitored device event.
 
@@ -163,53 +180,59 @@ DOOR_STATE_TRANSITIONS = {
     'closed':   {'ar-on':       'opening',      # 1      normal --> opening
                  'cs-off':      'opening',      # 2      normal --> opening
                  'vs-on':       'opening',      # 3      normal --> opening
-                 'tt-off':      'closed',       # 4      redundant event
-                 'os-on':       'open'},        # 5      recovery from anomaly
-    'opening':  {'os-on':       'open',         # 6      normal --> open
-                 'tt-off&!os':  'open',         # 7      normal --> open
-                 'ar-on':       'stopped',      # 8      interrupted opening
-                 'tt-off':      'stopped',      # 9      interrupted opening
-                 'cs-off':      'opening',      # 10     redundant event
-                 'vs-on':       'opening',      # 11     redundant event
-                 'cs-on':       'closed'},      # 12     recovery from anomaly
-    'open':     {'ar-on':       'closing',      # 13     normal --> closing
-                 'os-off':      'closing',      # 14     normal --> closing
-                 'vs-on':       'closing',      # 15     normal --> closing
-                 'tt-off':      'open',         # 16     redundant event
-                 'cs-on':       'closed'},      # 17     recovery from anomaly
-    'closing':  {'cs-on':       'closed',       # 18     normal --> closed
-                 'tt-off&!cs':  'closed',       # 19     normal --> closed
-                 'ar-on':       'opening',      # 20     interrupted closing
-                 'tt-off':      'opening',      # 21     interrupted closing
-                 'os-off':      'closing',      # 22     redundant event
-                 'vs-on':       'closing',      # 23     redundant event
-                 'os-on':       'open'},        # 24     recovery from anomaly
-    'stopped':  {'ar-on':       'closing',      # 25     normal --> closing
-                 'vs-on':       'closing',      # 26     normal --> closing
-                 'tt-off':      'stopped',      # 27     redundant event
-                 'cs-on':       'closed',       # 28     recovery from anomaly
-                 'os-on':       'open'}}        # 29     recovery from anomaly
+                 'os-on':       'open'},        # 4      recovery from anomaly
+    'opening':  {'os-on':       'open',         # 5      normal --> open
+                 'tt-exp&!os':  'open',         # 6      normal --> open
+                 'ar-on':       'stopped',      # 7      interrupted opening
+                 'tt-exp':      'stopped',      # 8      interrupted opening
+                 'cs-off':      'opening',      # 9      redundant event
+                 'vs-on':       'opening',      # 10     redundant event
+                 'cs-on':       'closed'},      # 11     recovery from anomaly
+    'open':     {'ar-on':       'closing',      # 12     normal --> closing
+                 'os-off':      'closing',      # 13     normal --> closing
+                 'vs-on':       'closing',      # 14     normal --> closing
+                 'cs-on':       'closed'},      # 15     recovery from anomaly
+    'closing':  {'cs-on':       'closed',       # 16     normal --> closed
+                 'tt-exp&!cs':  'closed',       # 17     normal --> closed
+                 'ar-on':       'opening',      # 18     interrupted closing
+                 'tt-exp':      'opening',      # 19     interrupted closing
+                 'os-off':      'closing',      # 20     redundant event
+                 'vs-on':       'closing',      # 21     redundant event
+                 'os-on':       'open'},        # 22     recovery from anomaly
+    'stopped':  {'ar-on':       'closing',      # 23     normal --> closing
+                 'vs-on':       'closing',      # 24     normal --> closing
+                 'cs-on':       'closed',       # 25     recovery from anomaly
+                 'os-on':       'open'}}        # 26     recovery from anomaly
 
 # Sensor and relay device type id tuples used by the dynamic list callback
 # methods in Plugin Part III.
 
-comboDeviceTypeIds = ('easyDaq4r4io', 'easyDaq16r8io', 'easyDaq8ii4io4r')
+easyDaqComboTypeIds = (     'easyDaq4r4io',      'easyDaq16r8io',
+                            'easyDaq8ii4io4r')
+easyDaqRelayTypeIds = (     'easyDaq8r',         'easyDaq24r',
+                            'easyDaqDo24Stack',  'easyDaqOutputRelay')
+easyDaqSensorTypeIds = (    'easyDaq24io',)
 
-RELAY_DEVICE_TYPE_IDs = (('digitalOutput', 'zwRelayType', 'easyDaq8r',
-                          'easyDaq24r', 'easyDaqDo24Stack',
-                          'easyDaqOutputRelay') + comboDeviceTypeIds)
-SENSOR_DEVICE_TYPE_IDs = (('alarmZone', 'contactSensor', 'digitalInput',
-                           'zwOnOffSensorType', 'easyDaq24io')
-                          + comboDeviceTypeIds)
+shellyDirectRelayTypeIds = ('shelly1',           'shelly1l',
+                            'shelly1pm',         'shelly4pro,'
+                            'shellyem',          'shellyem3')
+shellyMQTTRelayTypeIds = (  'shelly-1',          'shelly-1pm',
+                            'shelly-2-5-relay',  'shelly-2-5-roller',
+                            'shelly-4-pro',      'shelly-em-relay',
+                            'shelly-uni-relay')
 
-# Monitored device types used in deviceStartComm and validateDeviceConfigUi
-# methods.
+genericRelayTypeIds = (     'digitalOutput',    'pseudoRelay',
+                            'zwDimmerType',     'zwRelayType')
+genericSensorTypeIds = (    'alarmZone',        'contactSensor',
+                            'digitalInput',     'masqSensor',
+                            'zwOnOffSensorType')
 
-MONITORED_DEVICE_TYPES = ('ar', 'cs', 'os', 'vs', 'tt')
+RELAY_DEVICE_TYPE_IDs = (   easyDaqComboTypeIds + easyDaqRelayTypeIds
+                            + shellyDirectRelayTypeIds + shellyMQTTRelayTypeIds
+                            + genericRelayTypeIds)
 
-# activation relay momentary closure time (seconds).
-
-AR_CLOSURE_TIME = 1
+SENSOR_DEVICE_TYPE_IDs = (  easyDaqComboTypeIds + easyDaqSensorTypeIds
+                            + genericSensorTypeIds)
 
 
 ###############################################################################
@@ -301,8 +324,8 @@ class Plugin(indigo.PluginBase):
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
         self._monitoredDevices = {}
-        self._lastEventTime = datetime.now()
-        self._sequences = {}
+        self._lastEventTimes = {}  # Last event time by devId.
+        self._sequences = {}       # Door state transition sequence by devId.
 
     def __del__(self):
         """
@@ -394,6 +417,10 @@ class Plugin(indigo.PluginBase):
             self.deviceStopComm(dev)
             return
 
+        # Initialize the last event time for this device.
+
+        self._lastEventTimes[devId] = datetime.now()
+
         # Initialize the opener device state.  Assume that door is not in
         # motion and that it is closed unless the closedSensor is off and
         # openSensor is on.
@@ -428,7 +455,7 @@ class Plugin(indigo.PluginBase):
                     # Get the onOffStates for both the old (unchanged) device
                     # object and the new (updated) device object.  Invert the
                     # states if specified in the pluginProps.  Ignore the
-                    # device update if the onOffState is unchanged.
+                    # device object update if the onOffState is unchanged.
 
                     mDevType = (self._monitoredDevices
                                 [devId][mDevId][mDevState])
@@ -438,79 +465,100 @@ class Plugin(indigo.PluginBase):
                     if oldState == newState:
                         continue
 
-                    # Create the monitored device event name.  Add qualifiers
-                    # for travel timer off events that have different meanings
-                    # during opening and closing.
+                    doorState = dev.states['doorStatus']
+
+                    # Create monitored device event name.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    doorState = dev.states['doorStatus']
-                    if mDevEvent == 'tt-off':
-                        if doorState == 'opening':
-                            os = dev.pluginProps.get('os')
-                            mDevEvent += '&!os' if not os else ''
-                        elif doorState == 'closing':
-                            cs = dev.pluginProps.get('cs')
-                            mDevEvent += '&!cs' if not cs else ''
-
-                    # Get the time since the last event.  LOG the event and
-                    # the time if the logAll preference is specified.
-
-                    eventTime = datetime.now()
-                    dt = ((eventTime - self._lastEventTime).total_seconds())
-                    self._lastEventTime = eventTime
                     if self.pluginPrefs['logAll']:
-                        LOG.debug('"%s" %s %5.3f', dev.name, mDevEvent, dt)
+                        LOG.debug('"%s" %s', dev.name, mDevEvent)
 
-                    # Ignore events that can't affect the door state.  For
-                    # events that might result in a change, look up the door
-                    # state using the DOOR_STATE_TRANSITIONS dictionary.
-                    # Ignore the event if it is not legal for the current door
-                    # state (key error).
+                    # Check for expired timer.
 
-                    if mDevEvent in ('ar-off', 'vs-off', 'tt-on'):
+                    if mDevEvent == 'tt-off':  # Timer is inactive.
+                        if newDev.states['timeLeftSeconds'] == '0':
+                            mDevEvent = 'tt-exp'  # Timer has expired.
+
+                            # Add qualifiers for travel timer expired events
+                            # that have different meanings during opening and
+                            # closing.
+
+                            if doorState == 'opening':
+                                os = dev.pluginProps.get('os')
+                                mDevEvent += '&!os' if not os else ''
+                            elif doorState == 'closing':
+                                cs = dev.pluginProps.get('cs')
+                                mDevEvent += '&!cs' if not cs else ''
+
+                    # Ignore events that can't affect the door state.
+
+                    if mDevEvent in ('ar-off', 'vs-off', 'tt-on', 'tt-off'):
                         continue
+
+                    # Get the new door state from the DOOR_STATE_TRANSITIONS
+                    # dictionary as a function of the current door state and
+                    # the monitored device event.
+
                     try:
                         newDoorState = (DOOR_STATE_TRANSITIONS
                                         [doorState][mDevEvent])
+
+                    # Ignore the event if it is not legal for the current door
+                    # state (key error).
+
                     except KeyError:
                         LOG.warning('"%s" mDevEvent %s is inconsistent '
                                     'with door state %s',
                                     dev.name, mDevEvent, doorState)
                         continue
 
-                    if newDoorState != doorState:  # door state has changed.
+                    # Compute the time since the last event and append the
+                    # transition data to the door state transition sequence.
+
+                    eventTime = datetime.now()
+                    dt = eventTime - self._lastEventTimes[devId]
+                    timeSinceLastEvent = dt.total_seconds()
+                    if timeSinceLastEvent > 99:
+                        timeSinceLastEvent = 99
+                    self._lastEventTimes[devId] = eventTime
+                    self._sequences[devId] += (' [%.3f %s <%s>]'
+                                               % (timeSinceLastEvent,
+                                                  mDevEvent,
+                                                  newDoorState))
+
+                    if newDoorState != doorState:  # Door state has changed.
 
                         # Update the door states on the server and perform new
                         # state processing.
 
                         self._updateDoorStates(dev, newDoorState)
 
+                        ttDevId = int(dev.pluginProps['ttDevId'])
                         if newDoorState.endswith('ing'):  # Door is moving.
-                            timerAction = 'restartTimer'
-                            self._sequences[devId] = '<%s>' % doorState
+                            TIMER.executeAction('restartTimer',
+                                                deviceId=ttDevId)
 
-                        else:  # Door is stationary (open, closed, or stopped);
-                            timerAction = 'stopTimer'
+                        else:  # Door is stationary (open, closed, or stopped).
+                            TIMER.executeAction('stopTimer', deviceId=ttDevId)
+
+                            # Log the current sequence, and initialize the next
+                            # sequence.
+
+                            LOG.debug('"%s" %s %s', dev.name,
+                                      dev.pluginProps['mDevConfig'],
+                                      self._sequences[devId])
+                            self._sequences[devId] = '<%s>' % newDoorState
+
+                            # Reset vibration sensor, if present, after a
+                            # delay.
+
                             vsDevIdStr = dev.pluginProps['vsDevId']
                             if vsDevIdStr:
                                 vsDevId = int(vsDevIdStr)
-                                if vsDevId in indigo.devices:
-                                    vsResetDelay = float(dev.pluginProps
-                                                         ['vsResetDelay'])
-                                    sleep(vsResetDelay)
-                                    indigo.device.turnOff(vsDevId)
-
-                        ttDevId = int(dev.pluginProps['ttDevId'])
-                        if ttDevId in indigo.devices:
-                            TIMER.executeAction(timerAction, deviceId=ttDevId)
-
-                    # Update and log the event/state sequence.
-
-                    self._sequences[devId] += (' %s <%s>'
-                                               % (mDevEvent, newDoorState))
-                    LOG.debug('"%s" %s| %s', dev.name,
-                              dev.pluginProps['mDevConfig'],
-                              self._sequences[devId])
+                                vsResetDelay = float(dev.pluginProps
+                                                     ['vsResetDelay'])
+                                sleep(vsResetDelay)
+                                indigo.device.turnOff(vsDevId)
 
     ###########################################################################
     #                                                                         #

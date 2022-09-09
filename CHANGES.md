@@ -8,6 +8,39 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.0.6, September 8, 2022
+
+### Wiki updates, new devices and plugins, and a bug fix
+
+This release provides a significant update to the wiki, organizing it into
+multiple pages, and including new supported devices and references pages.
+
+The supported devices page includes an number of new devices and plugins that
+are now usable with the Virtual Garage Door plugin, but have not all been
+tested. The specs for these devices and plugins have been reviewed by papamac
+and they seem to be suitable for the functions listed. The new deviceTypeIds
+are included in the plugin so they will be available in device selection, but
+they are not guaranteed to work. If you use any of these with the plugin please
+share experience (positive or negative) on papamac's
+[Virtual Garage Door user forum](https://forums.indigodomo.com/viewforum.php?f=374). 
+
+This change is intended to satisfy user requests to support a number of Aeotec
+devices, Shelly devices, Zooz devices, Virtual Devices, Masqueraded devices,
+et al. papamac does not have the resources to test all of these. If users
+provide feedback on their experiences, however, we should be able to update the
+supported devices page to include only fully-tested devices and plugins in
+future releases.
+
+Release v1.0.6 also fixes a bug in state tracking that incorrectly equated a
+timer inactive event (tt-off) with an expired timer.  The fix definitively
+detects a new timer expired event (tt-exp) to simplify tracking.  The old
+tt-off event is ignored.
+
+The release also increases the default value for the vibration sensor reset
+delay time from 1.5 to 2 seconds. This was needed to eliminate false vs-on
+activations in papamac's home system. The user must set this value for each of
+his door openers.
+
 ## GitHub Release v1.0.5, August 16, 2022
 
 ### Add support for z-wave relay devices
