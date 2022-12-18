@@ -8,6 +8,46 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## Interim Version v1.1.0, December 18, 2022
+
+### New door states to improve future integration with Apple HomeKit
+
+Interim version v1.1.0 is not an official GitHub release and it is not included
+in the Indigo Plugin Store. Although it is tested and capable of user
+deployment, it is intended primarily for developer use. Also, the changes in
+v1.1.0 are not reflected in the wiki, which continues to describe v1.0.6. In
+short, v1.0.6 is still the official released version. When things settle down,
+a new official release v1.1.1 with final HomeKit integration changes and an
+updated wiki will replace v1.0.6 and v1.1.0.
+
+v1.1.0 captures a number of changes that will enable an improved interface with
+Apple HomeKit in the future. It maintains compatibility with current versions
+of the HomeKit Bridge (HKB) and HomeKitLink Siri (HKLS) plugins and should
+continue to do so as these plugins evolve. If enabled by future HKLS changes,
+however, the HomeKit application will recognize opening and closing states (as
+well as open and closed) and will detect both opening and closing door
+obstruction.  This is the goal.
+
+v1.1.0 includes the following changes:
+
+(1) Add an integer doorState to the device states dictionary to support full
+integration with Apple HomeKit. Re-structure plugin.py around the integer
+doorState instead of the text doorStatus. The integer doorStates are defined
+by: OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING = range(6).
+
+(2) Add state tracking logic for the new REVERSING doorState (and "reversing"
+doorStatus) to detect and report interrupted (obstructed) door closing. Update
+the transitions in the DOOR_STATE_TRANSITIONS tuple to implement the new
+REVERSING state. Immediately transition the REVERSING state to OPENING to
+reflect the auto-reversing behavior of the physical door.
+
+(3) Improve error detection and reporting during ConfigUi validation, device
+startup, and runtime.
+                    
+(4) Allow the openGarageDoor action (and indigo.device.turnOff) regardless of
+the opener onOffState. This enables recovery from obstructed door conditions
+using the Apple HomeKit application.
+
 ## GitHub Release v1.0.6, September 8, 2022
 
 ### Wiki updates, new devices and plugins, and a bug fix

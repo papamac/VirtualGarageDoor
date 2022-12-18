@@ -19,10 +19,10 @@ in the Virtual Garage Door wiki.
 
 The garage door tracking accuracy depends upon the selected devices and the
 door's operational cycle.
-[Section 3.4](https://github.com/papamac/VirtualGarageDoor/wiki/3.4-Door-State-Tracking)
-of the wiki contains a detailed discussion of the tracking performance under a wide range
-of conditions. This allows the user to select the set of monitored devices that
-meets his specific needs.
+[Section 3.4](https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design)
+of the wiki contains a detailed discussion of the tracking performance under a
+wide range of conditions. This allows the user to select the set of monitored
+devices that meets his specific needs.
 
 Virtual Garage Door Opener devices are compatible with the HomeKit Bridge
 plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or

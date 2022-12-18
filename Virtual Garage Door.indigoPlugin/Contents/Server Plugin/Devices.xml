@@ -8,8 +8,8 @@ FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.0.6
-    DATE:  September 8, 2022
+ VERSION:  1.1.0
+    DATE:  November 9, 2022
 
 
 CHANGE LOG:
@@ -44,6 +44,10 @@ v1.0.1   7/23/2022  Add a new vsResetDelay field to allow the user to set the
                     Permit travel time to be a floating point number.
 v1.0.6    9/8/2022  Change the default value for the vsResetDelay to 2.0
                     seconds.  Add wiki references in the configUI notes.
+v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
+                    support full integration with Apple HomeKit.  Add a new
+                    "reversing" door status to report interrupted (obstructed)
+                    closing.
 -->
 
 <Devices>
@@ -231,7 +235,7 @@ v1.0.6    9/8/2022  Change the default value for the vsResetDelay to 2.0
             <Field id="vsLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
                    visibleBindingId="vsConfig" visibleBindingValue="true">
-                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.  Set a reset delay time to prevent false activations from residual motion after the door stops (see wili Section 5.2).</Label>
+                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.  Set a reset delay time to prevent false activations from residual motion after the door stops (see wiki Section 5.2).</Label>
             </Field>
 
             <Field id="vsDevId" type="textfield" hidden="true">
@@ -259,20 +263,29 @@ v1.0.6    9/8/2022  Change the default value for the vsResetDelay to 2.0
 
         <States>
 
+            <State id="doorState">
+                <ValueType>Integer</ValueType>
+                <TriggerLabel>Door State Changed</TriggerLabel>
+                <TriggerLabelPrefix>Door State</TriggerLabelPrefix>
+                <ControlPageLabel>Door State</ControlPageLabel>
+                <ControlPageLabelPrefix>Door State</ControlPageLabelPrefix>
+            </State>
+
             <State id="doorStatus">
                 <ValueType>
                     <List>
                         <Option value="open">Open</Option>
                         <Option value="closed">Closed</Option>
-                        <Option value="stopped">Stopped</Option>
                         <Option value="opening">Opening</Option>
                         <Option value="closing">Closing</Option>
+                        <Option value="stopped">Stopped</Option>
+                        <Option value="reversing">Reversing</Option>
                     </List>
                 </ValueType>
-                <TriggerLabel>Door State Changed</TriggerLabel>
-                <TriggerLabelPrefix>Door State is</TriggerLabelPrefix>
-                <ControlPageLabel>Door State</ControlPageLabel>
-                <ControlPageLabelPrefix>Door State is</ControlPageLabelPrefix>
+                <TriggerLabel>Door Status</TriggerLabel>
+                <TriggerLabelPrefix>Door Status</TriggerLabelPrefix>
+                <ControlPageLabel>Door Status</ControlPageLabel>
+                <ControlPageLabelPrefix>Door Status</ControlPageLabelPrefix>
             </State>
 
         </States>
