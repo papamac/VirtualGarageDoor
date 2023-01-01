@@ -2,31 +2,34 @@
 
 # Monitoring and control of conventional garage door openers in Indigo
 
-The Virtual Garage Door plugin monitors one or more Indigo devices to track the
-garage door motion as it moves through its operational cycles. The plugin
-reports the door state in the states dictionary of a Virtual Garage Door Opener
-device.  The states are displayed in the Indigo devices display and are
-available for use in triggers and scripts. The plugin also provides actions
+The Virtual Garage Door (VGD) plugin monitors one or more Indigo devices to
+track the garage door motion as it moves through its operational cycles. It
+reports the door state in the states dictionary of a VGD opener device.  The
+states are displayed in the Indigo devices display and are available for use in
+triggers, scripts, and other plugins. The VGD plugin also provides actions
 to open, close and toggle the garage door.
 
-The plugin can monitor a wide variety of optional devices that are already
+VGD opener devices are compatible with the HomeKit Bridge (HKB) plugin (being
+deprecated) and the HomeKitLink Siri (HKLS) plugin. After installation and
+setup of either plugin, you can use the Apple Home application to monitor and
+control your garage door.  With any Apple device, you can also monitor and
+control the door verbally using Siri. Say "Hey Siri, check the garage door
+status" or "Hey Siri, open the garage main door".
+
+The VGD plugin can monitor a wide variety of optional devices that are already
 available in Indigo as supported devices or through existing 3rd party plugins.
 These include both z-wave devices and custom/wired devices. Device types
 include relays, contact sensors, tilt sensors, and multisensors. Please see the
 latest list of
 [supported devices](https://github.com/papamac/VirtualGarageDoor/wiki/2.-Supported-Devices)
-in the Virtual Garage Door wiki.
+in this wiki.
 
 The garage door tracking accuracy depends upon the selected devices and the
 door's operational cycle.
 [Section 3.4](https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design)
-of the wiki contains a detailed discussion of the tracking performance under a
+of this wiki contains a detailed discussion of the tracking performance under a
 wide range of conditions. This allows the user to select the set of monitored
-devices that meets his specific needs.
-
-Virtual Garage Door Opener devices are compatible with the HomeKit Bridge
-plugin and Siri. After setup, you can say "Hey Siri, check the garage doors" or
-"Hey Siri, open the garage main door".
+devices to best meet his specific needs.
 
 The following table lists the top level requirements for the Virtual Garage
 Door plugin:
