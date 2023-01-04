@@ -5,7 +5,7 @@
 The Virtual Garage Door (VGD) plugin monitors one or more Indigo devices to
 track the garage door motion as it moves through its operational cycles. It
 saves the door state/status in the states dictionary of a VGD opener device.
-The states are displayed in the Indigo home display and are available for
+The states are displayed in the Indigo Home window and are available for
 use by scripts, action groups, control pages, triggers, and other plugins. The
 VGD plugin also provides actions to open, close and toggle the garage door.
 
