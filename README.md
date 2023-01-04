@@ -4,10 +4,10 @@
 
 The Virtual Garage Door (VGD) plugin monitors one or more Indigo devices to
 track the garage door motion as it moves through its operational cycles. It
-reports the door state/status in the states dictionary of a VGD opener device.
-The states are displayed in the Indigo devices display and are available for
-use by triggers, scripts, and other plugins. The VGD plugin also provides
-actions to open, close and toggle the garage door.
+saves the door state/status in the states dictionary of a VGD opener device.
+The states are displayed in the Indigo home display and are available for
+use by scripts, action groups, control pages, triggers, and other plugins. The
+VGD plugin also provides actions to open, close and toggle the garage door.
 
 VGD opener devices work with Apple HomeKit by using the HomeKit Bridge (HKB)
 plugin (being deprecated) or the HomeKitLink Siri (HKLS) plugin. After

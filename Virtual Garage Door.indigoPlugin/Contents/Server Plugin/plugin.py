@@ -16,7 +16,7 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
  VERSION:  1.1.1
-    DATE:  January 4, 2023
+    DATE:  January 9, 2023
 
 
 UNLICENSE:
@@ -155,7 +155,7 @@ v1.1.0   12/18/2022 (1) Add an integer doorState to the device states
                     turnOff) regardless of the opener onOffState.  This enables
                     recovery from obstructed door conditions using the Apple
                     HomeKit application.
-v1.1.1    1/4/2023  Update the wiki to document the changes introduced in
+v1.1.1    1/9/2023  Update the wiki to document the changes introduced in
                     version v1.1.0.
 """
 ###############################################################################
@@ -166,7 +166,7 @@ v1.1.1    1/4/2023  Update the wiki to document the changes introduced in
 
 __author__ = 'papamac'
 __version__ = '1.1.1'
-__date__ = 'January 4, 2023'
+__date__ = 'January 9, 2023'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
