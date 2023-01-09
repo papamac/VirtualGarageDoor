@@ -8,7 +8,7 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
-## GitHub Release v1.1.1, January 9, 2023
+## GitHub Release v1.1.1, January 12, 2023
 
 ### New door states and documentation to fully integrate with Apple HomeKit
 
