@@ -10,7 +10,7 @@ post them on papamac's
 
 ## GitHub Release v1.1.1, January 12, 2023
 
-### New door states and documentation to fully integrate with Apple HomeKit
+### New door state and documentation to support full-capability HomeKit integration
 
 This release updates the wiki to document the changes introduced in the interim 
 version v1.1.0.  The v1.1.1 Python code is identical to v1.1.0.  Code changes
@@ -22,17 +22,17 @@ Garage Door (VGD) plugin that can fully integrate with Apple HomeKit. The
 version allows the use of the Apple Home app to close the door when it is not
 fully open. This facilitates recovery from obstructed states after the
 obstruction has been cleared.  It also enables two new capabilities using the
-Home app: (1) continuous state tracking, and (2) obstruction detection and
-reporting. To use these new capabilities, the VGD opener devices must interface
-to HomeKit using the HomeKitLink Siri (HKLS) plugin v0.5.10 or later. The
-capabilities provided by the various combinations of VGD versions and HomeKit
-integration plugins is explained in the
-[Design](https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design)
-pages of the wiki (see Table 3).
+Home application: (1) continuous state tracking, and (2) obstruction detection
+and reporting. To use these new capabilities, the VGD opener devices must
+interface to HomeKit using a future release of the HomeKitLink Siri (HKLS)
+plugin. The HomeKit capabilities provided by the various combinations of VGD
+versions and HomeKit integration plugins is explained in the
+[Design pages](https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design)
+of the wiki (see Table 2).
 
 ## Interim Version v1.1.0, December 18, 2022
 
-### New door states to improve future integration with Apple HomeKit
+### New door state to improve future integration with Apple HomeKit
 
 Interim version v1.1.0 is not an official GitHub release and it is not included
 in the Indigo Plugin Store. Although it is tested and capable of user
