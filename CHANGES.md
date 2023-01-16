@@ -19,8 +19,8 @@ release note below.
 
 GitHub release v1.1.1 provides a fully documented, formally released Virtual
 Garage Door (VGD) plugin that can fully integrate with Apple HomeKit. The
-version allows the use of the Apple Home app to close the door when it is not
-fully open. This facilitates recovery from obstructed states after the
+version allows the use of the Apple Home application to close the door when it
+is not fully open. This facilitates recovery from obstructed states after the
 obstruction has been cleared.  It also enables two new capabilities using the
 Home application: (1) continuous state tracking, and (2) obstruction detection
 and reporting. To use these new capabilities, the VGD opener devices must
