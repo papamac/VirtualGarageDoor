@@ -1,42 +1,71 @@
-monitored	    use 	phys    door state track                                                                                                                                phys    virt    color/  missed/added track states
-device		    case	start   {realWorldEvent physicalState} [mDevEvent virtualState] .....                                                                                   end     end     track   -missedState, +addedState ...
-config          		state                                                                                                                                                   state   state   errors
-                                |                       |                       |                       |                       |                       |                       |
-=============================================================================================================================================================================================================================================
-ar tt		    nar-no	CLOSED	{activation OPENING}    {stop OPEN}                                                                                                             OPEN    CLOSED  R       -OPENING, -OPEN
-ar tt		    nar-nc	OPEN	{activation CLOSING}    {stop CLOSED}                                                                                                           CLOSED  OPEN    R   2   -CLOSING, -CLOSED
-ar tt		    nar-io	CLOSED	{activation OPENING}    {interrupt STOPPED}     {activation CLOSING}    {stop CLOSED}                                                           CLOSED  CLOSED  LR  4   -OPENING, -STOPPED, -CLOSING, -CLOSED
-ar tt		    nar-ic	OPEN	{activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}                                                             OPEN    OPEN    LR  4   -CLOSING, -REVERSING, -OPENING, -OPEN
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ar tt		    ar-no	CLOSED	[ar-on OPENING]         {activation OPENING}    {stop OPEN}             [tt-exp&!os OPEN]                                                       OPEN    OPEN    LG      no cs, os for state recovery
-ar tt		    ar-nc	OPEN	[ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [tt-exp&!cs CLOSED]                                                     OPEN    OPEN    LG      no cs, os for state recovery
-ar tt		    ar-io	CLOSED	[ar-on OPENING]	        {activation OPENING}    {interrupt STOPPED}     [tt-exp&!os OPEN]       [ar-on CLOSING]	        {activation CLOSING}    CLOSED  CLOSED  LR  2   -STOPPED, +OPEN
-                                {stop CLOSED}       		[tt-exp&!cs CLOSED]
-ar tt		    ar-ic	OPEN	[ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}             [tt-exp&!cs CLOSED]     OPEN    CLOSED  R   4   -REVERSING, -OPENING, -OPEN, +CLOSED
-=============================================================================================================================================================================================================================================
-ar cs tt	    nar-no	CLOSED	{activation OPENING}    [cs-off OPENING]        {stop OPEN}             [tt-exp&!os OPEN]                                                       OPEN    OPEN    G
-ar cs tt	    nar-nc	OPEN	{activation CLOSING}    {stop CLOSED}           [cs-on CLOSED]                                                                                  CLOSED  CLOSED  LR  1   -CLOSING
-ar cs tt	    nar-io	CLOSED	{activation OPENING}    [cs-off OPENING]        {interrupt STOPPED}     [tt-exp&!os OPEN]       {activation CLOSING}    {stop CLOSED}           CLOSED  OPEN    R   4   -STOPPED, +OPEN, -CLOSING, -CLOSED
-ar cs tt	    nar-ic	OPEN	{activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}                                                             OPEN    OPEN    LR  4   -CLOSING, -REVERSING, -OPENING, -OPEN
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-ar cs tt	    ar-no	CLOSED	[ar-on OPENING]         {activation OPENING}    [cs-off OPENING]        {stop OPEN}             [tt-exp&!os OPEN]                               OPEN    OPEN    G
-ar cs tt	    ar-nc	OPEN	[ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [cs-on CLOSED]                                                          CLOSED  CLOSED  G
-ar cs tt 	    ar-io	CLOSED	[ar-on OPENING]	        {activation OPENING}    [cs-off OPENING]	{interrupt STOPPED}     [tt-exp&!os OPEN]       [ar-on CLOSING]	        CLOSED  CLOSED  LR  2   -STOPPED, +OPEN,
-                                {activation CLOSING}		{stop CLOSED}           [cs-on CLOSED]
-ar cs tt 	    ar-ic	OPEN	[ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          [tt-exp REVERSING]      [null OPENING]          OPEN    OPEN    G
-                                {stop OPEN}     		[tt-exp&!os OPEN]
-=============================================================================================================================================================================================================================================
-ar os tt	    nar-no	CLOSED	{activation OPENING}    {stop OPEN}             [os-on OPEN]                                                                                            LR  -OPENING, ends correctly
-ar os tt	    nar-nc	OPEN	{activation CLOSING}    [os-off CLOSING]        {stop CLOSED}           [tt-exp&!cs CLOSED]                                                             G   tracks all states
-ar os tt	    nar-io	CLOSED	{activation OPENING}    {interrupt STOPPED}     {activation CLOSING}    {stop CLOSED}                                                                   LR  -OPENING, -STOPPED, -CLOSING, -CLOSED, ends correctly
-ar os tt 	    nar-ic	OPEN	{activation CLOSING}    [os-off CLOSING]    	{interrupt REVERSING, OPENING}  [tt-exp&!cs CLOSED]   {stop OPEN}             [os-on OPEN]                    LR  -REVERSING, -OPENING, +CLOSED; ends correctly
-
-ar os tt 	    ar-no	CLOSED	[ar-on OPENING]	        {activation OPENING}     {stop OPEN}             [os-on OPEN]                                                                    G   tracks all states
-ar os tt 	    ar-nc	OPEN	[ar-on CLOSING]	        {activation CLOSING}     [os-off CLOSING]	    [tt-exp&!cs CLOSED]                                                             G   tracks all states
-ar os tt 	    ar-io	CLOSED	[ar-on OPENING]	        {activation OPENING}   	{interrupt STOPPED}           [tt-exp STOPPED]	                                                            G   tracks all states
-                                [ar-on CLOSING]	        	{activation CLOSING}	    {stop CLOSED}           [tt-exp&!cs CLOSED]
-ar os tt 	    ar-ic	OPEN	[ar-on CLOSING]	        {activation CLOSING}     [os-off CLOSING]	    {interrupt REVERSING, OPENING}  [tt-exp&!cs CLOSED]   {stop OPEN}       [os-on OPEN]  LR  -REVERSING, -OPENING, +CLOSED; ends correctly
-
+monitored	    use     color/  phys     phys    virt   missed/added track states
+device		    case    track   start    end     end    -missedState, +addedState ...
+configuration           errors  state    state   state
+================================================================================================================================
+ar tt		    nar-no  R   2   CLOSED	OPEN    CLOSED  -OPENING, -OPEN
+                                {activation OPENING}    {stop OPEN}
+ar tt		    nar-nc	R   2   OPEN	CLOSED  OPEN    -CLOSING, -CLOSED
+                                {activation CLOSING}    {stop CLOSED}
+ar tt		    nar-io	LR  4   CLOSED	CLOSED  CLOSED  -OPENING, -STOPPED, -CLOSING, -CLOSED
+                                {activation OPENING}    {interrupt STOPPED}     {activation CLOSING}    {stop CLOSED}
+ar tt		    nar-ic	LR  4   OPEN	OPEN    OPEN    -CLOSING, -REVERSING, -OPENING, -OPEN
+                                {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}
+--------------------------------------------------------------------------------------------------------------------------------
+ar tt		    ar-no	LG      CLOSED	OPEN    OPEN    no cs, os for state recovery
+                                [ar-on OPENING]         {activation OPENING}    {stop OPEN}             [tt-exp&!os OPEN]
+ar tt		    ar-nc	LG      OPEN	OPEN    OPEN    no cs, os for state recovery
+                                [ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [tt-exp&!cs CLOSED]
+ar tt		    ar-io	LR  2   CLOSED	CLOSED  CLOSED  -STOPPED, +OPEN
+                                [ar-on OPENING]         {activation OPENING}    {interrupt STOPPED}     [tt-exp&!os OPEN]
+                                [ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [tt-exp&!cs CLOSED]
+ar tt		    ar-ic	R   4   OPEN	OPEN    CLOSED  -REVERSING, -OPENING, -OPEN, +CLOSED
+                                [ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}
+                                {stop OPEN}             [tt-exp&!cs CLOSED]
+================================================================================================================================
+ar cs tt	    nar-no	G       CLOSED	OPEN    OPEN
+                                {activation OPENING}    [cs-off OPENING]        {stop OPEN}             [tt-exp&!os OPEN]
+ar cs tt	    nar-nc	LR  1   OPEN	CLOSED  CLOSED  -CLOSING
+                                {activation CLOSING}    {stop CLOSED}           [cs-on CLOSED]
+ar cs tt	    nar-io	R   4   CLOSED	CLOSED  OPEN    -STOPPED, +OPEN, -CLOSING, -CLOSED
+                                {activation OPENING}    [cs-off OPENING]        {interrupt STOPPED}     [tt-exp&!os OPEN]
+                                {activation CLOSING}    {stop CLOSED}
+ar cs tt	    nar-ic	LR  4   OPEN	OPEN    OPEN    -CLOSING, -REVERSING, -OPENING, -OPEN
+                                {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}
+--------------------------------------------------------------------------------------------------------------------------------
+ar cs tt	    ar-no	G       CLOSED	OPEN    OPEN
+                                [ar-on OPENING]         {activation OPENING}    [cs-off OPENING]        {stop OPEN}
+                                [tt-exp&!os OPEN]
+ar cs tt	    ar-nc	G       OPEN	CLOSED  CLOSED
+                                [ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [cs-on CLOSED]
+ar cs tt 	    ar-io	LR  2   CLOSED	CLOSED  CLOSED  -STOPPED, +OPEN
+                                [ar-on OPENING]	        {activation OPENING}    [cs-off OPENING]	    {interrupt STOPPED}
+                                [tt-exp&!os OPEN]       [ar-on CLOSING]	        {activation CLOSING}	{stop CLOSED}
+                                [cs-on CLOSED]
+ar cs tt 	    ar-ic	G       OPEN	OPEN    OPEN
+                                [ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}
+                                [tt-exp REVERSING]      [null OPENING]          {stop OPEN}     		[tt-exp&!os OPEN]
+================================================================================================================================
+ar os tt	    nar-no	LR  1   CLOSED	OPEN    OPEN    -OPENING
+                                {activation OPENING}    {stop OPEN}             [os-on OPEN]
+ar os tt	    nar-nc	G       OPEN    CLOSED  CLOSED
+                                {activation CLOSING}    [os-off CLOSING]        {stop CLOSED}           [tt-exp&!cs CLOSED]
+ar os tt	    nar-io	LR  4   CLOSED  CLOSED  CLOSED	-OPENING, -STOPPED, -CLOSING, -CLOSED
+                                {activation OPENING}    {interrupt STOPPED}     {activation CLOSING}    {stop CLOSED}
+ar os tt 	    nar-ic	LR  3   OPEN    OPEN    OPEN   	-REVERSING, -OPENING, +CLOSED
+                                {activation CLOSING}    [os-off CLOSING]    	{interrupt REVERSING}   {null OPENING}
+                                [tt-exp&!cs CLOSED]     {stop OPEN}             [os-on OPEN]
+--------------------------------------------------------------------------------------------------------------------------------
+ar os tt 	    ar-no	G       CLOSED  OPEN    OPEN
+                                [ar-on OPENING]	        {activation OPENING}    {stop OPEN}            [os-on OPEN]
+ar os tt 	    ar-nc	G       OPEN	CLOSED  CLOSED
+                                [ar-on CLOSING]	        {activation CLOSING}    [os-off CLOSING]	    [tt-exp&!cs CLOSED]
+ar os tt 	    ar-io	G       CLOSED	CLOSED  CLOSED
+                                [ar-on OPENING]	        {activation OPENING}   	{interrupt STOPPED}     [tt-exp STOPPED]
+                                [ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [tt-exp&!cs CLOSED]
+ar os tt 	    ar-ic	LR  3   OPEN    OPEN    OPEN	-REVERSING, -OPENING, +CLOSED
+                                [ar-on CLOSING]	        {activation CLOSING}    [os-off CLOSING]	    {interrupt REVERSING}
+                                {null OPENING}          [tt-exp&!cs CLOSED]     {stop OPEN}             [os-on OPEN]
+================================================================================================================================
 ar vs tt	    nar-no	CLOSED	{activation OPENING}    [vs-on OPENING]    	 {stop OPEN}             [tt-exp&!os OPEN]                                                               LG  no cs, os for state recovery
 ar vs tt	    nar-nc	OPEN	{activation CLOSING}    [vs-on CLOSING]     	{stop CLOSED}           [tt-exp&!cs CLOSED]                                                             LG  no cs, os for state recovery
 ar vs tt	    nar-io	CLOSED	{activation OPENING}    [vs-on OPENING]     	{interrupt STOPPED}           [tt-exp&!os OPEN]                                                               LR  -STOPPED, +OPEN,
