@@ -1,14 +1,14 @@
-monitored	    use     color/  phys     phys    virt   missed/added track states
-device		    case    track   start    end     end    -missedState, +addedState ...
-configuration   errors  state    state   state
+monitored       use     color/  phys    phys    virt    missed/added track states
+device          case    track   start   end     end     -missedState, +addedState ...
+configuration           errors  state   state   state
 ========================================================================================================================================================
-ar tt		    nar-no  R   2   CLOSED	OPEN    CLOSED  -OPENING, -OPEN
+ar tt           nar-no  R   2   CLOSED	OPEN    CLOSED  -OPENING, -OPEN
                                 {activation OPENING}    {stop OPEN}
-ar tt		    nar-nc	R   2   OPEN	CLOSED  OPEN    -CLOSING, -CLOSED
+ar tt           nar-nc	R   2   OPEN	CLOSED  OPEN    -CLOSING, -CLOSED
                                 {activation CLOSING}    {stop CLOSED}
-ar tt		    nar-io	LR  4   CLOSED	CLOSED  CLOSED  -OPENING, -STOPPED, -CLOSING, -CLOSED
+ar tt           nar-io	LR  4   CLOSED	CLOSED  CLOSED  -OPENING, -STOPPED, -CLOSING, -CLOSED
                                 {activation OPENING}    {interrupt STOPPED}     {activation CLOSING}    {stop CLOSED}
-ar tt		    nar-ic	LR  4   OPEN	OPEN    OPEN    -CLOSING, -REVERSING, -OPENING, -OPEN
+ar tt           nar-ic	LR  4   OPEN	OPEN    OPEN    -CLOSING, -REVERSING, -OPENING, -OPEN
                                 {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          {stop OPEN}
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 ar tt		    ar-no	LG      CLOSED	OPEN    OPEN    no cs, os for state recovery
