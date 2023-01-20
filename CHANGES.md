@@ -12,10 +12,12 @@ post them on papamac's
 
 ### New door state and documentation to support full-capability HomeKit integration
 
-This release updates the wiki to document the changes introduced in the interim 
-version v1.1.0.  The v1.1.1 Python code is identical to v1.1.0.  Code changes
-from the prior release (v1.0.6) are described in the interim version v1.1.0
-release note below.
+This release includes major updates the wiki to (1) correct errors, (2) improve
+discussions of door state tracking/tracking performance, (3) add a new section
+on error detection, reporting, and recovery, and (4) document the plugin.py
+changes introduced in the interim version v1.1.0.  Several minor new plugin.py
+changes are also included.  See the CHANGE LOG in the plugin.py module
+docstring for details on the new v1.1.1 changes.
 
 GitHub release v1.1.1 provides a fully documented, formally released Virtual
 Garage Door (VGD) plugin that can fully integrate with Apple HomeKit. The

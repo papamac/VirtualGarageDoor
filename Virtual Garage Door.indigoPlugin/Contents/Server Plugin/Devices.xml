@@ -48,6 +48,8 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
                     support full integration with Apple HomeKit.  Add a new
                     "reversing" door status to report interrupted (obstructed)
                     closing.
+v1.1.1   1/21/2023  Change the default value for the vsResetDelay to an integer
+                    2 sec.
 -->
 
 <Devices>
@@ -227,7 +229,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
                 <Label>Invert on/off State:</Label>
             </Field>
 
-            <Field id="vsResetDelay" type="textfield" defaultValue="2.0"
+            <Field id="vsResetDelay" type="textfield" defaultValue="2"
                    visibleBindingId="vsConfig" visibleBindingValue="true">
                 <Label>Reset Delay Time (seconds):</Label>
             </Field>
@@ -235,7 +237,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
             <Field id="vsLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
                    visibleBindingId="vsConfig" visibleBindingValue="true">
-                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.  Set a reset delay time to prevent false activations from residual motion after the door stops (see wiki Section 5.2).</Label>
+                <Label>Optionally select an on/off sensor and state name that captures a vibration event.  Check "Invert" if the sensor is "off" when vibration occurs; uncheck it if not.  Set an integer reset delay time to prevent false activations from residual motion after the door stops (see wiki Section 5.2).</Label>
             </Field>
 
             <Field id="vsDevId" type="textfield" hidden="true">

@@ -49,11 +49,46 @@ For more information, please refer to <http://unlicense.org/>
 
 DESCRIPTION:
 
-****************************** needs work *************************************
+The Virtual Garage Door (VGD) plugin monitors one or more Indigo devices to
+track the garage door as it moves through its operational cycles. It saves the
+door states in the states dictionary of a VGD opener device. The states are
+displayed in the Indigo Home window and are available for use by scripts,
+action groups, control pages, triggers, and other plugins. The VGD plugin also
+provides actions to open, close and toggle the garage door.
+
+VGD opener devices work with Apple HomeKit by using the HomeKit Bridge (HKB)
+plugin or the HomeKitLink Siri (HKLS) plugin. After installation and setup of
+either plugin, you can use the Apple Home application to monitor and control
+your garage doors.  With any Apple device, you can also monitor and control
+your doors verbally using Siri. Say "Hey Siri, check the garage door status" or
+"Hey Siri, open the garage main door".
+
+The VGD plugin can monitor a wide variety of optional devices that are already
+available in Indigo as supported devices or through existing 3rd party plugins.
+These include both z-wave devices and custom/wired devices. Device types
+include relays, contact sensors, tilt sensors, and multisensors. Please see the
+latest list of supported devices at
+<https://github.com/papamac/VirtualGarageDoor/wiki/2.-Supported-Devices>.
+
+The garage door tracking accuracy depends upon which monitored devices are
+selected and the door's operational cycle. The wiki Design page (see
+<https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design> (Section 3.4)
+contains a detailed discussion of the tracking performance under a wide range
+of conditions. This allows the user to select the set of monitored devices
+to best meet his specific needs.
+
 
 DEPENDENCIES/LIMITATIONS:
 
-****************************** needs work *************************************
+The plugin will work only with conventional garage door openers that auto-
+reverse during an obstructed closing cycle.  It will not accurately track door
+state transitions in this cycle for a non-auto-reversing door.
+
+If equipped with an activation relay, the plugin is capable of unattended
+operation of the door.  Unattended operation of a residential garage door is
+permitted only with accompanying audible and visible alarms. See the safety
+issue discussion in the wiki Section 5.1 at
+<https://github.com/papamac/VirtualGarageDoor/wiki/5.-User-Notes>.
 
 
 CHANGE LOG:
@@ -155,9 +190,21 @@ v1.1.0   12/18/2022 (1) Add an integer doorState to the device states
                     turnOff) regardless of the opener onOffState.  This enables
                     recovery from obstructed door conditions using the Apple
                     HomeKit application.
-v1.1.1   1/12/2023  Update the wiki to document the changes introduced in
-                    version v1.1.0.  Improve debug reporting of the door state
-                    transition sequence.
+v1.1.1   1/12/2023  (1) Update the wiki to document the changes introduced in
+                    version v1.1.0.
+                    (2) Add the DoorStateTrack class to capture and log
+                    sequences of door transition sequences (tracks).
+                    (3) Optionally log door state tracks in the info log per a
+                    pluginPrefs checkbox.
+                    (4) Restore the restriction on the openGarageDoor action
+                    that was removed in v1.1.0 (4).  Restoring this restriction
+                    requires that the door be closed before the open action is
+                    performed.  The removal of the same restriction on the
+                    device turnOff command remains to allow the HomeKit Home
+                    application (via the HKB of HKLS plugin) to close the door
+                    from a stopped state.
+                    (5) Log warning messages if the door opening/closing
+                    restrictions are violated.
 """
 ###############################################################################
 #                                                                             #
@@ -198,7 +245,7 @@ AR_CLOSURE_TIME = 1
 
 # Door state enumeration, stationary state group, and door status.
 
-# The door states are the same as those defined in the
+# The first five door states are the same as those defined in the
 # HMCharacteristicValueDoorState enumeration in the Apple developer HomeKit website:
 # (https://developer.apple.com/documentation/homekit/hmcharacteristicvaluedoorstate).
 
@@ -231,7 +278,7 @@ DOOR_STATE_TRANSITIONS = (
     # Transitions from the OPENING state (doorState == 2):
 
     {'os-on':       OPEN,         # 5      normal open
-     'tt-exp&!os':  OPEN,         # 6      normal open
+     'tt-exp&!os':  OPEN,         # 6      normal open if no os
      'ar-on':       STOPPED,      # 7      interrupted opening
      'tt-exp':      STOPPED,      # 8      interrupted opening
      'cs-off':      OPENING,      # 9      redundant event
@@ -241,7 +288,7 @@ DOOR_STATE_TRANSITIONS = (
     # Transitions from the CLOSING state (doorState == 3):
 
     {'cs-on':       CLOSED,       # 16     normal closed
-     'tt-exp&!cs':  CLOSED,       # 17     normal closed
+     'tt-exp&!cs':  CLOSED,       # 17     normal closed if no cs
      'ar-on':       REVERSING,    # 18     interrupted closing
      'tt-exp':      REVERSING,    # 19     interrupted closing
      'os-off':      CLOSING,      # 20     redundant event
@@ -294,6 +341,81 @@ RELAY_DEVICE_TYPE_IDs =    (easyDaqComboTypeIds + easyDaqRelayTypeIds
 SENSOR_DEVICE_TYPE_IDs =   (easyDaqComboTypeIds + easyDaqSensorTypeIds
                             + genericSensorTypeIds)
 
+###############################################################################
+#                                                                             #
+#                            CLASS DoorStateTrack                             #
+#                                                                             #
+###############################################################################
+
+class DoorStateTrack:
+    """
+    A door state track is a time sequence of transitions from state to state as
+    the door moves through its operational cycle.  A monitored device event
+    (mDevEvent) initiates a transition from the current door state to a new
+    door state as determined by the global DOOR_STATE_TRANSITIONS tuple.  Each.
+    transition is a string of the form:
+
+    [timeSinceLastEvent mDevEvent newDoorState], and tracks look like:
+    initialState [transition 1] [transition2]...
+
+    Each track begins in a stationary state (see globals tuple
+    STATIONARY_STATES) and continues until the start of the next stationary
+    state.  When a stationary state occurs, the current track is optionally
+    logged and a new track started.  Optional logging is controlled by the
+    logDoorStateTracks checkbox in the plugin preferences.
+
+    Tracks are used offline to facilitate analysis of door state tracking
+    performance.
+
+    This class provides methods to initialize, update, and log door state
+    tracks.  These methods are called by the deviceStartComm and deviceUpdated
+    plugin methods.
+    """
+    def __init__(self, plugin, dev, currentDoorState):
+        """
+        Initialize local attributes.
+        """
+
+        self._plugin = plugin
+        self._dev = dev
+        self._lastEventTime = datetime.now()
+        self._doorStateTrack = DOOR_STATUS[currentDoorState].upper()
+        self._lastState = currentDoorState
+
+    def update(self, mDevEvent, newDoorState):
+        """
+        Add the current door state transitions to an existing track.
+        """
+
+        # Compute the time since the last event.
+
+        eventTime = datetime.now()
+        dt = eventTime - self._lastEventTime
+        timeSinceLastEvent = dt.total_seconds()
+        if timeSinceLastEvent > 99:  # Max it out at 99 seconds.
+            timeSinceLastEvent = 99
+        self._lastEventTime = eventTime
+
+        # Format a transition string in the form of [time event state] and
+        # append it to the track.
+
+        transition = ' [%.2f %s %s]' % (timeSinceLastEvent, mDevEvent,
+                                        DOOR_STATUS[newDoorState].upper())
+        self._doorStateTrack += transition
+        self._lastState = newDoorState
+
+    def log(self):
+        """
+        LOG the track if requested and initialize a new track with the last
+        door state.
+        """
+        if self._plugin.pluginPrefs['logDoorStateTracks']:
+            LOG.info('"%s" config: %s| track: %s', self._dev.name,
+                     self._dev.pluginProps['mDevConfig'],
+                     self._doorStateTrack)
+
+        self._doorStateTrack = DOOR_STATUS[self._lastState].upper()
+
 
 ###############################################################################
 #                                                                             #
@@ -303,7 +425,14 @@ SENSOR_DEVICE_TYPE_IDs =   (easyDaqComboTypeIds + easyDaqSensorTypeIds
 
 class Plugin(indigo.PluginBase):
     """
-    **************************** needs work ***********************************
+    The Plugin class is a collection of standard Indigo plugin methods that are
+    needed to manage multiple door opener devices.  It is segmented into four
+    parts for readability:
+
+    I   STANDARD INDIGO INITILIZATION, STARTUP, AND RUN/STOP METHODS,
+    II  CONFIG UI VALIDATION METHODS,
+    III CONFIG UI CALLBACK METHODS, and
+    IV  ACTION CALLBACK METHODS
     """
 
     ###########################################################################
@@ -330,39 +459,32 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                           SUPPORTING METHOD                             #
     #                                                                         #
-    #  def _updateDoorStatesAndTracks(dev, mDevEvent, doorState)              #
+    #  def _updateDoorStates(dev, mDevEvent, doorState)                       #
     #                                                                         #
     ###########################################################################
-
-    # Private methods:
 
     def __init__(self, pluginId, pluginDisplayName,
                  pluginVersion, pluginPrefs):
         """
-        Initialize plugin data and private instance attributes for the Plugin
-        class.
+        Define the two local dictionaries needed by plugin methods: the
+        monitored devices dictionary and the door state tracks dictionary.
+        Set these to empty dictionaries to be initialized later by the
+        deviceStartComm method.
 
-        Two local dictionaries are private to the Plugin class: the monitored
-        devices dictionary and the door state tracks dictionary.  Both are
-        keyed by the device id of a Plugin opener device.  self.__init__
-        initializes these to empty dictionaries to be filled later by Plugin
-        methods.
-
-        The monitored devices dictionary is key to the operation of the plugin.
-        It is a compound dictionary that stores device id's and properties for
-        devices that are monitored by the plugin.  It has the following
-        structure:
+        The monitored devices dictionary is a compound dictionary that stores
+        the device id's and properties of devices that are monitored by the
+        plugin.  It has the following structure:
 
         self._monitoredDevices = {devId: {mDevId: {mDevState: mDevType}}}
         where:
            devId     is the device id of the opener device.
            mDevId    is the device id of a timer, sensor, or relay device to be
-                     monitored by the opener plugin to determine the garage
+                     monitored by the opener plugin to track the garage
                      door state.  All monitored devices must have an on/off
                      bool state defined in the devices xml by
                      <ValueType boolType="OnOff">Boolean</ValueType>.
-           mDevState is the state name to be monitored by the plugin.  For
-                     most sensor devices it is typically "onOffState".  For
+           mDevState is the on/off state name to be monitored by the plugin.
+                     For most sensor devices it is typically "onOffState".  For
                      EasyDAQ devices it is "channelnn" where nn is the
                      numeric channel number.  For timers the state name is
                      "timerStatus.active".
@@ -371,24 +493,21 @@ class Plugin(indigo.PluginBase):
                      (activation relay), "cs" (closed sensor), "os" (open
                      sensor), "vs" (vibration sensor), and "tt" (travel timer).
 
-        self._monitoredDevices is created by the deviceStartComm method and
-        used by the deviceUpdated method to select monitored devices and
-        interpret their state changes.  self._monitoredDevices is also used
-        in the validateDeviceConfigUi method to ensure that mDevId/mDevState
-        combinations are not reused across the various opener devices/sensors.
+        The door state tracks dictionary stores a single DoorStateTrack
+        instance object for each plugin opener device.  It has the following
+        structure:
 
-        The door state tracks dictionary provides a place to assemble state
-        track data prior to debug logging. self._doorStateTracks captures the
-        sequence of times, events, and states for each door state transition.
-        Track assembly and logging are performed in the self._updateStates
-        method.
+        self._doorStateTracks = {devId: track}
+        where:
+            devId   is the device id of the opener device.
+            track   is an instance object of the DoorStateTrack class
+                    (see above).
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
 
-        self._monitoredDevices = {}  # Monitored devices (see above).
-        self._lastEventTimes = {}    # Last event time by devId.
-        self._doorStateTracks = {}   # Door state track by devId.
+        self._monitoredDevices = {}  # Monitored device properties by devId.
+        self._doorStateTracks = {}   # Door state track objects by devId.
 
     def __del__(self):
         """
@@ -397,31 +516,22 @@ class Plugin(indigo.PluginBase):
         LOG.threaddebug('Plugin.__del__ called')
         indigo.PluginBase.__del__(self)
 
-    def _updateDoorStatesAndTracks(self, dev, mDevEvent, doorState):
+    @staticmethod
+    def _updateDoorStates(dev, doorState):
         """
-        Update door states and update/log door state tracks:
+        Update the door states on the Indigo server for use by the Home window,
+        scripts, action groups, control pages, triggers, and other plugins.
 
         The door states include the doorState, doorStatus and the onOffState.
         The doorState can be OPEN, CLOSED, OPENING, CLOSING, STOPPED, and
         REVERSING (see enumeration in globals).  The doorStatus is a lower case
-        text representation of the doorState, and the onOffState is on if the
+        string representation of the doorState, and the onOffState is on if the
         doorState is CLOSED and off otherwise.
 
-        Update the door states on the Indigo server for use by the Home window,
-        scripts, action groups, control pages, triggers, and other plugins. Set
-        the Home window user interface image to a green dot if the onOffState
-        is on (doorState is CLOSED) and a red dot otherwise.
-
-        Door state tracks include the monitored device event time, event name,
-        and the resulting new door state for each state transition.  Each track
-        begins in a stationary state and continues until the start of the next
-        stationary state.  When a stationary state occurs, log the current
-        track and initialize the next track.  Tracks are used offline to
-        facilitate analysis of state tracking performance.
+        Also, set state image on the Indigo Home window based on the value of
+        the onOffState.  Select a green dot if the onOffState is on (doorState
+        is CLOSED) and a red dot if it is off.
         """
-
-        # Update the door states on the Indigo server.
-
         onOffState = doorState is CLOSED
         doorStatus = DOOR_STATUS[doorState]
         dev.updateStateOnServer('onOffState', onOffState, uiValue=doorStatus)
@@ -430,35 +540,12 @@ class Plugin(indigo.PluginBase):
         dev.updateStateImageOnServer(image)
         dev.updateStateOnServer('doorStatus', doorStatus)
         dev.updateStateOnServer('doorState', doorState)
-        LOG.info('"%s" update to %s', dev.name, doorStatus)
-
-        # Update and log the door state tracks.
-
-        if mDevEvent:  # Current track exists.
-
-            # Append the monitored event time, event name, and the new door
-            # state to the existing track.
-
-            eventTime = datetime.now()
-            dt = eventTime - self._lastEventTimes[dev.id]
-            timeSinceLastEvent = dt.total_seconds()
-            if timeSinceLastEvent > 99:
-                timeSinceLastEvent = 99
-            self._lastEventTimes[dev.id] = eventTime
-            self._doorStateTracks[dev.id] += (' [%.3f %s %s]'
-                % (timeSinceLastEvent, mDevEvent, doorStatus.upper()))
-
-            if doorState in STATIONARY_STATES:
-
-                # Log completed track and initialize a new one.
-
-                LOG.debug('"%s" %s%s', dev.name, dev.pluginProps['mDevConfig'],
-                          self._doorStateTracks[dev.id])
-                self._doorStateTracks[dev.id] = doorStatus.upper()
-
-    # Indigo standard public instance methods:
+        LOG.info('"%s" update to %s', dev.name, doorStatus.upper())
 
     def startup(self):
+        """
+        Setup THREADDEBUG logging and subscribe to device state changes.
+        """
         self.indigo_log_handler.setLevel(NOTSET)
         level = self.pluginPrefs['loggingLevel']
         LOG.setLevel('THREADDEBUG' if level == 'THREAD' else level)
@@ -466,6 +553,9 @@ class Plugin(indigo.PluginBase):
         indigo.devices.subscribeToChanges()
 
     def deviceStartComm(self, dev):
+        """
+        Initialize door opener devices.
+        """
         LOG.threaddebug('Plugin.deviceStartComm called "%s"', dev.name)
 
         # Create a new monitored devices dictionary entry for this opener
@@ -521,26 +611,25 @@ class Plugin(indigo.PluginBase):
             dev.setErrorStateOnServer('init err')  # Set error state.
             return
 
-        # Initialize the last event time for this device.
-
-        self._lastEventTimes[devId] = datetime.now()
-
-        # Initialize the opener device state.  Assume that door is not in
-        # motion and that it is closed unless the closedSensor is off and
-        # openSensor is on.
+        # Initialize the opener device state and door state track.  Assume that
+        # door is not in motion and that it is closed unless the closedSensor
+        # is off and openSensor is on.
 
         csState = states.get('cs')
         osState = states.get('os')
         doorState = OPEN if not csState and osState else CLOSED
+        self._doorStateTracks[devId] = DoorStateTrack(self, dev, doorState)
         if doorState != dev.states.get('doorState'):
-            self._updateDoorStatesAndTracks(dev, None, doorState)
-        self._doorStateTracks[devId] = DOOR_STATUS[doorState].upper()
+            self._updateDoorStates(dev, doorState)
 
         # Clear error state, if any.
 
         dev.setErrorStateOnServer(None)
 
     def deviceStopComm(self, dev):
+        """
+        Retire door opener devices.
+        """
         LOG.threaddebug('Plugin.deviceStopComm called "%s"', dev.name)
 
         # Delete the entry in the monitored devices dictionary, if present.
@@ -576,10 +665,10 @@ class Plugin(indigo.PluginBase):
 
                     doorState = dev.states['doorState']
 
-                    # Create monitored device event name.
+                    # Create monitored device event name and optionally log it.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    if self.pluginPrefs['logAll']:
+                    if self.pluginPrefs['logAllMonitoredDeviceEvents']:
                         LOG.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
@@ -599,6 +688,11 @@ class Plugin(indigo.PluginBase):
                                 cs = dev.pluginProps.get('cs')
                                 mDevEvent += '&!cs' if not cs else ''
 
+                            # Optionally log timer expired events.
+
+                            if self.pluginPrefs['logAll']:
+                                LOG.debug('"%s" %s', dev.name, mDevEvent)
+
                     # Ignore events that can't affect the door state.
 
                     if mDevEvent in ('ar-off', 'vs-off', 'tt-on', 'tt-off'):
@@ -613,14 +707,16 @@ class Plugin(indigo.PluginBase):
                                         [doorState][mDevEvent])
                     except KeyError:  # Ignore event if no legal transition.
                         LOG.warning('"%s" mDevEvent %s is inconsistent '
-                                    'with door state %s',
-                                    dev.name, mDevEvent, doorState)
+                                    'with door state %s', dev.name, mDevEvent,
+                                    DOOR_STATUS[doorState].upper())
                         continue
+
+                    self._doorStateTracks[devId].update(mDevEvent,
+                                                        newDoorState)
 
                     if newDoorState != doorState:  # Door state has changed.
 
-                        self._updateDoorStatesAndTracks(dev, mDevEvent,
-                                                        newDoorState)
+                        self._updateDoorStates(dev, newDoorState)
 
                         # If the new door state is REVERSING, immediately
                         # transition to OPENING and update the door states
@@ -628,8 +724,9 @@ class Plugin(indigo.PluginBase):
 
                         if newDoorState is REVERSING:
                             newDoorState = OPENING
-                            self._updateDoorStatesAndTracks(dev, 'null',
-                                                            newDoorState)
+                            self._doorStateTracks[devId].update('null',
+                                                                newDoorState)
+                            self._updateDoorStates(dev, newDoorState)
 
                         # Perform new state actions.
 
@@ -637,7 +734,10 @@ class Plugin(indigo.PluginBase):
                             ttDevId = int(dev.pluginProps['ttDevId'])
                             if newDoorState in STATIONARY_STATES:
 
-                                # Stop timer and reset vibration sensor.
+                                # Log/reset the existing state track, stop
+                                # the timer, and reset the vibration sensor.
+
+                                self._doorStateTracks[devId].log()
 
                                 TIMER.executeAction('stopTimer',
                                                     deviceId=ttDevId)
@@ -645,12 +745,12 @@ class Plugin(indigo.PluginBase):
                                 vsDevIdStr = dev.pluginProps['vsDevId']
                                 if vsDevIdStr:
                                     vsDevId = int(vsDevIdStr)
-                                    vsResetDelay = float(dev.pluginProps
-                                                         ['vsResetDelay'])
-                                    sleep(vsResetDelay)
-                                    indigo.device.turnOff(vsDevId)
+                                    vsResetDelay = int(round(float(
+                                        dev.pluginProps['vsResetDelay'])))
+                                    indigo.device.turnOff(vsDevId,
+                                                          delay=vsResetDelay)
 
-                            else:  # Door is moving; restart timer.
+                            else:  # Door is moving; restart the timer.
                                 TIMER.executeAction('restartTimer',
                                                     deviceId=ttDevId)
 
@@ -686,12 +786,26 @@ class Plugin(indigo.PluginBase):
 
     @staticmethod
     def validatePrefsConfigUi(valuesDict):
+        """
+        Set the THREADDEBUG logging level if the user changes the pluginPrefs
+        after startup.
+        """
         LOG.threaddebug('Plugin.validatePrefsConfigUi called')
         level = valuesDict['loggingLevel']
         LOG.setLevel('THREADDEBUG' if level == 'THREAD' else level)
         return True
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
+        """
+        Validate the GUI travel time.  If a timer device already exists for the
+        opener device, then configure the timer.  If not, create a new timer.
+
+        Validate monitored device GUI entries and create the monitored device
+        dictionary.
+
+        Set the initial opener device state based on the states
+        of the open and closed sensors.
+        """
         dev = indigo.devices[devId]
         devName = 'devId%s' % devId if dev.name == 'new device' else dev.name
         LOG.threaddebug('Plugin.validateDeviceConfigUi called "%s"', devName)
@@ -966,7 +1080,12 @@ class Plugin(indigo.PluginBase):
 
     @staticmethod
     def _toggleActivationRelay(dev):
-        LOG.threaddebug('Plugin._activateOpenerRelay called "%s"', dev.name)
+        """
+        Turn on the activation relay for a period equal to the global
+        AR_CLOSURE_TIME.  Use special plugin actions for EasyDAQ relay devices;
+        otherwise use the standard Indigo device turnOn method.
+        """
+        LOG.threaddebug('Plugin._toggleActivationRelay called "%s"', dev.name)
         ar = dev.pluginProps.get('ar')
         if ar:
             arDev = indigo.devices[ar]
@@ -981,36 +1100,73 @@ class Plugin(indigo.PluginBase):
             else:  # Standalone relay device.
                 indigo.device.turnOn(ar, duration=AR_CLOSURE_TIME)
         else:
-            error = 'door action ignored; no activation relay specified.'
-            LOG.error(error)
+            error = 'no activation relay specified; door action ignored.'
+            LOG.warning('"%s" %s', dev.name, error)
 
     def closeGarageDoor(self, pluginAction):
+        """
+        Toggle the activation relay to close the garage door if it is not
+        already closed.  This prevents the inadvertent opening of the door with
+        a close command.
+        """
         dev = indigo.devices[pluginAction.deviceId]
         LOG.threaddebug('Plugin.closeGarageDoor called "%s"', dev.name)
-        if not dev.states['onOffState']:  # Close if not already closed.
+        if not dev.states['onOffState']:
             self._toggleActivationRelay(dev)
+        else:
+            error = ('attempt to toggle the garage door closed when it is '
+                     'already closed; door action ignored.')
+            LOG.warning('"%s" %s', dev.name, error)
 
     def openGarageDoor(self, pluginAction):
+        """
+        Toggle the activation relay to open the garage door if it is closed.
+        This prevents the inadvertent closing of the door with an open command.
+        """
         dev = indigo.devices[pluginAction.deviceId]
         LOG.threaddebug('Plugin.openGarageDoor called "%s"', dev.name)
-        self._toggleActivationRelay(dev)  # Allow opening anytime.
+        if dev.states['onOffState']:
+            self._toggleActivationRelay(dev)
+        else:
+            error = ('attempt to toggle the garage door open when it is '
+                     'not closed; door action ignored.')
+            LOG.warning('"%s" %s', dev.name, error)
 
     def toggleGarageDoor(self, pluginAction):
+        """
+        Toggle the activation relay with no state conditions.
+        """
         dev = indigo.devices[pluginAction.deviceId]
         LOG.threaddebug('Plugin.toggleGarageDoor called "%s"', dev.name)
         self._toggleActivationRelay(dev)
 
     def actionControlDevice(self, action, dev):
+        """
+        Implement the device turnOn (close), turnOff (open) and toggle commands
+        by selectively toggling the activation relay.  Allow the turnOn (close)
+        activation only if the door is not already closed. This prevents the
+        inadvertent opening of the door with a close command.  Do not restrict
+        activation for the turnOn (close) or toggle commands.  The previous
+        turnOn restriction was removed to allow the HomeKit Home application
+        (via the HKB of HKLS plugin) to close the door from a stopped state.
+        """
         LOG.threaddebug('Plugin.actionControlDevice called "%s"', dev.name)
         if action.deviceAction == indigo.kDeviceAction.TurnOn:
             if not dev.states['onOffState']:  # Close if not already closed.
                 self._toggleActivationRelay(dev)
+            else:
+                error = ('attempt to toggle the garage door open when it is '
+                         'not closed; door action ignored.')
+                LOG.warning('"%s" %s', dev.name, error)
         elif action.deviceAction == indigo.kDeviceAction.TurnOff:
             self._toggleActivationRelay(dev)  # Allow opening anytime.
         elif action.deviceAction == indigo.kDeviceAction.Toggle:
             self._toggleActivationRelay(dev)
 
     def actionControlUniversal(self, action, dev):
+        """
+        Implement the requestStatus command by logging the current door state.
+        """
         LOG.threaddebug('Plugin.actionControlUniversal called "%s"', dev.name)
         if action.deviceAction == indigo.kUniversalAction.RequestStatus:
-            LOG.info('"%s" is %s', dev.name, dev.states['doorStatus'])
+            LOG.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())

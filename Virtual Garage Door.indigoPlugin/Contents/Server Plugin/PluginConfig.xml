@@ -8,14 +8,15 @@ FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,
            specifies GUI labels, and sets default values.
    USAGE:  PluginConfig.xml is read by the indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  0.5.0
-    DATE:  December 27, 2020
+ VERSION:  1.1.1
+    DATE:  January 20, 2023
 
 
 CHANGE LOG:
 
 v0.5.0  12/27/2020  Initial beta version.
 v0.9.5   7/10/2022  Add logAll checkbox.
+v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
 -->
 
 <PluginConfig>
@@ -32,10 +33,10 @@ v0.9.5   7/10/2022  Add logAll checkbox.
         </List>
     </Field>
 
-    <Field id="logAll" type="checkbox" defaultValue="false"
+    <Field id="logAllMonitoredDeviceEvents" type="checkbox" defaultValue="false"
            visibleBindingId="loggingLevel"
            visibleBindingValue="(THREAD, DEBUG)">
-        <Label>Log all monitored device events</Label>
+        <Label>Log All Monitored Device Events</Label>
     </Field>
 
     <Field id="threaddebug" type="label" alignWithControl="true"
@@ -69,6 +70,14 @@ v0.9.5   7/10/2022  Add logAll checkbox.
            fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="CRITICAL">
         <Label>Log critical messages only</Label>
+    </Field>
+
+    <Field id="logSpacer" type="label">
+        <Label> </Label>
+    </Field>
+
+    <Field id="logDoorStateTracks" type="checkbox" defaultValue="false">
+        <Label>Log Door State Tracks</Label>
     </Field>
 
 </PluginConfig>
