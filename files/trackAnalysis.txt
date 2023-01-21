@@ -42,7 +42,7 @@ ar cs tt        ar-io	LR  2   CLOSED	CLOSED  CLOSED  -STOPPED, +OPEN
                                 [ar-on CLOSING]	        {activation CLOSING}	{stop CLOSED}           [cs-on CLOSED]
 ar cs tt        ar-ic	G       OPEN	OPEN    OPEN
                                 [ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          [tt-exp REVERSING]
-                                [null OPENING]          {stop OPEN}     		[tt-exp&!os OPEN]
+                                [null OPENING]          {stop OPEN}             [tt-exp&!os OPEN]
 ========================================================================================================================================================
 ar os tt        nar-no	Y   1   CLOSED	OPEN    OPEN    -OPENING
                                 {activation OPENING}    {stop OPEN}             [os-on OPEN]
@@ -62,7 +62,7 @@ ar os tt        ar-io	G       CLOSED	CLOSED  CLOSED
                                 [ar-on OPENING]	        {activation OPENING}   	{interrupt STOPPED}     [tt-exp STOPPED]        [ar-on CLOSING]
                                 {activation CLOSING}    {stop CLOSED}           [tt-exp&!cs CLOSED]
 ar os tt        ar-ic	LR  3   OPEN    OPEN    OPEN	-REVERSING, -OPENING, +CLOSED
-                                [ar-on CLOSING]	        {activation CLOSING}    [os-off CLOSING]	    {interrupt REVERSING}   {null OPENING}
+                                [ar-on CLOSING]	        {activation CLOSING}    [os-off CLOSING]        {interrupt REVERSING}   {null OPENING}
                                 [tt-exp&!cs CLOSED]     {stop OPEN}             [os-on OPEN]
 ========================================================================================================================================================
 ar vs tt        nar-no	LG      CLOSED	OPEN    OPEN    no cs, os for state recovery
@@ -71,7 +71,7 @@ ar vs tt        nar-nc	LG      OPEN	CLOSED  CLOSED  no cs, os for state recovery
                                 {activation CLOSING}    [vs-on CLOSING]     	{stop CLOSED}           [tt-exp&!cs CLOSED]
 ar vs tt        nar-io	LR  2   CLOSED	CLOSED  CLOSED  -STOPPED, +OPEN
                                 {activation OPENING}    [vs-on OPENING]     	{interrupt STOPPED}     [tt-exp&!os OPEN]       {activation CLOSING}
-                                [vs-on CLOSING]    	    {stop CLOSED}           [tt-exp&!cs CLOSED]
+                                [vs-on CLOSING]         {stop CLOSED}           [tt-exp&!cs CLOSED]
 ar vs tt        nar-ic	R   4   OPEN    OPEN    CLOSED	-REVERSING, -OPENING, +CLOSED, -OPEN
                                 {activation CLOSING}    [vs-on CLOSING]     	{interrupt REVERSING}   {null OPENING}          [tt-exp&!cs CLOSED]
                                 {stop OPEN}
@@ -163,20 +163,20 @@ ar cs os vs tt 	nar-io	G       CLOSED	CLOSED  CLOSED
                                 {activation OPENING}    [vs-on OPENING]         [cs-off OPENING]        {interrupt STOPPED}     [tt-exp STOPPED]
                                 {activation CLOSING}    [vs-on CLOSING]         {stop CLOSED}           [cs-on CLOSED]
 ar cs os vs tt  nar-ic	G       OPEN	OPEN    OPEN
-                                {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]	    {interrupt REVERSING}   {null OPENING}
+                                {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]        {interrupt REVERSING}   {null OPENING}
                                 [tt-exp REVERSING]      [null OPENING]          {stop OPEN}             [os-on OPEN]
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 ar cs os vs tt 	ar-no	G       CLOSED	OPEN    OPEN
-                                [ar-on OPENING]	        {activation OPENING}    [vs-on OPENING]         [cs-off OPENING]	    {stop OPEN}
+                                [ar-on OPENING]	        {activation OPENING}    [vs-on OPENING]         [cs-off OPENING]        {stop OPEN}
                                 [os-on OPEN]
 ar cs os vs tt 	ar-nc	G       OPEN	CLOSED  CLOSED
-                                [ar-on CLOSING]	        {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]	    {stop CLOSED}
+                                [ar-on CLOSING]	        {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]        {stop CLOSED}
                                 [cs-on CLOSED]
 ar cs os vs tt 	ar-io	G       CLOSED	CLOSED  CLOSED
-                                [ar-on OPENING]	        {activation OPENING}    [vs-on OPENING]         [cs-off OPENING]	    {interrupt STOPPED}
+                                [ar-on OPENING]	        {activation OPENING}    [vs-on OPENING]         [cs-off OPENING]        {interrupt STOPPED}
                                 [tt-exp STOPPED]        [ar-on CLOSING]	        {activation CLOSING}    [vs-on CLOSING]         {stop CLOSED}
                                 [cs-on CLOSED]
 ar cs os vs tt 	ar-ic	G       OPEN	OPEN    OPEN
-                                [ar-on CLOSING]	        {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]	    {interrupt REVERSING}
+                                [ar-on CLOSING]	        {activation CLOSING}    [vs-on CLOSING]         [os-off CLOSING]        {interrupt REVERSING}
                                 {null OPENING}          [tt-exp REVERSING]      [null OPENING]          {stop OPEN}             [os-on OPEN]
 ========================================================================================================================================================
