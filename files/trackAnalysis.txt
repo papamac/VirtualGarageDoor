@@ -38,7 +38,7 @@ ar cs tt        ar-no	G       CLOSED	OPEN    OPEN
 ar cs tt        ar-nc	G       OPEN	CLOSED  CLOSED
                                 [ar-on CLOSING]	        {activation CLOSING}    {stop CLOSED}           [cs-on CLOSED]
 ar cs tt        ar-io	LR  2   CLOSED	CLOSED  CLOSED  -STOPPED, +OPEN
-                                [ar-on OPENING]	        {activation OPENING}    [cs-off OPENING]	    {interrupt STOPPED}     [tt-exp&!os OPEN]
+                                [ar-on OPENING]	        {activation OPENING}    [cs-off OPENING]        {interrupt STOPPED}     [tt-exp&!os OPEN]
                                 [ar-on CLOSING]	        {activation CLOSING}	{stop CLOSED}           [cs-on CLOSED]
 ar cs tt        ar-ic	G       OPEN	OPEN    OPEN
                                 [ar-on CLOSING]	        {activation CLOSING}    {interrupt REVERSING}   {null OPENING}          [tt-exp REVERSING]
