@@ -55,7 +55,7 @@ ar os tt        nar-ic	LR  3   OPEN    OPEN    OPEN   	-REVERSING, -OPENING, +CL
                                 {stop OPEN}             [os-on OPEN]
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 ar os tt        ar-no	G       CLOSED  OPEN    OPEN
-                                [ar-on OPENING]	        {activation OPENING}    {stop OPEN}            [os-on OPEN]
+                                [ar-on OPENING]	        {activation OPENING}    {stop OPEN}             [os-on OPEN]
 ar os tt        ar-nc	G       OPEN	CLOSED  CLOSED
                                 [ar-on CLOSING]	        {activation CLOSING}    [os-off CLOSING]	    [tt-exp&!cs CLOSED]
 ar os tt        ar-io	G       CLOSED	CLOSED  CLOSED
