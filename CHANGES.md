@@ -8,16 +8,16 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
-## GitHub Release v1.1.1, January 12, 2023
+## GitHub Release v1.1.1, January 22, 2023
 
 ### New door state and documentation to support full-capability HomeKit integration
 
 This release includes major updates the wiki to (1) correct errors, (2) improve
 discussions of door state tracking/tracking performance, (3) add a new section
 on error detection, reporting, and recovery, and (4) document the plugin.py
-changes introduced in the interim version v1.1.0.  Several minor new plugin.py
-changes are also included.  See the CHANGE LOG in the plugin.py module
-docstring for details on the new v1.1.1 changes.
+changes introduced in the interim version v1.1.0.  Several new plugin.py
+changes are also included.  These relatively minor changes are listed in the
+CHANGE LOG in the plugin.py module docstring.
 
 GitHub release v1.1.1 provides a fully documented, formally released Virtual
 Garage Door (VGD) plugin that can fully integrate with Apple HomeKit. The
@@ -28,9 +28,9 @@ Home application: (1) continuous state tracking, and (2) obstruction detection
 and reporting. To use these new capabilities, the VGD opener devices must
 interface to HomeKit using a future release of the HomeKitLink Siri (HKLS)
 plugin. The HomeKit capabilities provided by the various combinations of VGD
-versions and HomeKit integration plugins is explained in the
+versions and HomeKit integration plugins is explained in the wiki
 [Design pages](https://github.com/papamac/VirtualGarageDoor/wiki/3.-Design)
-of the wiki (see Table 2).
+(see Table 2).
 
 ## Interim Version v1.1.0, December 18, 2022
 
@@ -124,7 +124,7 @@ now work with other z-wave relays as well.
 This release increases the maximum value of the vibration sensor reset delay
 time from 2 to 5 seconds. The default delay remains at 1.5 seconds. Recent
 experience with papamac's vibration sensor suggests that the user should have
-more lattitude in setting this value.
+more latitude in setting this value.
 
 v1.0.3 also removes the plugin bundle zip file from the repo. A new
 indigoplugin.zip file will now be attached to each release for the user's

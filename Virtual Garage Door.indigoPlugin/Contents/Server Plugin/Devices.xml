@@ -48,7 +48,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
                     support full integration with Apple HomeKit.  Add a new
                     "reversing" door status to report interrupted (obstructed)
                     closing.
-v1.1.1   1/21/2023  Change the default value for the vsResetDelay to an integer
+v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                     value of 2 sec.
 -->
 

@@ -16,7 +16,7 @@ CHANGE LOG:
 
 v0.5.0  12/27/2020  Initial beta version.
 v0.9.5   7/10/2022  Add logMonitoredDeviceEvents checkbox.
-v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
+v1.1.1   1/22/2023  Add logDoorStateTracks checkbox.
 -->
 
 <PluginConfig>
