@@ -15,7 +15,7 @@ FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,
 CHANGE LOG:
 
 v0.5.0  12/27/2020  Initial beta version.
-v0.9.5   7/10/2022  Add logAll checkbox.
+v0.9.5   7/10/2022  Add logMonitoredDeviceEvents checkbox.
 v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
 -->
 
@@ -33,12 +33,6 @@ v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
         </List>
     </Field>
 
-    <Field id="logAllMonitoredDeviceEvents" type="checkbox" defaultValue="false"
-           visibleBindingId="loggingLevel"
-           visibleBindingValue="(THREAD, DEBUG)">
-        <Label>Log All Monitored Device Events</Label>
-    </Field>
-
     <Field id="threaddebug" type="label" alignWithControl="true"
            fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="THREAD">
@@ -48,6 +42,18 @@ v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
     <Field id="debug" type="label" alignWithControl="true" fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="DEBUG">
         <Label>Log debug messages and higher</Label>
+    </Field>
+
+    <Field id="logMonitoredDeviceEventsSpacer" type="label"
+           visibleBindingId="loggingLevel"
+           visibleBindingValue="(THREAD, DEBUG)">
+        <Label> </Label>
+    </Field>
+
+    <Field id="logMonitoredDeviceEvents" type="checkbox" defaultValue="false"
+           visibleBindingId="loggingLevel"
+           visibleBindingValue="(THREAD, DEBUG)">
+        <Label>Log Monitored Device Events</Label>
     </Field>
 
     <Field id="info" type="label" alignWithControl="true" fontColor="darkgray"
@@ -72,7 +78,7 @@ v1.1.1   1/20/2023  Add logDoorStateTracks checkbox.
         <Label>Log critical messages only</Label>
     </Field>
 
-    <Field id="logSpacer" type="label">
+    <Field id="logDoorStateTracksSpacer" type="label">
         <Label> </Label>
     </Field>
 

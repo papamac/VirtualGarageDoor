@@ -49,7 +49,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
                     "reversing" door status to report interrupted (obstructed)
                     closing.
 v1.1.1   1/21/2023  Change the default value for the vsResetDelay to an integer
-                    2 sec.
+                    value of 2 sec.
 -->
 
 <Devices>

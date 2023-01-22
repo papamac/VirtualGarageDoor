@@ -205,6 +205,8 @@ v1.1.1   1/12/2023  (1) Update the wiki to document the changes introduced in
                     from a stopped state.
                     (5) Log warning messages if the door opening/closing
                     restrictions are violated.
+                    (6) Change the validation of the vibration sensor reset
+                    delay time to check for an integer between 0 and 4 seconds.
 """
 ###############################################################################
 #                                                                             #
@@ -266,14 +268,14 @@ DOOR_STATE_TRANSITIONS = (
     {'ar-on':       CLOSING,      # 12     normal closing
      'os-off':      CLOSING,      # 13     normal closing
      'vs-on':       CLOSING,      # 14     normal closing
-     'cs-on':       CLOSED},      # 15     recovery from anomaly
+     'cs-on':       CLOSED},      # 15     out-of-sync recovery
 
     # Transitions from the CLOSED state (doorState == 1):
 
     {'ar-on':       OPENING,      # 1      normal opening
      'cs-off':      OPENING,      # 2      normal opening
      'vs-on':       OPENING,      # 3      normal opening
-     'os-on':       OPEN},        # 4      recovery from anomaly
+     'os-on':       OPEN},        # 4      out-of-sync recovery
 
     # Transitions from the OPENING state (doorState == 2):
 
@@ -283,7 +285,7 @@ DOOR_STATE_TRANSITIONS = (
      'tt-exp':      STOPPED,      # 8      interrupted opening
      'cs-off':      OPENING,      # 9      redundant event
      'vs-on':       OPENING,      # 10     redundant event
-     'cs-on':       CLOSED},      # 11     recovery from anomaly
+     'cs-on':       CLOSED},      # 11     out-of-sync recovery
 
     # Transitions from the CLOSING state (doorState == 3):
 
@@ -293,14 +295,14 @@ DOOR_STATE_TRANSITIONS = (
      'tt-exp':      REVERSING,    # 19     interrupted closing
      'os-off':      CLOSING,      # 20     redundant event
      'vs-on':       CLOSING,      # 21     redundant event
-     'os-on':       OPEN},        # 22     recovery from anomaly
+     'os-on':       OPEN},        # 22     out-of-sync recovery
 
     # Transitions from the STOPPED state (doorState == 4):
 
     {'ar-on':       CLOSING,      # 23     normal closing from stop
      'vs-on':       CLOSING,      # 24     normal closing from stop
-     'cs-on':       CLOSED,       # 25     recovery from anomaly
-     'os-on':       OPEN}         # 26     recovery from anomaly
+     'cs-on':       CLOSED,       # 25     out-of-sync recovery
+     'os-on':       OPEN}         # 26     out-of-sync recovery
 
     # Transitions from the REVERSING state (doorState == 5):
 
@@ -349,11 +351,11 @@ SENSOR_DEVICE_TYPE_IDs =   (easyDaqComboTypeIds + easyDaqSensorTypeIds
 
 class DoorStateTrack:
     """
-    A door state track is a time sequence of transitions from state to state as
-    the door moves through its operational cycle.  A monitored device event
-    (mDevEvent) initiates a transition from the current door state to a new
-    door state as determined by the global DOOR_STATE_TRANSITIONS tuple.  Each.
-    transition is a string of the form:
+    A (virtual) door state track is a time sequence of transitions from state
+    to state as the door moves through its operational cycle.  A monitored
+    device event (mDevEvent) initiates a transition from the current door state
+    to a new door state as determined by the global DOOR_STATE_TRANSITIONS
+    tuple.  Each transition is a string of the form:
 
     [timeSinceLastEvent mDevEvent newDoorState], and tracks look like:
     initialState [transition 1] [transition2]...
@@ -364,8 +366,9 @@ class DoorStateTrack:
     logged and a new track started.  Optional logging is controlled by the
     logDoorStateTracks checkbox in the plugin preferences.
 
-    Tracks are used offline to facilitate analysis of door state tracking
-    performance.
+    Virtual state tracks are used offline to facilitate door state tracking
+    analysis.  Virtual state tracks are compared with the actual physical state
+    tracks to identify missing or added virtual state transitions.
 
     This class provides methods to initialize, update, and log door state
     tracks.  These methods are called by the deviceStartComm and deviceUpdated
@@ -550,6 +553,7 @@ class Plugin(indigo.PluginBase):
         level = self.pluginPrefs['loggingLevel']
         LOG.setLevel('THREADDEBUG' if level == 'THREAD' else level)
         LOG.threaddebug('Plugin.startup called')
+        LOG.debug(self.pluginPrefs)
         indigo.devices.subscribeToChanges()
 
     def deviceStartComm(self, dev):
@@ -668,7 +672,7 @@ class Plugin(indigo.PluginBase):
                     # Create monitored device event name and optionally log it.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    if self.pluginPrefs['logAllMonitoredDeviceEvents']:
+                    if self.pluginPrefs['logMonitoredDeviceEvents']:
                         LOG.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
@@ -690,7 +694,7 @@ class Plugin(indigo.PluginBase):
 
                             # Optionally log timer expired events.
 
-                            if self.pluginPrefs['logAll']:
+                            if self.pluginPrefs['logMonitoredDeviceEvents']:
                                 LOG.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Ignore events that can't affect the door state.
@@ -902,14 +906,14 @@ class Plugin(indigo.PluginBase):
                 # Validate the vs reset delay time.
 
                 if mDevType == 'vs':
-                    vsResetDelay = -1  # Force an error if try fails.
+                    vsResetDelay = -1  # Force an error if the try fails.
                     try:
-                        vsResetDelay = float(valuesDict['vsResetDelay'])
+                        vsResetDelay = int(valuesDict['vsResetDelay'])
                     except ValueError:
                         pass
-                    if not 0 <= vsResetDelay <= 5:
-                        error = ('Reset delay time must be a number between '
-                                 '0 and 5 seconds')
+                    if not 0 <= vsResetDelay <= 4:
+                        error = ('Reset delay time must be an integer between '
+                                 '0 and 4 seconds')
                         errors['vsResetDelay'] = error
                         continue
 
