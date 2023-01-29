@@ -8,6 +8,18 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.1.2, January 29, 2023
+
+### Fix "key not found in dictionary" error
+
+When upgrading VGD from v1.0.6 to v1.1.1, a "key not found in dictionary" error
+occurs during the first execution of the plugin. It is an initilization error
+that disappears when the plugin is configured and reloaded. VGD 1.1.2 fixes the
+error for those who have not yet upgraded. If you have already upgraded to
+v1.1.1 and are running successfully after configuring/reloading, there is no
+need to install this version.
+
+
 ## GitHub Release v1.1.1, January 22, 2023
 
 ### New door state and documentation to support full-capability HomeKit integration

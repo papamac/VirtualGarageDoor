@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.1.1
-    DATE:  January 22, 2023
+ VERSION:  1.1.2
+    DATE:  January 29, 2023
 
 
 UNLICENSE:
@@ -207,6 +207,7 @@ v1.1.1   1/22/2023  (1) Update the wiki to document the changes introduced in
                     restrictions are violated.
                     (6) Change the validation of the vibration sensor reset
                     delay time to check for an integer between 0 and 4 seconds.
+v1.1.2   1/29/2023  Fix "key not found in dictionary" initialization error.
 """
 ###############################################################################
 #                                                                             #
@@ -215,8 +216,8 @@ v1.1.1   1/22/2023  (1) Update the wiki to document the changes introduced in
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.1.1'
-__date__ = 'January 22, 2023'
+__version__ = '1.1.2'
+__date__ = 'January 29, 2023'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -432,7 +433,7 @@ class Plugin(indigo.PluginBase):
     needed to manage multiple door opener devices.  It is segmented into four
     parts for readability:
 
-    I   STANDARD INDIGO INITILIZATION, STARTUP, AND RUN/STOP METHODS,
+    I   STANDARD INDIGO INITIALIZATION, STARTUP, AND RUN/STOP METHODS,
     II  CONFIG UI VALIDATION METHODS,
     III CONFIG UI CALLBACK METHODS, and
     IV  ACTION CALLBACK METHODS
@@ -672,7 +673,7 @@ class Plugin(indigo.PluginBase):
                     # Create monitored device event name and optionally log it.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    if self.pluginPrefs['logMonitoredDeviceEvents']:
+                    if self.pluginPrefs.get('logMonitoredDeviceEvents'):
                         LOG.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
@@ -694,7 +695,8 @@ class Plugin(indigo.PluginBase):
 
                             # Optionally log timer expired events.
 
-                            if self.pluginPrefs['logMonitoredDeviceEvents']:
+                            if self.pluginPrefs.get(
+                                    'logMonitoredDeviceEvents'):
                                 LOG.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Ignore events that can't affect the door state.
