@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.1.2
-    DATE:  January 29, 2023
+ VERSION:  1.1.3
+    DATE:  March 19, 2023
 
 
 UNLICENSE:
@@ -119,7 +119,7 @@ v0.8.0   4/30/2022  Revise the door state transition processing to use a state
                     in a DOOR_STATE_TRANSITIONS dictionary that controls a
                     table-driven state tracking algorithm.  The transitions in
                     the dictionary are numbered to cross-reference them to
-                    the state transition diagram.  Also, LOG warning messages
+                    the state transition diagram.  Also, log warning messages
                     for monitored device state changes that are inconsistent
                     with the new state transition model.
 v0.9.0   5/31/2022  (1) Add a new monitored device called an activation sensor
@@ -208,6 +208,7 @@ v1.1.1   1/22/2023  (1) Update the wiki to document the changes introduced in
                     (6) Change the validation of the vibration sensor reset
                     delay time to check for an integer between 0 and 4 seconds.
 v1.1.2   1/29/2023  Fix "key not found in dictionary" initialization error.
+v1.1.3   3/19/2023  Change the logger global name from "LOG" to "L".
 """
 ###############################################################################
 #                                                                             #
@@ -216,8 +217,8 @@ v1.1.2   1/29/2023  Fix "key not found in dictionary" initialization error.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.1.2'
-__date__ = 'January 29, 2023'
+__version__ = '1.1.3'
+__date__ = 'March 19, 2023'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -227,7 +228,7 @@ import indigo
 
 # Globals:
 
-LOG = getLogger('Plugin')  # Standard logger.
+L = getLogger('Plugin')  # Standard logger.
 TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
 TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
 
@@ -410,13 +411,13 @@ class DoorStateTrack:
 
     def log(self):
         """
-        LOG the track if requested and initialize a new track with the last
+        Log the track if requested and initialize a new track with the last
         door state.
         """
         if self._plugin.pluginPrefs['logDoorStateTracks']:
-            LOG.info('"%s" config: %s| track: %s', self._dev.name,
-                     self._dev.pluginProps['mDevConfig'],
-                     self._doorStateTrack)
+            L.info('"%s" config: %s| track: %s', self._dev.name,
+                   self._dev.pluginProps['mDevConfig'],
+                   self._doorStateTrack)
 
         self._doorStateTrack = DOOR_STATUS[self._lastState].upper()
 
@@ -517,7 +518,7 @@ class Plugin(indigo.PluginBase):
         """
         Delete the Plugin instance object.
         """
-        LOG.threaddebug('Plugin.__del__ called')
+        L.threaddebug('Plugin.__del__ called')
         indigo.PluginBase.__del__(self)
 
     @staticmethod
@@ -544,7 +545,7 @@ class Plugin(indigo.PluginBase):
         dev.updateStateImageOnServer(image)
         dev.updateStateOnServer('doorStatus', doorStatus)
         dev.updateStateOnServer('doorState', doorState)
-        LOG.info('"%s" update to %s', dev.name, doorStatus.upper())
+        L.info('"%s" update to %s', dev.name, doorStatus.upper())
 
     def startup(self):
         """
@@ -552,16 +553,16 @@ class Plugin(indigo.PluginBase):
         """
         self.indigo_log_handler.setLevel(NOTSET)
         level = self.pluginPrefs['loggingLevel']
-        LOG.setLevel('THREADDEBUG' if level == 'THREAD' else level)
-        LOG.threaddebug('Plugin.startup called')
-        LOG.debug(self.pluginPrefs)
+        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
+        L.threaddebug('Plugin.startup called')
+        L.debug(self.pluginPrefs)
         indigo.devices.subscribeToChanges()
 
     def deviceStartComm(self, dev):
         """
         Initialize door opener devices.
         """
-        LOG.threaddebug('Plugin.deviceStartComm called "%s"', dev.name)
+        L.threaddebug('Plugin.deviceStartComm called "%s"', dev.name)
 
         # Create a new monitored devices dictionary entry for this opener
         # device.
@@ -584,14 +585,14 @@ class Plugin(indigo.PluginBase):
 
                 mDev = indigo.devices.get(mDevName)
                 if not mDev:
-                    LOG.error('"%s" not in devices dictionary', mDevName)
+                    L.error('"%s" not in devices dictionary', mDevName)
                     errors = True
                     continue
                 mDevStateKey = mDevType + 'State'
                 mDevState = dev.pluginProps[mDevStateKey]
                 if mDevState not in mDev.states:
-                    LOG.error('"%s" state %s not in states dictionary',
-                              mDevName, mDevState)
+                    L.error('"%s" state %s not in states dictionary',
+                            mDevName, mDevState)
                     errors = True
                     continue
 
@@ -607,12 +608,12 @@ class Plugin(indigo.PluginBase):
                 invert = dev.pluginProps.get(mDevType + 'Invert', False)
                 states[mDevType] = mDev.states[mDevState] ^ invert
 
-        LOG.debug(self._monitoredDevices[devId])
-        LOG.debug(states)
+        L.debug(self._monitoredDevices[devId])
+        L.debug(states)
 
         if errors:  # Abort deviceStartComm if there were errors.
             self.deviceStopComm(dev)
-            LOG.error('"%s" init error(s): check/run ConfigUi', dev.name)
+            L.error('"%s" init error(s): check/run ConfigUi', dev.name)
             dev.setErrorStateOnServer('init err')  # Set error state.
             return
 
@@ -635,7 +636,7 @@ class Plugin(indigo.PluginBase):
         """
         Retire door opener devices.
         """
-        LOG.threaddebug('Plugin.deviceStopComm called "%s"', dev.name)
+        L.threaddebug('Plugin.deviceStopComm called "%s"', dev.name)
 
         # Delete the entry in the monitored devices dictionary, if present.
 
@@ -674,7 +675,7 @@ class Plugin(indigo.PluginBase):
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
                     if self.pluginPrefs.get('logMonitoredDeviceEvents'):
-                        LOG.debug('"%s" %s', dev.name, mDevEvent)
+                        L.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
 
@@ -697,7 +698,7 @@ class Plugin(indigo.PluginBase):
 
                             if self.pluginPrefs.get(
                                     'logMonitoredDeviceEvents'):
-                                LOG.debug('"%s" %s', dev.name, mDevEvent)
+                                L.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Ignore events that can't affect the door state.
 
@@ -712,9 +713,9 @@ class Plugin(indigo.PluginBase):
                         newDoorState = (DOOR_STATE_TRANSITIONS
                                         [doorState][mDevEvent])
                     except KeyError:  # Ignore event if no legal transition.
-                        LOG.warning('"%s" mDevEvent %s is inconsistent '
-                                    'with door state %s', dev.name, mDevEvent,
-                                    DOOR_STATUS[doorState].upper())
+                        L.warning('"%s" mDevEvent %s is inconsistent with '
+                                  'door state %s', dev.name, mDevEvent,
+                                  DOOR_STATUS[doorState].upper())
                         continue
 
                     self._doorStateTracks[devId].update(mDevEvent,
@@ -761,8 +762,8 @@ class Plugin(indigo.PluginBase):
                                                     deviceId=ttDevId)
 
                         except Exception as errorMessage:  # tt or vs error.
-                            LOG.error('"%s" run error: %s; check/run ConfigUi',
-                                      dev.name, errorMessage)
+                            L.error('"%s" run error: %s; check/run ConfigUi',
+                                    dev.name, errorMessage)
                             dev.setErrorStateOnServer('run err')  # Set error.
                             errorDevices.append(dev)  # Update error devices.
                             break  # Break from inner mDevState loop.
@@ -796,9 +797,9 @@ class Plugin(indigo.PluginBase):
         Set the THREADDEBUG logging level if the user changes the pluginPrefs
         after startup.
         """
-        LOG.threaddebug('Plugin.validatePrefsConfigUi called')
+        L.threaddebug('Plugin.validatePrefsConfigUi called')
         level = valuesDict['loggingLevel']
-        LOG.setLevel('THREADDEBUG' if level == 'THREAD' else level)
+        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
         return True
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
@@ -814,8 +815,8 @@ class Plugin(indigo.PluginBase):
         """
         dev = indigo.devices[devId]
         devName = 'devId%s' % devId if dev.name == 'new device' else dev.name
-        LOG.threaddebug('Plugin.validateDeviceConfigUi called "%s"', devName)
-        LOG.debug(valuesDict)
+        L.threaddebug('Plugin.validateDeviceConfigUi called "%s"', devName)
+        L.debug(valuesDict)
         errors = indigo.Dict()
 
         # Validate open/close travel time entry.
@@ -852,7 +853,7 @@ class Plugin(indigo.PluginBase):
                                      deviceTypeId='timer',
                                      props=props,
                                      folder='doors')
-                LOG.info('"%s" new timer device created', tt)
+                L.info('"%s" new timer device created', tt)
         except Exception as errorMessage:
             error = '"%s" travel timer init failed: %s' % (tt, errorMessage)
             valuesDict['tTime'] = error
@@ -934,7 +935,7 @@ class Plugin(indigo.PluginBase):
                 if not self._monitoredDevices[devId].get(mDevId):
                     self._monitoredDevices[devId][mDevId] = {}
                 self._monitoredDevices[devId][mDevId][mDevState] = mDevType
-                LOG.debug(self._monitoredDevices[devId])
+                L.debug(self._monitoredDevices[devId])
 
         # Return with or without errors.
 
@@ -973,7 +974,7 @@ class Plugin(indigo.PluginBase):
         Also include a "none" element to enable the removal of an existing
         selection.
         """
-        LOG.threaddebug('Plugin.getSSensorDeviceList called')
+        L.threaddebug('Plugin.getSSensorDeviceList called')
         sensors = []
         for dev in indigo.devices:
             if dev.deviceTypeId in SENSOR_DEVICE_TYPE_IDs:
@@ -990,7 +991,7 @@ class Plugin(indigo.PluginBase):
         Also include a "none" element to enable the removal of an existing
         selection.
         """
-        LOG.threaddebug('Plugin.getRelayDeviceList called')
+        L.threaddebug('Plugin.getRelayDeviceList called')
         relays = []
         for dev in indigo.devices:
             if dev.deviceTypeId in RELAY_DEVICE_TYPE_IDs:
@@ -1007,7 +1008,7 @@ class Plugin(indigo.PluginBase):
         Set the csConfig hidden checkbox to control the visibility of the
         remaining cs fields based on the device name selection.
         """
-        LOG.threaddebug('Plugin.setCsConfig called')
+        L.threaddebug('Plugin.setCsConfig called')
         cs = '' if valuesDict['cs'] == 'none' else valuesDict['cs']
         valuesDict['cs'] = cs
         valuesDict['csConfig'] = 'true' if cs else 'false'
@@ -1023,7 +1024,7 @@ class Plugin(indigo.PluginBase):
         Set the osConfig hidden checkbox to control the visibility of the
         remaining os fields based on the device name selection.
         """
-        LOG.threaddebug('Plugin.setOsConfig called')
+        L.threaddebug('Plugin.setOsConfig called')
         os = '' if valuesDict['os'] == 'none' else valuesDict['os']
         valuesDict['os'] = os
         valuesDict['osConfig'] = 'true' if os else 'false'
@@ -1039,7 +1040,7 @@ class Plugin(indigo.PluginBase):
         Set the vsConfig hidden checkbox to control the visibility of the
         remaining vs fields based on the device name selection.
         """
-        LOG.threaddebug('Plugin.setVsConfig called')
+        L.threaddebug('Plugin.setVsConfig called')
         vs = '' if valuesDict['vs'] == 'none' else valuesDict['vs']
         valuesDict['vs'] = vs
         valuesDict['vsConfig'] = 'true' if vs else 'false'
@@ -1055,7 +1056,7 @@ class Plugin(indigo.PluginBase):
         Set the arConfig hidden checkbox to control the visibility of the
         remaining ar fields based on the device name selection.
         """
-        LOG.threaddebug('Plugin.setArConfig called')
+        L.threaddebug('Plugin.setArConfig called')
         ar = '' if valuesDict['ar'] == 'none' else valuesDict['ar']
         valuesDict['ar'] = ar
         valuesDict['arConfig'] = 'true' if ar else 'false'
@@ -1091,7 +1092,7 @@ class Plugin(indigo.PluginBase):
         AR_CLOSURE_TIME.  Use special plugin actions for EasyDAQ relay devices;
         otherwise use the standard Indigo device turnOn method.
         """
-        LOG.threaddebug('Plugin._toggleActivationRelay called "%s"', dev.name)
+        L.threaddebug('Plugin._toggleActivationRelay called "%s"', dev.name)
         ar = dev.pluginProps.get('ar')
         if ar:
             arDev = indigo.devices[ar]
@@ -1107,7 +1108,7 @@ class Plugin(indigo.PluginBase):
                 indigo.device.turnOn(ar, duration=AR_CLOSURE_TIME)
         else:
             error = 'no activation relay specified; door action ignored.'
-            LOG.warning('"%s" %s', dev.name, error)
+            L.warning('"%s" %s', dev.name, error)
 
     def closeGarageDoor(self, pluginAction):
         """
@@ -1116,13 +1117,13 @@ class Plugin(indigo.PluginBase):
         a close command.
         """
         dev = indigo.devices[pluginAction.deviceId]
-        LOG.threaddebug('Plugin.closeGarageDoor called "%s"', dev.name)
+        L.threaddebug('Plugin.closeGarageDoor called "%s"', dev.name)
         if not dev.states['onOffState']:
             self._toggleActivationRelay(dev)
         else:
             error = ('attempt to toggle the garage door closed when it is '
                      'already closed; door action ignored.')
-            LOG.warning('"%s" %s', dev.name, error)
+            L.warning('"%s" %s', dev.name, error)
 
     def openGarageDoor(self, pluginAction):
         """
@@ -1130,20 +1131,20 @@ class Plugin(indigo.PluginBase):
         This prevents the inadvertent closing of the door with an open command.
         """
         dev = indigo.devices[pluginAction.deviceId]
-        LOG.threaddebug('Plugin.openGarageDoor called "%s"', dev.name)
+        L.threaddebug('Plugin.openGarageDoor called "%s"', dev.name)
         if dev.states['onOffState']:
             self._toggleActivationRelay(dev)
         else:
             error = ('attempt to toggle the garage door open when it is '
                      'not closed; door action ignored.')
-            LOG.warning('"%s" %s', dev.name, error)
+            L.warning('"%s" %s', dev.name, error)
 
     def toggleGarageDoor(self, pluginAction):
         """
         Toggle the activation relay with no state conditions.
         """
         dev = indigo.devices[pluginAction.deviceId]
-        LOG.threaddebug('Plugin.toggleGarageDoor called "%s"', dev.name)
+        L.threaddebug('Plugin.toggleGarageDoor called "%s"', dev.name)
         self._toggleActivationRelay(dev)
 
     def actionControlDevice(self, action, dev):
@@ -1156,14 +1157,14 @@ class Plugin(indigo.PluginBase):
         turnOn restriction was removed to allow the HomeKit Home application
         (via the HKB of HKLS plugin) to close the door from a stopped state.
         """
-        LOG.threaddebug('Plugin.actionControlDevice called "%s"', dev.name)
+        L.threaddebug('Plugin.actionControlDevice called "%s"', dev.name)
         if action.deviceAction == indigo.kDeviceAction.TurnOn:
             if not dev.states['onOffState']:  # Close if not already closed.
                 self._toggleActivationRelay(dev)
             else:
                 error = ('attempt to toggle the garage door open when it is '
                          'not closed; door action ignored.')
-                LOG.warning('"%s" %s', dev.name, error)
+                L.warning('"%s" %s', dev.name, error)
         elif action.deviceAction == indigo.kDeviceAction.TurnOff:
             self._toggleActivationRelay(dev)  # Allow opening anytime.
         elif action.deviceAction == indigo.kDeviceAction.Toggle:
@@ -1173,6 +1174,6 @@ class Plugin(indigo.PluginBase):
         """
         Implement the requestStatus command by logging the current door state.
         """
-        LOG.threaddebug('Plugin.actionControlUniversal called "%s"', dev.name)
+        L.threaddebug('Plugin.actionControlUniversal called "%s"', dev.name)
         if action.deviceAction == indigo.kUniversalAction.RequestStatus:
-            LOG.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())
+            L.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())
