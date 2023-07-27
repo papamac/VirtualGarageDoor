@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.1.3
-    DATE:  March 19, 2023
+ VERSION:  1.1.4
+    DATE:  July 26, 2023
 
 
 UNLICENSE:
@@ -209,6 +209,9 @@ v1.1.1   1/22/2023  (1) Update the wiki to document the changes introduced in
                     delay time to check for an integer between 0 and 4 seconds.
 v1.1.2   1/29/2023  Fix "key not found in dictionary" initialization error.
 v1.1.3   3/19/2023  Change the logger global name from "LOG" to "L".
+v1.1.4   7/26/2023  Add the pseudoRelay device type id to the
+                    genericSensorTypeIds.  This will allow Indigo virtual
+                    devices to be used as VGD sensor devices.
 """
 ###############################################################################
 #                                                                             #
@@ -217,8 +220,8 @@ v1.1.3   3/19/2023  Change the logger global name from "LOG" to "L".
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.1.3'
-__date__ = 'March 19, 2023'
+__version__ = '1.1.4'
+__date__ = 'July 26, 2023'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -336,7 +339,7 @@ genericRelayTypeIds =      ('digitalOutput',    'pseudoRelay',
                             'zwDimmerType',     'zwRelayType')
 genericSensorTypeIds =     ('alarmZone',        'contactSensor',
                             'digitalInput',     'masqSensor',
-                            'zwOnOffSensorType')
+                            'pseudoRelay',      'zwOnOffSensorType')
 
 RELAY_DEVICE_TYPE_IDs =    (easyDaqComboTypeIds + easyDaqRelayTypeIds
                             + shellyDirectRelayTypeIds + shellyMQTTRelayTypeIds

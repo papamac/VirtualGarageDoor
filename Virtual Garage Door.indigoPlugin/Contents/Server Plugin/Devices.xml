@@ -104,7 +104,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
             </Field>
 
             <Field id="ar" type="menu">
-                <Label>Activation Relay</Label>
+                <Label>Activation Relay:</Label>
                 <List class="self" method="getRelayDeviceList"
                       dynamicReload="yes"/>
                 <CallbackMethod>setArConfig</CallbackMethod>
