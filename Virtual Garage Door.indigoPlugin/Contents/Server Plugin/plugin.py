@@ -396,7 +396,7 @@ class DoorStateTrack:
 
     def update(self, mDevEvent, newDoorState):
         """
-        Add the current door state transitions to an existing track.
+        Add the current door state transition to an existing track.
         """
 
         # Compute the time since the last event.
@@ -511,15 +511,16 @@ class Plugin(indigo.PluginBase):
 
         self._doorStateTracks = {devId: track}
         where:
-            devId   is the device id of the opener device.
-            track   is an instance object of the DoorStateTrack class
-                    (see above).
+            devId       is the device id of the opener device.
+            track       is an instance object of the DoorStateTrack class
+                        (see above).
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
 
         self._monitoredDevices = {}  # Monitored device properties by devId.
         self._doorStateTracks = {}   # Door state track objects by devId.
+        self._priorMDevEvents = {}   # Prior monitored device event by devId.
 
     def __del__(self):
         """
@@ -631,9 +632,10 @@ class Plugin(indigo.PluginBase):
         csState = states.get('cs')
         osState = states.get('os')
         doorState = OPEN if not csState and osState else CLOSED
-        self._doorStateTracks[devId] = DoorStateTrack(self, dev, doorState)
         if doorState != dev.states.get('doorState'):
             self._updateDoorStates(dev, doorState)
+        self._doorStateTracks[devId] = DoorStateTrack(self, dev, doorState)
+        self._priorMDevEvents[devId] = None
 
         # Clear error state, if any.
 
@@ -657,7 +659,6 @@ class Plugin(indigo.PluginBase):
         """
         indigo.PluginBase.deviceUpdated(self, oldDev, newDev)
         errorDevices = []
-        priorEvent = {}
         for devId in self._monitoredDevices:
             if oldDev.id in self._monitoredDevices[devId]:
                 dev = indigo.devices[devId]
@@ -685,10 +686,10 @@ class Plugin(indigo.PluginBase):
                     # Check for multiple consecutive reports for the same
                     # monitored device event.
 
-                    if mDevEvent == priorEvent.get(devId):
-                        L.warning('"%s" multiple consecutive reports for the ',
-                                  'same event %s', dev.name, mDevEvent)
-                        priorEvent[devId] = mDevEvent
+                    if mDevEvent == self._priorMDevEvents[devId]:
+                        L.debug('"%s" multiple consecutive reports for the ',
+                                'same event %s', dev.name, mDevEvent)
+                        self._priorMDevEvents[devId] = mDevEvent
                         continue  # Ignore multiple report.
 
                     # Check for expired timer.
@@ -728,8 +729,8 @@ class Plugin(indigo.PluginBase):
                                   DOOR_STATUS[doorState].upper())
                         continue
 
-                    self._doorStateTracks[devId].update(mDevEvent,
-                                                        newDoorState)
+                    track = self._doorStateTracks[devId]
+                    track.update(mDevEvent, newDoorState)
 
                     if newDoorState != doorState:  # Door state has changed.
 
@@ -741,8 +742,7 @@ class Plugin(indigo.PluginBase):
 
                         if newDoorState is REVERSING:
                             newDoorState = OPENING
-                            self._doorStateTracks[devId].update('null',
-                                                                newDoorState)
+                            track.update('null', newDoorState)
                             self._updateDoorStates(dev, newDoorState)
 
                         # Perform new state actions.
@@ -754,7 +754,7 @@ class Plugin(indigo.PluginBase):
                                 # Log/reset the existing state track, stop
                                 # the timer, and reset the vibration sensor.
 
-                                self._doorStateTracks[devId].log()
+                                track.log()
 
                                 TIMER.executeAction('stopTimer',
                                                     deviceId=ttDevId)
