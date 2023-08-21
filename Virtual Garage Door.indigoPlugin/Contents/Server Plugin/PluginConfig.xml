@@ -44,18 +44,6 @@ v1.1.1   1/22/2023  Add logDoorStateTracks checkbox.
         <Label>Log debug messages and higher</Label>
     </Field>
 
-    <Field id="logMonitoredDeviceEventsSpacer" type="label"
-           visibleBindingId="loggingLevel"
-           visibleBindingValue="(THREAD, DEBUG)">
-        <Label> </Label>
-    </Field>
-
-    <Field id="logMonitoredDeviceEvents" type="checkbox" defaultValue="false"
-           visibleBindingId="loggingLevel"
-           visibleBindingValue="(THREAD, DEBUG)">
-        <Label>Log Monitored Device Events</Label>
-    </Field>
-
     <Field id="info" type="label" alignWithControl="true" fontColor="darkgray"
            visibleBindingId="loggingLevel" visibleBindingValue="INFO">
         <Label>Log info messages and higher</Label>

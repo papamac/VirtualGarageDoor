@@ -15,8 +15,8 @@ FUNCTION:  Monitors multiple Indigo devices to track garage door motion
            device.  Provides actions to open, close and toggle the garage door.
    USAGE:  plugin.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.1.4
-    DATE:  July 26, 2023
+ VERSION:  1.1.5
+    DATE:  August 21, 2023
 
 
 UNLICENSE:
@@ -212,6 +212,10 @@ v1.1.3   3/19/2023  Change the logger global name from "LOG" to "L".
 v1.1.4   7/26/2023  Add the pseudoRelay device type id to the
                     genericSensorTypeIds.  This will allow Indigo virtual
                     devices to be used as VGD sensor devices.
+v1.1.5   8/21/2023  Ignore multiple consecutive reports for the same monitored
+                    device event.  Eliminate the logMonitoredDeviceEvents
+                    checkbox in the pluginPrefs configUi.  These events should
+                    always be logged in the debug logging level.
 """
 ###############################################################################
 #                                                                             #
@@ -220,8 +224,8 @@ v1.1.4   7/26/2023  Add the pseudoRelay device type id to the
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.1.4'
-__date__ = 'July 26, 2023'
+__version__ = '1.1.5'
+__date__ = 'August 21, 2023'
 
 from datetime import datetime
 from logging import getLogger, NOTSET
@@ -653,6 +657,7 @@ class Plugin(indigo.PluginBase):
         """
         indigo.PluginBase.deviceUpdated(self, oldDev, newDev)
         errorDevices = []
+        priorEvent = {}
         for devId in self._monitoredDevices:
             if oldDev.id in self._monitoredDevices[devId]:
                 dev = indigo.devices[devId]
@@ -662,7 +667,7 @@ class Plugin(indigo.PluginBase):
                     # Get the onOffStates for both the old (unchanged) device
                     # object and the new (updated) device object.  Invert the
                     # states if specified in the pluginProps.  Ignore the
-                    # device object update if the onOffState is unchanged.
+                    # device object update if the mdevState is unchanged.
 
                     mDevType = (self._monitoredDevices
                                 [devId][mDevId][mDevState])
@@ -670,18 +675,25 @@ class Plugin(indigo.PluginBase):
                     oldState = oldDev.states[mDevState] ^ invert
                     newState = newDev.states[mDevState] ^ invert
                     if oldState == newState:
-                        continue
+                        continue  # Ignore it.
 
-                    doorState = dev.states['doorState']
-
-                    # Create monitored device event name and optionally log it.
+                    # Create monitored device event name and log it for debug.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    if self.pluginPrefs.get('logMonitoredDeviceEvents'):
-                        L.debug('"%s" %s', dev.name, mDevEvent)
+                    L.debug('"%s" %s', dev.name, mDevEvent)
+
+                    # Check for multiple consecutive reports for the same
+                    # monitored device event.
+
+                    if mDevEvent == priorEvent.get(devId):
+                        L.warning('"%s" multiple consecutive reports for the ',
+                                  'same event %s', dev.name, mDevEvent)
+                        priorEvent[devId] = mDevEvent
+                        continue  # Ignore multiple report.
 
                     # Check for expired timer.
 
+                    doorState = dev.states['doorState']
                     if mDevEvent == 'tt-off':  # Timer is inactive.
                         if newDev.states['timeLeftSeconds'] == '0':
                             mDevEvent = 'tt-exp'  # Timer has expired.
@@ -696,12 +708,7 @@ class Plugin(indigo.PluginBase):
                             elif doorState is CLOSING:
                                 cs = dev.pluginProps.get('cs')
                                 mDevEvent += '&!cs' if not cs else ''
-
-                            # Optionally log timer expired events.
-
-                            if self.pluginPrefs.get(
-                                    'logMonitoredDeviceEvents'):
-                                L.debug('"%s" %s', dev.name, mDevEvent)
+                            L.debug('"%s" %s', dev.name, mDevEvent)
 
                     # Ignore events that can't affect the door state.
 
