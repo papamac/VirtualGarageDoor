@@ -9,12 +9,11 @@ displayed in the Indigo Home window and are available for use by scripts,
 action groups, control pages, triggers, and other plugins. The VGD plugin also
 provides actions to open, close and toggle the garage door.
 
-VGD opener devices work with Apple HomeKit by using the HomeKit Bridge (HKB)
-plugin or the HomeKitLink Siri (HKLS) plugin. After installation and setup of
-either plugin, you can use the Apple Home application to monitor and control
-your garage doors.  With any Apple device, you can also monitor and control
-your doors verbally using Siri. Say "Hey Siri, check the garage door status" or
-"Hey Siri, open the garage main door".
+VGD opener devices work with Apple HomeKit by using the HomeKitLink Siri (HKLS)
+plugin. After installation and setup, you can use the Apple Home application to
+monitor and control your garage doors.  With any Apple device, you can also
+monitor and control your doors verbally using Siri. Say "Siri, check the garage
+door status" or "Siri, open the garage main door".
 
 The VGD plugin can monitor a wide variety of optional devices that are already
 available in Indigo as supported devices or through existing 3rd party plugins.
@@ -35,8 +34,8 @@ Door plugin:
 
 | Requirement            | Description                                                                                                                                |
 |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| Minimum Indigo Version | 2022.1                                                                                                                                     |
-| Python Library (API)   | Official (3.X)                                                                                                                             |
+| Indigo Version         | 2022.1.0 or higher                                                                                                                         |
+| Python Library (API)   | Official (3.x)                                                                                                                             |
 | Requires Local Network | Yes                                                                                                                                        |
 | Requires Internet      | Yes                                                                                                                                        |
 | Hardware Interfaces    | Various z-wave / custom devices from the [supported devices](https://github.com/papamac/VirtualGarageDoor/wiki/2.-Supported-Devices) list. |

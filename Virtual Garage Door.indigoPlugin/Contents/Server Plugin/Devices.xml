@@ -1,16 +1,22 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers in Indigo
-  MODULE:  Devices.xml
+###############################################################################
+#                                                                             #
+#                      Virtual Garage Door Indigo Plugin                      #
+#                              FILE Devices.xml                               #
+#                                                                             #
+###############################################################################
+
+  BUNDLE:  Monitoring and control of conventional garage door openers in Indigo
+           (Virtual Garage Door.indigoPlugin
+    FILE:  Devices.xml
    TITLE:  Define and initialize the Virtual Garage Door device objects
 FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
-   USAGE:  Devices.xml is read by the indigo server during plugin startup.
+   USAGE:  Devices.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
  VERSION:  1.1.0
     DATE:  November 9, 2022
-
 
 CHANGE LOG:
 
@@ -107,7 +113,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label>Activation Relay:</Label>
                 <List class="self" method="getRelayDeviceList"
                       dynamicReload="yes"/>
-                <CallbackMethod>setArConfig</CallbackMethod>
+                <CallbackMethod>setMDevConfig</CallbackMethod>
             </Field>
 
             <Field id="arState" type="textfield" defaultValue="onOffState"
@@ -140,7 +146,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label>Closed Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
-                <CallbackMethod>setCsConfig</CallbackMethod>
+                <CallbackMethod>setMDevConfig</CallbackMethod>
             </Field>
 
             <Field id="csState" type="textfield" defaultValue="onOffState"
@@ -178,7 +184,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label>Open Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
-                <CallbackMethod>setOsConfig</CallbackMethod>
+                <CallbackMethod>setMDevConfig</CallbackMethod>
             </Field>
 
             <Field id="osState" type="textfield" defaultValue="onOffState"
@@ -216,7 +222,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label>Vibration Sensor:</Label>
                 <List class="self" method="getSensorDeviceList"
                       dynamicReload="yes"/>
-                <CallbackMethod>setVsConfig</CallbackMethod>
+                <CallbackMethod>setMDevConfig</CallbackMethod>
             </Field>
 
             <Field id="vsState" type="textfield" defaultValue="onOffState"

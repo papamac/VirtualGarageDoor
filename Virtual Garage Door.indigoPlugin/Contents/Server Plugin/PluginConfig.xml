@@ -1,22 +1,29 @@
 <?xml version="1.0"?>
 <!--
- PACKAGE:  Virtual Garage Door - Monitoring and control of conventional garage
-           door openers in Indigo
-  MODULE:  PluginConfig.xml
+###############################################################################
+#                                                                             #
+#                      Virtual Garage Door Indigo Plugin                      #
+#                           FILE PluginConfig.xml                             #
+#                                                                             #
+###############################################################################
+
+  BUNDLE:  Monitoring and control of conventional garage door openers in Indigo
+           (Virtual Garage Door.indigoPlugin
+    FILE:  PluginConfig.xml
    TITLE:  Define and initialize Virtual Garage Door logging options
 FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,
            specifies GUI labels, and sets default values.
-   USAGE:  PluginConfig.xml is read by the indigo server during plugin startup.
+   USAGE:  PluginConfig.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
  VERSION:  1.1.1
     DATE:  January 20, 2023
-
 
 CHANGE LOG:
 
 v0.5.0  12/27/2020  Initial beta version.
 v0.9.5   7/10/2022  Add logMonitoredDeviceEvents checkbox.
 v1.1.1   1/22/2023  Add logDoorStateTracks checkbox.
+v1.1.5   8/21/2023  Eliminate the logMonitoredDeviceEvents checkbox.
 -->
 
 <PluginConfig>

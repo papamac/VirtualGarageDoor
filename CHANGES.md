@@ -8,6 +8,47 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.2.0, September 24, 2023
+
+### Refactoring, documentation, and a few minor improvements
+
+#### 1. Refactoring to improve code readability and maintainability:
+
+(1) Divide the **_Plugin_** class into two classes: **_Plugin_** which 
+encapsulates the Indigo device behavior and **_VirtualGarageDoor_** which
+encapsulates the detailed door behavior.  The **_VirtualGarageDoor_** class has
+instances for each VGD plugin device.
+
+(2) Move startup functions from the **_startup_** method into the **_init_**
+method. Remove the **_startup_** method override and use the superclass method.
+Remove the do nothing **_del_** method and use the superclass method.
+
+(3) Consolidate multiple ConfigUi callback methods (one for each monitored
+device type) into a single method (**_setMDevConfig_**) that works for all
+types.
+
+#### 2. Documentation:
+
+Update module headers, add/update class/method docstrings, and update the wiki.
+Of particular note is the revised wiki Section 3.1.5 Apple HomeKit Integration.
+
+#### 3. A few minor improvements:
+
+(1) Add the **_pseudoRelay_** device type id to the genericSensorTypeIds.  This
+will allow Indigo virtual devices to be used as VGD sensor devices.
+
+(2) Ignore multiple consecutive reports for the same monitored device event
+within a 1 second time interval. Log a warning mesage when duplicates are
+detected. This change will minimize the impact of sensor errors and monitored
+device configuration errors. It will facilitate problem diagnosis and
+resolution.
+
+(3) Use monitored device ids to initialize opener devices instead of the
+monitored device names.  This allows monitored devices to be renamed if desired
+without immediately reconfiguring.
+                    
+                    
+
 ## GitHub Release v1.1.2, January 29, 2023
 
 ### Fix "key not found in dictionary" error
