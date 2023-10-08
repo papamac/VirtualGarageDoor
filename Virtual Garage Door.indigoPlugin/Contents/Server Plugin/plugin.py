@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.2.0
-    DATE:  September 24, 2023
+ VERSION:  1.2.1
+    DATE:  October 8, 2023
 
 UNLICENSE:
 
@@ -240,8 +240,8 @@ v1.2.1   10/8/2023  Move the thread debug logging setup from the __init__
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.2.0'
-__date__ = 'September 24, 2023'
+__version__ = '1.2.1'
+__date__ = 'October 8, 2023'
 
 import indigo
 
