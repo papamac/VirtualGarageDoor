@@ -227,6 +227,11 @@ v1.2.0   9/24/2023  (1) Divide the Plugin class into two classes: Plugin which
                     each monitored device type) into a single method
                     (setMDevConfig) that works for all types.
                     (6) Add method docstrings for most methods.
+v1.2.1   10/8/2023  Move the thread debug logging setup from the __init__
+                    method back to the startup method.  Apparently, pluginPrefs
+                    are not copied from the xml file prior to calling __init__,
+                    causing a key error when starting the plugin for the first
+                    time. This change should fix the error.
 """
 ###############################################################################
 #                                                                             #
@@ -329,6 +334,7 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #  def __init__(self, pluginId, pluginDisplayName,                        #
     #               pluginVersion, pluginPrefs)                               #
+    #  def startup(self)                                                      #
     #  def deviceStartComm(self, dev)                                         #
     #  def deviceStopComm(self, dev)                                          #
     #  def deviceUpdated(self, oldDev, newDev)                                #
@@ -338,14 +344,13 @@ class Plugin(indigo.PluginBase):
     def __init__(self, pluginId, pluginDisplayName,
                  pluginVersion, pluginPrefs):
         """
-        Initialize internal instance attributes, setup THREADDEBUG logging, and
-        subscribe to device state changes.
+        Define the two local dictionaries needed by plugin methods: the
+        monitored devices dictionary and the door state tracks dictionary.
+        Set these to empty dictionaries to be initialized later by the
+        deviceStartComm method.
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
-
-        # Define the internal monitored device dictionary and the virtual
-        # garage door dictionary for use by plugin methods.
 
         # The monitored devices dictionary is a compound dictionary that stores
         # the device id's and properties of devices that are monitored by the
@@ -383,12 +388,14 @@ class Plugin(indigo.PluginBase):
 
         self._virtualGarageDoors = {}
 
-        # Setup THREADDEBUG logging and subscribe to device state changes.
-
+    def startup(self):
+        """
+        Setup THREADDEBUG logging and subscribe to device state changes.
+        """
         self.indigo_log_handler.setLevel(NOTSET)
-        level = pluginPrefs['loggingLevel']
+        level = self.pluginPrefs['loggingLevel']
         L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
-        L.threaddebug('__init__ called')
+        L.threaddebug('startup called')
         L.debug(self.pluginPrefs)
         indigo.devices.subscribeToChanges()
 
