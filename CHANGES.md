@@ -8,6 +8,15 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.2.1, October 8, 2023
+
+### Fix key error in first time initialization
+
+In v1.2.0 the key **_loggingLevel_** is not found in the pluginPrefs dictionary
+after the plugin is loaded for the first time. v1.2.1 moves this reference from
+the **_init_** method to the **_startup_** method to allow the Indigo server to
+initialize the pluginPrefs dictionary from the PluginConfig.xml file.
+
 ## GitHub Release v1.2.0, September 24, 2023
 
 ### Refactoring, documentation, and a few minor improvements
@@ -16,7 +25,7 @@ post them on papamac's
 
 (1) Divide the **_Plugin_** class into two classes: **_Plugin_** which 
 encapsulates the Indigo device behavior and **_VirtualGarageDoor_** which
-encapsulates the detailed door behavior.  The **_VirtualGarageDoor_** class has
+encapsulates the detailed door behavior. The **_VirtualGarageDoor_** class has
 instances for each VGD plugin device.
 
 (2) Move startup functions from the **_startup_** method into the **_init_**
