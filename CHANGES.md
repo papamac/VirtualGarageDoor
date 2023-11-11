@@ -8,6 +8,18 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.2.2, November 10, 2023
+
+### Fix key error in first time initialization
+
+The bug fix in v1.2.1 doesn't work. It erroneously assumes that the Indigo
+server initializes the pluginPrefs directly from the PluginConfig.xml file.  It
+does not; it loads pluginPrefs from a different preferences file written by a
+prior plugin execution. For a true first time execution (with no prior file),
+the pluginPrefs are still not initialized properly. The replacement fix in this
+version assigns the default **_INFO_** loggging level in pluginPrefs when there
+is no prior file. It works and has been tested thoroughly.
+
 ## GitHub Release v1.2.1, October 8, 2023
 
 ### Fix key error in first time initialization

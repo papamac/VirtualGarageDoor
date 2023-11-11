@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.2.1
-    DATE:  October 8, 2023
+ VERSION:  1.2.2
+    DATE:  November 10, 2023
 
 UNLICENSE:
 
@@ -232,16 +232,26 @@ v1.2.1   10/8/2023  Move the thread debug logging setup from the __init__
                     are not copied from the xml file prior to calling __init__,
                     causing a key error when starting the plugin for the first
                     time. This change should fix the error.
-"""
+v1.2.2  11/10/2023  The bug fix in v1.2.1 doesn't work. It erroneously assumes
+                    that the Indigo server initializes the pluginPrefs
+                    directly from the PluginConfig.xml file. It does not; it
+                    loads pluginPrefs from a different preferences file written
+                    by a prior plugin execution. For a true first time
+                    execution (with no prior file), the pluginPrefs are still
+                    not initialized properly.  The replacement fix in this
+                    version assigns a default INFO logging level in pluginPrefs
+                    when there is no prior file.  It then sets the logging
+                    level with this default value in the __init__ method.
+
 ###############################################################################
 #                                                                             #
 #                       DUNDERS, IMPORTS, AND GLOBALS                         #
 #                                                                             #
 ###############################################################################
-
+"""
 __author__ = 'papamac'
-__version__ = '1.2.1'
-__date__ = 'October 8, 2023'
+__version__ = '1.2.2'
+__date__ = 'November 10, 2023'
 
 import indigo
 
@@ -334,7 +344,6 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #  def __init__(self, pluginId, pluginDisplayName,                        #
     #               pluginVersion, pluginPrefs)                               #
-    #  def startup(self)                                                      #
     #  def deviceStartComm(self, dev)                                         #
     #  def deviceStopComm(self, dev)                                          #
     #  def deviceUpdated(self, oldDev, newDev)                                #
@@ -347,7 +356,8 @@ class Plugin(indigo.PluginBase):
         Define the two local dictionaries needed by plugin methods: the
         monitored devices dictionary and the door state tracks dictionary.
         Set these to empty dictionaries to be initialized later by the
-        deviceStartComm method.
+        deviceStartComm method.  Set the logging level and subscribe to device
+        changes.
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
@@ -383,19 +393,17 @@ class Plugin(indigo.PluginBase):
         # self._virtualGarageDoors = {devId: vgd}
         # where:
         #   devId    is the device id of the opener device.
-        #   vgd      is an instance object of the VirtualGarageDoor class in the
-        #                    virtualGarageDoor module.
+        #   vgd      is an instance object of the VirtualGarageDoor class in
+        #            the virtualGarageDoor module.
 
         self._virtualGarageDoors = {}
 
-    def startup(self):
-        """
-        Setup THREADDEBUG logging and subscribe to device state changes.
-        """
-        self.indigo_log_handler.setLevel(NOTSET)
-        level = self.pluginPrefs['loggingLevel']
-        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
-        L.threaddebug('startup called')
+        # Set logging level and subscribe to device state changes.
+
+        self.indigo_log_handler.setLevel(NOTSET)  # Eliminate handler level.
+        level = self.pluginPrefs.get('loggingLevel', 'INFO')
+        L.setLevel(level)
+        L.threaddebug('__init__ called')
         L.debug(self.pluginPrefs)
         indigo.devices.subscribeToChanges()
 
@@ -543,12 +551,11 @@ class Plugin(indigo.PluginBase):
     @staticmethod
     def validatePrefsConfigUi(valuesDict):
         """
-        Set the THREADDEBUG logging level if the user changes the pluginPrefs
-        after startup.
+        Set the logging level if the user requests a change after startup.
         """
         L.threaddebug('validatePrefsConfigUi called')
         level = valuesDict['loggingLevel']
-        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
+        L.setLevel(level)
         return True
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
