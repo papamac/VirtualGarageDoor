@@ -15,8 +15,8 @@ FUNCTION:  PluginConfig.xml defines the structure of the configuration GUI,
            specifies GUI labels, and sets default values.
    USAGE:  PluginConfig.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.2.2
-    DATE:  November 10, 2023
+ VERSION:  1.2.3
+    DATE:  November 12, 2023
 
 CHANGE LOG:
 
@@ -25,6 +25,8 @@ v0.9.5   7/10/2022  Add logMonitoredDeviceEvents checkbox.
 v1.1.1   1/22/2023  Add logDoorStateTracks checkbox.
 v1.1.5   8/21/2023  Eliminate the logMonitoredDeviceEvents checkbox.
 v1.2.2  11/10/2023  Change "THREAD" value to "THREADDEBUG".
+v1.2.3  11/12/2023  Change "THREADDEBUG" value back to "THREAD" to decouple
+                    visible binding for "THREAD" and "DEBUG" options.
 -->
 
 <PluginConfig>
@@ -32,7 +34,7 @@ v1.2.2  11/10/2023  Change "THREAD" value to "THREADDEBUG".
     <Field id="loggingLevel" type="menu" defaultValue="INFO">
         <Label>Logging Level:</Label>
         <List>
-            <Option value="THREADDEBUG">Thread Debug</Option>
+            <Option value="THREAD">Thread Debug</Option>
             <Option value="DEBUG">Debug</Option>
             <Option value="INFO">Info</Option>
             <Option value="WARNING">Warning</Option>
@@ -43,7 +45,7 @@ v1.2.2  11/10/2023  Change "THREAD" value to "THREADDEBUG".
 
     <Field id="threaddebug" type="label" alignWithControl="true"
            fontColor="darkgray"
-           visibleBindingId="loggingLevel" visibleBindingValue="THREADDEBUG">
+           visibleBindingId="loggingLevel" visibleBindingValue="THREAD">
         <Label>Log threaddebug messages and higher</Label>
     </Field>
 

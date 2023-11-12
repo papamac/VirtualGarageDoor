@@ -8,6 +8,13 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.2.3, November 12, 2023
+
+### Correct minor omission in v1.2.2
+
+Correct a minor omission in v1.2.2 that adds an incorrect note in the
+PluginConfig GUI.
+
 ## GitHub Release v1.2.2, November 10, 2023
 
 ### Fix key error in first time initialization

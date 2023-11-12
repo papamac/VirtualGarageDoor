@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.2.2
-    DATE:  November 10, 2023
+ VERSION:  1.2.3
+    DATE:  November 12, 2023
 
 UNLICENSE:
 
@@ -242,6 +242,8 @@ v1.2.2  11/10/2023  The bug fix in v1.2.1 doesn't work. It erroneously assumes
                     version assigns a default INFO logging level in pluginPrefs
                     when there is no prior file.  It then sets the logging
                     level with this default value in the __init__ method.
+v1.2.3  11/12/2023  Correct a minor omission in v1.2.2 that adds an incorrect
+                    note in the PluginConfig GUI.
 
 ###############################################################################
 #                                                                             #
@@ -250,8 +252,8 @@ v1.2.2  11/10/2023  The bug fix in v1.2.1 doesn't work. It erroneously assumes
 ###############################################################################
 """
 __author__ = 'papamac'
-__version__ = '1.2.2'
-__date__ = 'November 10, 2023'
+__version__ = '1.2.3'
+__date__ = 'November 12, 2023'
 
 import indigo
 
@@ -401,10 +403,10 @@ class Plugin(indigo.PluginBase):
         # Set logging level and subscribe to device state changes.
 
         self.indigo_log_handler.setLevel(NOTSET)  # Eliminate handler level.
-        level = self.pluginPrefs.get('loggingLevel', 'INFO')
-        L.setLevel(level)
+        level = pluginPrefs.get('loggingLevel', 'INFO')
+        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
         L.threaddebug('__init__ called')
-        L.debug(self.pluginPrefs)
+        L.debug(pluginPrefs)
         indigo.devices.subscribeToChanges()
 
     def deviceStartComm(self, dev):
@@ -555,7 +557,7 @@ class Plugin(indigo.PluginBase):
         """
         L.threaddebug('validatePrefsConfigUi called')
         level = valuesDict['loggingLevel']
-        L.setLevel(level)
+        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
         return True
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
