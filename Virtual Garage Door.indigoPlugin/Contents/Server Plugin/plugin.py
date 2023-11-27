@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.2.3
-    DATE:  November 12, 2023
+ VERSION:  1.2.4
+    DATE:  November 27, 2023
 
 UNLICENSE:
 
@@ -244,6 +244,12 @@ v1.2.2  11/10/2023  The bug fix in v1.2.1 doesn't work. It erroneously assumes
                     level with this default value in the __init__ method.
 v1.2.3  11/12/2023  Correct a minor omission in v1.2.2 that adds an incorrect
                     note in the PluginConfig GUI.
+v1.2.4  11/27/2023  (1) Correct a bug that causes messages from class
+                    VirtualGarageDoor to refer to an old opener door name if
+                    the name was changed by the user after initilization.
+                    (2) Improve the travel timer device management process.
+                    Standardize travel timer device names and restore them
+                    if they are changed.
 
 ###############################################################################
 #                                                                             #
@@ -252,8 +258,8 @@ v1.2.3  11/12/2023  Correct a minor omission in v1.2.2 that adds an incorrect
 ###############################################################################
 """
 __author__ = 'papamac'
-__version__ = '1.2.3'
-__date__ = 'November 12, 2023'
+__version__ = '1.2.4'
+__date__ = 'November 27, 2023'
 
 import indigo
 
@@ -346,6 +352,7 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #  def __init__(self, pluginId, pluginDisplayName,                        #
     #               pluginVersion, pluginPrefs)                               #
+    #  def didDeviceCommPropertyChange(oldDev, newDev)                        #
     #  def deviceStartComm(self, dev)                                         #
     #  def deviceStopComm(self, dev)                                          #
     #  def deviceUpdated(self, oldDev, newDev)                                #
@@ -371,20 +378,21 @@ class Plugin(indigo.PluginBase):
         # self._monitoredDevices = {devId: {mDevId: {mDevState: mDevType}}}
         # where:
         #   devId     is the device id of the opener device.
-        #   mDevId    is the device id of a timer, sensor, or relay device to be
+        #   mDevId    is the device id of a timer, sensor, or relay device to
         #             be monitored by the opener plugin to track the garage
         #             door state.  All monitored devices must have an on/off
         #             bool state defined in the devices xml by
         #             <ValueType boolType="OnOff">Boolean</ValueType>.
         #   mDevState is the on/off state name to be monitored by the plugin.
-        #             For most sensor devices it is typically "onOffState".  For
-        #             EasyDAQ devices it is "channelnn" where nn is the numeric
-        #             channel number.  For timers the state name is
+        #             For most sensor devices it is typically "onOffState".
+        #             For EasyDAQ devices it is "channelnn" where nn is the
+        #             numeric channel number.  For timers the state name is
         #             "timerStatus.active".
-        #   mDevType  is the type of the monitored device that allows the plugin
-        #             to interpret state changes. Types are "ar" (activation
-        #             relay), "cs" (closed sensor), "os" (open sensor), "vs"
-        #             (vibration sensor), and "tt" (travel timer).
+        #   mDevType  is the type of the monitored device that allows the
+        #             plugin to interpret state changes. Types are "ar"
+        #             (activation relay), "cs" (closed sensor), "os"
+        #             (open sensor), "vs" (vibration sensor), and "tt"
+        #             (travel timer).
 
         self._monitoredDevices = {}
 
@@ -409,6 +417,20 @@ class Plugin(indigo.PluginBase):
         L.debug(pluginPrefs)
         indigo.devices.subscribeToChanges()
 
+    @staticmethod
+    def didDeviceCommPropertyChange(oldDev, newDev):
+        """
+        By default, changing a device's plugin properties causes the Indigo
+        server to stop the device and then restart it.  This method forces a
+        stop/restart when either the pluginProps or the device name changes.
+        Stopping/restarting on a name change avoids complications in the
+        virtualGarageDoor VirtualGarageDoor class which uses the device name at
+        the time of initialization.
+        """
+        devChanged = (oldDev.pluginProps != newDev.pluginProps
+                      or oldDev.name != newDev.name)
+        return devChanged
+
     def deviceStartComm(self, dev):
         """
         Initialize door opener devices.  For each opener device, create a new
@@ -431,7 +453,7 @@ class Plugin(indigo.PluginBase):
         errors = False
         mDevStates = {}  # Initial states of monitored devices by device type.
         for mDevType in self.MONITORED_DEVICE_TYPES:
-            mDevId = dev.pluginProps.get(mDevType + 'DevId')
+            mDevId = dev.pluginProps[mDevType + 'DevId']
             if mDevId:  # Monitored device is selected in the ConfigUi.
                 mDevId = int(mDevId)
 
@@ -439,13 +461,14 @@ class Plugin(indigo.PluginBase):
 
                 mDev = indigo.devices.get(mDevId)
                 if not mDev:
-                    L.error('mDevId %s not in devices dictionary', mDevId)
+                    L.error('"%s" mDevId %s is not in devices dictionary',
+                            dev.name, mDevId)
                     errors = True
                     continue
                 mDevStateName = dev.pluginProps[mDevType + 'State']
                 if mDevStateName not in mDev.states:
-                    L.error('"%s" state %s not in states dictionary',
-                            mDev.name, mDevStateName)
+                    L.error('"%s" "%s" state %s is not in states dictionary',
+                            dev.name, mDev.name, mDevStateName)
                     errors = True
                     continue
 
@@ -562,15 +585,16 @@ class Plugin(indigo.PluginBase):
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
         """
-        Validate the GUI travel time.  If a timer device already exists for the
-        opener device, then configure the timer.  If not, create a new timer.
+        Validate the ConfigUi travel time.  Create a standard travel timer
+        device name based on the opener device name. Configure an existing or
+        new timer device using the ConfigUi travel time and the standard device
+        name.
 
-        Validate monitored device GUI entries and create the monitored device
-        dictionary.
+        Validate monitored device ConfigUi entries and create the monitored
+        device dictionary.
         """
         dev = indigo.devices[devId]
-        devName = 'devId%s' % devId if dev.name == 'new device' else dev.name
-        L.threaddebug('validateDeviceConfigUi called "%s"', devName)
+        L.threaddebug('validateDeviceConfigUi called "%s"', dev.name)
         L.debug(valuesDict)
         errors = indigo.Dict()
 
@@ -586,32 +610,68 @@ class Plugin(indigo.PluginBase):
             errors['tTime'] = error
             return False, valuesDict, errors
 
-        # Configure the timer.
+        # Derive a standard travel timer device name (tt) from the opener
+        # device name (dev.name):
+
+        #    Opener Device Name          Standard Travel Timer Device Name
+
+        #  new device x (default)   devIdnnnnnnnnnnn-travelTimer (nnnnnnnnnn = dev id)
+        #  device-opener            device-travelTimer
+        #  arbitraryDeviceName      arbitraryDeviceName-travelTimer
+
+        if dev.name.startswith('new device'):
+            tt = 'devId%s' % devId
+        elif dev.name.endswith('-opener'):
+            tt = dev.name[:-7]
+        else:
+            tt = dev.name
+        tt += '-travelTimer'
+        valuesDict['tt'] = tt
+        L.debug('"%s" standard travel timer device name is "%s"', dev.name, tt)
+
+        # Select and configure the tt device.
 
         props = dict(amount=tTime, amountType='seconds')
-        name = devName[:-7] if devName.endswith('-opener') else devName
-        tt = name + '-travelTimer'
-        valuesDict['tt'] = tt
-        ttDev = indigo.devices.get(tt)
-
+        description = 'Automatically generated timer for "%s"' % dev.name
         try:
-            if ttDev:  # Device exists, set the travel time.
-                ttDevId = ttDev.id
+            # Use an existing tt device if available; create a new device if
+            # not.
+
+            ttDev = indigo.devices.get(tt)  # Search for standard device name.
+            if ttDev:  # tt device exists with the standard name; use it.
+                L.debug('"%s" using existing travel timer device "%s"',
+                        dev.name, ttDev.name)
                 self.TIMER.executeAction('setTimerStartValue',
-                                         deviceId=ttDevId, props=props)
-            else:  # Create a new timer device.
-                description = 'Automatically generated timer for "%s"' % devName
-                indigo.device.create(protocol=indigo.kProtocol.Plugin,
-                                     name=tt,
-                                     description=description,
-                                     pluginId=self.TIMER_PLUGIN_ID,
-                                     deviceTypeId='timer',
-                                     props=props,
-                                     folder='doors')
-                L.info('"%s" new timer device created', tt)
+                                         deviceId=ttDev.id, props=props)
+            else:  # No device with the standard name.
+                ttDevId = valuesDict['ttDevId']  # Search for the tt device id.
+                ttDevId = int(ttDevId) if ttDevId else ttDevId
+                ttDev = indigo.devices.get(ttDevId)
+                if ttDev:  # tt device exists; use it and rename it.
+                    L.debug('"%s" using existing travel timer device "%s"',
+                            dev.name, ttDev.name)
+                    self.TIMER.executeAction('setTimerStartValue',
+                                             deviceId=ttDev.id, props=props)
+                    L.debug('"%s" renaming travel timer from "%s" to "%s"',
+                            dev.name, ttDev.name, tt)
+                    ttDev.name = tt
+                    ttDev.description = description
+                    ttDev.replaceOnServer()
+                else:  # No existing tt device; create a new one.
+                    L.debug('"%s" creating new travel timer device "%s"',
+                            dev.name, tt)
+                    indigo.device.create(
+                        protocol=indigo.kProtocol.Plugin,
+                        name=tt,
+                        description=description,
+                        pluginId=self.TIMER_PLUGIN_ID,
+                        deviceTypeId='timer',
+                        props=props,
+                        folder='doors')
+
         except Exception as errorMessage:
             error = '"%s" travel timer init failed: %s' % (tt, errorMessage)
-            valuesDict['tTime'] = error
+            errors['tTime'] = error
             return False, valuesDict, errors
 
         # Clear self._monitoredDevices for this opener to prevent previous

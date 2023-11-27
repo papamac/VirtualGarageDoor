@@ -32,7 +32,7 @@ devices_ to best meet his specific needs.
 The following table lists the top level requirements for the Virtual Garage
 Door plugin:
 
-| Requirement            | Description                                                                                                                                |
+| **Requirement**        | **Description**                                                                                                                            |
 |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | Indigo Version         | 2022.1.0 or higher                                                                                                                         |
 | Python Library (API)   | Official (3.x)                                                                                                                             |

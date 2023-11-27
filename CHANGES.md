@@ -8,12 +8,28 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+
+## GitHub Release v1.2.4, November 27, 2023
+
+### Fix messaging bug and improve travel timer device management
+
+Correct a bug that causes messages from class VirtualGarageDoor to refer
+to an old opener door name if the name was changed by the user after
+initilization.
+
+Improve the travel timer device management process. Standardize travel
+timer device names and restore them if they are changed. This change is
+explained in detail in a new Wiki
+[Section 5.4](https://github.com/papamac/VirtualGarageDoor/wiki/5.-User-Notes)
+
+
 ## GitHub Release v1.2.3, November 12, 2023
 
 ### Correct minor omission in v1.2.2
 
 Correct a minor omission in v1.2.2 that adds an incorrect note in the
 PluginConfig GUI.
+
 
 ## GitHub Release v1.2.2, November 10, 2023
 
@@ -27,6 +43,7 @@ the pluginPrefs are still not initialized properly. The replacement fix in this
 version assigns the default **_INFO_** loggging level in pluginPrefs when there
 is no prior file. It works and has been tested thoroughly.
 
+
 ## GitHub Release v1.2.1, October 8, 2023
 
 ### Fix key error in first time initialization
@@ -35,6 +52,7 @@ In v1.2.0 the key **_loggingLevel_** is not found in the pluginPrefs dictionary
 after the plugin is loaded for the first time. v1.2.1 moves this reference from
 the **_init_** method to the **_startup_** method to allow the Indigo server to
 initialize the pluginPrefs dictionary from the PluginConfig.xml file.
+
 
 ## GitHub Release v1.2.0, September 24, 2023
 
@@ -74,8 +92,7 @@ resolution.
 (3) Use monitored device ids to initialize opener devices instead of the
 monitored device names.  This allows monitored devices to be renamed if desired
 without immediately reconfiguring.
-                    
-                    
+
 
 ## GitHub Release v1.1.2, January 29, 2023
 
