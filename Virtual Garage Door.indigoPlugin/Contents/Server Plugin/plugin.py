@@ -246,7 +246,7 @@ v1.2.3  11/12/2023  Correct a minor omission in v1.2.2 that adds an incorrect
                     note in the PluginConfig GUI.
 v1.2.4  11/27/2023  (1) Correct a bug that causes messages from class
                     VirtualGarageDoor to refer to an old opener door name if
-                    the name was changed by the user after initilization.
+                    the name was changed by the user after initialization.
                     (2) Improve the travel timer device management process.
                     Standardize travel timer device names and restore them
                     if they are changed.

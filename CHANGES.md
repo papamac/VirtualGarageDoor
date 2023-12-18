@@ -9,13 +9,20 @@ post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
 
+## GitHub Release v1.2.5, December 18, 2023
+
+### Correct errors in Wiki Sections 4.2 and 4.3
+
+Correct errors in Wiki Sections 4.2 and 4.3 that reference ConfigUi images.
+Delete the image file hkbConfigUi.png and replace the file hklsConfigUi.png.
+
 ## GitHub Release v1.2.4, November 27, 2023
 
 ### Fix messaging bug and improve travel timer device management
 
 Correct a bug that causes messages from class VirtualGarageDoor to refer
 to an old opener door name if the name was changed by the user after
-initilization.
+initialization.
 
 Improve the travel timer device management process. Standardize travel
 timer device names and restore them if they are changed. This change is
