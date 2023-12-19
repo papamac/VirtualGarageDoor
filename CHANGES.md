@@ -9,12 +9,20 @@ post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
 
+## GitHub Release v1.2.6, December 18, 2023
+
+### Correct image filename in v1.2.5
+
+Rename hlksConfig.png to hklsConfig.png.
+
+
 ## GitHub Release v1.2.5, December 18, 2023
 
 ### Correct errors in Wiki Sections 4.2 and 4.3
 
 Correct errors in Wiki Sections 4.2 and 4.3 that reference ConfigUi images.
 Delete the image file hkbConfigUi.png and replace the file hklsConfigUi.png.
+
 
 ## GitHub Release v1.2.4, November 27, 2023
 
