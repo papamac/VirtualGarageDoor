@@ -9,6 +9,15 @@ post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
 
+## GitHub Update v1.2.7, April 27, 2024
+
+### Correct error in the Design wiki.
+
+Delete extraneous object in figure1.png. This is not an official Github release
+because the new figure1.png is accessible directly from the wiki pages without
+downloading the plugin.
+
+
 ## GitHub Release v1.2.6, December 18, 2023
 
 ### Correct image filename in v1.2.5
@@ -266,7 +275,7 @@ requires that you delete and re-create your opener devices to use the change.
 ## Initial GitHub release v1.0.0, July 22, 2022
 
 This is the initial version of the Virtual Garage Door plugin for Indigo.
-It is fully functional and documented in README.md and GitHub WIKI. Code
+It is fully functional and documented in README.md and the GitHub wiki. Code
 documentation in plugin.py is still in work.
 
 The activation sensor feature that was implemented in version 0.9.1 is no
