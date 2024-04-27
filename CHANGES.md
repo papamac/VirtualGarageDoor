@@ -9,13 +9,11 @@ post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
 
-## GitHub Update v1.2.7, April 27, 2024
+## GitHub Release v1.2.7, April 27, 2024
 
 ### Correct error in the Design wiki.
 
-Delete extraneous object in figure1.png. This is not an official Github release
-because the new figure1.png is accessible directly from the wiki pages without
-downloading the plugin.
+Delete extraneous object in figure1.png.
 
 
 ## GitHub Release v1.2.6, December 18, 2023
