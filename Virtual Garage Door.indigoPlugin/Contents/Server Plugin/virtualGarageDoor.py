@@ -14,8 +14,8 @@ FUNCTION:  Receives and checks monitored device events from plugin.py.
            Uses the events to update door states and tracks.
    USAGE:  virtualGarageDoor.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.2.0
-    DATE:  September 24, 2023
+ VERSION:  1.2.8
+    DATE:  May 18, 2024
 
 
 UNLICENSE:
@@ -70,7 +70,7 @@ for details.
 DEPENDENCIES/LIMITATIONS:
 
 The plugin will work only with conventional garage door openers that auto-
-reverse during an obstructed closing cycle.  It will not accurately track door
+reverses during an obstructed closing cycle.  It will not accurately track door
 state transitions in this cycle for a non-auto-reversing door.
 
 CHANGE LOG:
@@ -80,6 +80,8 @@ v1.2.0   9/24/2023  Divide the Plugin class into two classes: Plugin which
                     VirtualGarageDoor which encapsulates the detailed door
                     behavior.  The VirtualGarageDoor class has instances for
                     each VGD plugin device.
+v1.2.8   5/18/2024  Fix the logDoorStateTracks "key not found" error after the
+                    first time initialization of the plugin.
 """
 ###############################################################################
 #                                                                             #
@@ -88,8 +90,8 @@ v1.2.0   9/24/2023  Divide the Plugin class into two classes: Plugin which
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.2.0'
-__date__ = 'September 24, 2023'
+__version__ = '1.2.8'
+__date__ = 'May 18, 2024'
 
 import indigo
 
@@ -355,7 +357,7 @@ class VirtualGarageDoor:
             # initialize a new door state track, stop the timer,
             # and reset the vibration sensor if present.
 
-            if self._plugin.pluginPrefs['logDoorStateTracks']:
+            if self._plugin.pluginPrefs.get('logDoorStateTracks'):
                 L.info('"%s" config: %s| track: %s',
                        self._dev.name, self._dev.pluginProps['mDevConfig'],
                        self._doorStateTrack)

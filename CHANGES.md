@@ -8,6 +8,15 @@ Your bug reports, comments and suggestions will be greatly appreciated.  Please
 post them on papamac's
 [Virtual Garage Door User Forum](https://forums.indigodomo.com/viewforum.php?f=374).
 
+## GitHub Release v1.2.8, May 18, 2024
+
+### Fix latent bug in first time initialization
+
+In prior releases, the key **_logDoorStateTracks_** in pluginPrefs is not found
+after the first time initialization of the VGD plugin. This only occurs when
+the plugin is loaded and started for the first time; if your are a continuing
+VGD user and have pluginPrefs in your database, the key is there. This release
+fixes this first time initialization bug.
 
 ## GitHub Release v1.2.7, April 27, 2024
 
