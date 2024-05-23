@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.2.4
-    DATE:  November 27, 2023
+ VERSION:  1.3.0
+    DATE:  May 23, 2024
 
 UNLICENSE:
 
@@ -258,8 +258,8 @@ v1.2.4  11/27/2023  (1) Correct a bug that causes messages from class
 ###############################################################################
 """
 __author__ = 'papamac'
-__version__ = '1.2.4'
-__date__ = 'November 27, 2023'
+__version__ = '1.3.0'
+__date__ = 'May 23, 2024'
 
 import indigo
 
@@ -291,7 +291,7 @@ class Plugin(indigo.PluginBase):
 
     # Class constants:
 
-    AR_CLOSURE_TIME = 1  # Activation relay momentary closure time (seconds).
+    AR_CLOSURE_TIME = 0.5  # Activation relay momentary closure time (seconds).
     TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
     TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
 
@@ -769,11 +769,30 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                      CONFIG UI CALLBACK METHODS                         #
     #                                                                         #
+    #  def getActionGroupList(*args)                                          #
     #  def getRelayDeviceList(self, *args)                                    #
     #  def getSensorDeviceList(self, *args)                                   #
+    #  def resetClosingActionGroup(valuesDict, *args)                         #
+    #  def resetOpeningActionGroup(valuesDict, *args)                         #
     #  def setMDevConfig(self, valuesDict, *args)                             #
     #                                                                         #
     ###########################################################################
+
+    @staticmethod
+    def getActionGroupList(*args):
+        """
+        Return a list of action group names for the ar action group selection
+        menus in the opener device ConfigUi.
+
+        List all indigo devices with a deviceTypeIds in RELAY_DEVICE_TYPE_IDs.
+        Also include a "None" element to enable the removal of an existing
+        selection.
+        """
+        L.threaddebug('getActionGroupList called')
+        actionGroups = []
+        for ag in indigo.actionGroups.iter('self'):
+            actionGroups.append(ag.name)
+        return ['None'] + sorted(actionGroups)
 
     def getRelayDeviceList(self, *args):
         """
@@ -781,7 +800,7 @@ class Plugin(indigo.PluginBase):
         in the opener device ConfigUi.
 
         List all indigo devices with a deviceTypeIds in RELAY_DEVICE_TYPE_IDs.
-        Also include a "none" element to enable the removal of an existing
+        Also include a "None" element to enable the removal of an existing
         selection.
         """
         L.threaddebug('getRelayDeviceList called')
@@ -807,6 +826,38 @@ class Plugin(indigo.PluginBase):
                 sensors.append(dev.name)
         return ['None'] + sorted(sensors)
 
+    @staticmethod
+    def resetClosingActionGroup(valuesDict, *args):
+        """
+        Respond to a user selection from the optional closing action group
+        menu in the opener device ConfigUi.
+
+        If the user selects None for the closing action group name, he is
+        deselecting a previous selection.  In this case, reset the action
+        group name to the null string ('') to indicate that no selection was
+        made.
+        """
+        L.threaddebug('resetClosingActionGroup called')
+        if valuesDict['closingActionGroup'] == 'None':
+            valuesDict['closingActionGroup'] = ''
+        return valuesDict
+
+    @staticmethod
+    def resetOpeningActionGroup(valuesDict, *args):
+        """
+        Respond to a user selection from the optional opening action group
+        menu in the opener device ConfigUi.
+
+        If the user selects None for the opening action group name, he is
+        deselecting a previous selection.  In this case, reset the action
+        group name to the null string ('') to indicate that no selection was
+        made.
+        """
+        L.threaddebug('resetOpeningActionGroup called')
+        if valuesDict['openingActionGroup'] == 'None':
+            valuesDict['openingActionGroup'] = ''
+        return valuesDict
+
     def setMDevConfig(self, valuesDict, *args):
         """
         Respond to a user selection from any of the monitored device selection
@@ -828,11 +879,10 @@ class Plugin(indigo.PluginBase):
         configuration of the additional the fields in the ConfigUi.
         """
         L.threaddebug('setMDevConfig called')
-
         for mDevType in self.MONITORED_DEVICE_TYPES:
             mDevName = valuesDict[mDevType]  # The selected mDevType dev name.
             mDevConfig = mDevType + 'Config'
-            if mDevName:
+            if mDevName:  # Valid selection from menu.
                 if mDevName == 'None':
                     valuesDict[mDevType] = ''
                     valuesDict[mDevConfig] = 'false'
@@ -882,21 +932,44 @@ class Plugin(indigo.PluginBase):
                 sleep(self.AR_CLOSURE_TIME)
                 plugin.executeAction('turnOffOutput', deviceId=arDevId,
                                      props=props)
-            else:  # Standalone relay device.
-                indigo.device.turnOn(arDevId, duration=self.AR_CLOSURE_TIME)
+            else:  # Indigo relay device.
+                indigo.device.turnOn(arDevId)
+                sleep(self.AR_CLOSURE_TIME)
+                indigo.device.turnOff(arDevId)
         else:
             error = 'no activation relay specified; door action ignored.'
             L.warning('"%s" %s', dev.name, error)
+
+    @staticmethod
+    def _executeOptionalActions(dev, action='closing'):
+        """
+        Optionally execute closing or opening action group and closing/opening
+        delay based on pluginProps entries.  Do nothing if the action group
+        or delay keys are not in the pluginProps dictionary.  This ensures
+        backward compatibility with opener devices created by older plugin
+        versions.
+        """
+        L.threaddebug('_executeOptionalActions called')
+
+        actionGroup = dev.pluginProps.get(action + 'ActionGroup')
+        if actionGroup:
+            indigo.actionGroup.execute(actionGroup)
+
+        delay = dev.pluginProps.get(action + 'Delay')
+        if delay:
+            sleep(float(delay))
 
     def closeGarageDoor(self, pluginAction):
         """
         Toggle the activation relay to close the garage door if it is not
         already closed.  This prevents the inadvertent opening of the door with
-        a close command.
+        a close command.  Execute optional user actions prior to toggling the
+        activation relay.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('closeGarageDoor called "%s"', dev.name)
-        if not dev.states['onOffState']:
+        if not dev.states['onOffState']:  # Door is not closed.
+            self._executeOptionalActions(dev)
             self._toggleActivationRelay(dev)
         else:
             error = ('attempt to toggle the garage door closed when it is '
@@ -907,10 +980,12 @@ class Plugin(indigo.PluginBase):
         """
         Toggle the activation relay to open the garage door if it is closed.
         This prevents the inadvertent closing of the door with an open command.
+        Execute optional user actions prior to toggling the activation relay.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('openGarageDoor called "%s"', dev.name)
-        if dev.states['onOffState']:
+        if dev.states['onOffState']:  # Door is closed.
+            self._executeOptionalActions(dev, action='opening')
             self._toggleActivationRelay(dev)
         else:
             error = ('attempt to toggle the garage door open when it is '
@@ -930,21 +1005,24 @@ class Plugin(indigo.PluginBase):
         Implement the device turnOn (close), turnOff (open) and toggle commands
         by selectively toggling the activation relay.  Allow the turnOn (close)
         activation only if the door is not already closed. This prevents the
-        inadvertent opening of the door with a close command.  Do not restrict
-        activation for the turnOn (close) or toggle commands.  The previous
-        turnOn restriction was removed to allow the HomeKit Home application
-        (via the HKB of HKLS plugin) to close the door from a stopped state.
+        inadvertent opening of the door with a close command.  Allow the
+        turnOff (open) activation only if the door is closed.  Do not restrict
+        toggle activation.  Execute optional actions prior to toggling the
+        activation relay for turnOn (close) and turnOff (open).
         """
         L.threaddebug('actionControlDevice called "%s"', dev.name)
-        if action.deviceAction == indigo.kDeviceAction.TurnOn:
-            if not dev.states['onOffState']:  # Close if not already closed.
+        if action.deviceAction == indigo.kDeviceAction.TurnOn:  # Close.
+            if not dev.states['onOffState']:  # Door is not closed.
+                self._executeOptionalActions(dev)
                 self._toggleActivationRelay(dev)
             else:
                 error = ('attempt to toggle the garage door open when it is '
                          'not closed; door action ignored.')
                 L.warning('"%s" %s', dev.name, error)
-        elif action.deviceAction == indigo.kDeviceAction.TurnOff:
-            self._toggleActivationRelay(dev)  # Allow opening anytime.
+        elif action.deviceAction == indigo.kDeviceAction.TurnOff:  # Open.
+            if dev.states['onOffState']:  # Door is closed.
+                self._executeOptionalActions(dev, action='opening')
+                self._toggleActivationRelay(dev)
         elif action.deviceAction == indigo.kDeviceAction.Toggle:
             self._toggleActivationRelay(dev)
 

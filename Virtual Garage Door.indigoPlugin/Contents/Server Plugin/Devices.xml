@@ -15,8 +15,8 @@ FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.1.0
-    DATE:  November 9, 2022
+ VERSION:  1.3.0
+    DATE:  May 23, 2024
 
 CHANGE LOG:
 
@@ -250,7 +250,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label> </Label>
             </Field>
 
-           <!-- #################### Travel Timer (tt) ################### -->
+            <!-- #################### Travel Timer (tt) ################### -->
 
             <Field id="tt" type="textfield" hidden="true">
                 <Label> </Label>
@@ -263,6 +263,53 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
 
             <Field id="ttDevId" type="textfield" hidden="true">
                 <Label> </Label>
+            </Field>
+
+            <!-- ########### Optional Closing/Opening Actions ############# -->
+
+            <Field id="optionsSeparator" type="separator"> </Field>
+
+            <Field id="optionsTitle" type="label" alignText="center">
+                <Label>Optional Closing/Opening Actions</Label>
+            </Field>
+
+            <Field id="optionsSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="optionsLabel" type="label" alignText="center"
+                   fontSize="small" fontColor="darkgray">
+                <Label>When closing or opening the door using plugin actions, optionally execute an action group and/or delay before toggling the activation relay.</Label>
+            </Field>
+
+            <Field id="closingSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="closingActionGroup" type="menu">
+                <Label>Closing Action Group:</Label>
+                <List class="self" method="getActionGroupList"
+                      dynamicReload="yes"/>
+                <CallbackMethod>resetClosingActionGroup</CallbackMethod>
+            </Field>
+
+            <Field id="closingDelay" type="textfield" defaultValue="0">
+                <Label>Closing Delay Time (seconds):</Label>
+            </Field>
+
+            <Field id="openingSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="openingActionGroup" type="menu">
+                <Label>Opening Action Group:</Label>
+                <List class="self" method="getActionGroupList"
+                      dynamicReload="yes"/>
+                <CallbackMethod>resetOpeningActionGroup</CallbackMethod>
+            </Field>
+
+            <Field id="openingDelay" type="textfield" defaultValue="0">
+                <Label>Opening Delay Time (seconds):</Label>
             </Field>
 
         </ConfigUI>
