@@ -56,6 +56,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
                     closing.
 v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                     value of 2 sec.
+v1.3.0   5/23/2024  Add optional closing/opening actions to the ConfigUi.
 -->
 
 <Devices>
@@ -78,7 +79,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
             </Field>
 
             <Field id="tTime" type="textfield" defaultValue="12.0">
-                <Label>Open/Close Travel Time (seconds):</Label>
+                <Label>Open/Close Travel Time (8-20 seconds):</Label>
             </Field>
 
             <Field id="tTimeLabel" type="label" fontSize="small"
@@ -282,6 +283,8 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <Label>When closing or opening the door using plugin actions, optionally execute an action group and/or delay before toggling the activation relay.</Label>
             </Field>
 
+            <!-- ####### Optional Closing Action Group/Delay Time ######### -->
+
             <Field id="closingSpacer" type="label">
                 <Label> </Label>
             </Field>
@@ -293,9 +296,11 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <CallbackMethod>resetClosingActionGroup</CallbackMethod>
             </Field>
 
-            <Field id="closingDelay" type="textfield" defaultValue="0">
-                <Label>Closing Delay Time (seconds):</Label>
+            <Field id="closingDelayTime" type="textfield" defaultValue="0.0">
+                <Label>Closing Delay Time (0-10 seconds):</Label>
             </Field>
+
+            <!-- ####### Optional Opening Action Group/Delay Time ######### -->
 
             <Field id="openingSpacer" type="label">
                 <Label> </Label>
@@ -308,8 +313,8 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                 <CallbackMethod>resetOpeningActionGroup</CallbackMethod>
             </Field>
 
-            <Field id="openingDelay" type="textfield" defaultValue="0">
-                <Label>Opening Delay Time (seconds):</Label>
+            <Field id="openingDelayTime" type="textfield" defaultValue="0.0">
+                <Label>Opening Delay Time (0-10 seconds):</Label>
             </Field>
 
         </ConfigUI>
@@ -335,6 +340,7 @@ v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                         <Option value="closing">Closing</Option>
                         <Option value="stopped">Stopped</Option>
                         <Option value="reversing">Reversing</Option>
+                        <Option value="locked">Locked</Option>
                     </List>
                 </ValueType>
                 <TriggerLabel>Door Status</TriggerLabel>

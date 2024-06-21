@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.0
-    DATE:  May 23, 2024
+ VERSION:  1.3.1
+    DATE:  June 21, 2024
 
 UNLICENSE:
 
@@ -250,6 +250,16 @@ v1.2.4  11/27/2023  (1) Correct a bug that causes messages from class
                     (2) Improve the travel timer device management process.
                     Standardize travel timer device names and restore them
                     if they are changed.
+v1.3.0   5/23/2024  Add optional actions and/or delays prior to toggling the
+                    activation relay for closing and opening.
+v1.3.1   6/21/2024  (1) Remove the toggleGarageDoor action because it is
+                    normally not necessary and is an unattended operation
+                    safety risk.
+                    (2) Add lockGarageDoor and unlockGarageDoor actions as part
+                    of a larger VGD security update.
+                    (3) Encapsulate travel timer initilization functions into
+                    a new internal method _initTravelTimerDevice(self, dev) in
+                    preparation for introducing a new lock device.
 
 ###############################################################################
 #                                                                             #
@@ -258,8 +268,8 @@ v1.2.4  11/27/2023  (1) Correct a bug that causes messages from class
 ###############################################################################
 """
 __author__ = 'papamac'
-__version__ = '1.3.0'
-__date__ = 'May 23, 2024'
+__version__ = '1.3.1'
+__date__ = 'June 21, 2024'
 
 import indigo
 
@@ -291,9 +301,14 @@ class Plugin(indigo.PluginBase):
 
     # Class constants:
 
-    AR_CLOSURE_TIME = 0.5  # Activation relay momentary closure time (seconds).
+    AR_CLOSURE_TIME = 0.8  # Activation relay momentary closure time (seconds).
     TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
     TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
+
+    # Door state enumeration and stationary states.
+
+    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING, LOCKED = range(7)
+    STATIONARY_STATES = (OPEN, CLOSED, STOPPED, LOCKED)
 
     # Monitored device types used in deviceStartComm and validateDeviceConfigUi
     # methods.
@@ -568,37 +583,35 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                      CONFIG UI VALIDATION METHODS                       #
     #                                                                         #
+    #                        Internal Support Methods                         #
+    #                                                                         #
+    #  def _initializeTravelTimer(self, dev, valuesDict, errorsDict)          #
+    #  def _initializeLockDevice(self, dev, valuesDict, errorsDict)           #
+    #                                                                         #
+    #                        Core Validation Methods                          #
+    #                                                                         #
     #  def validatePrefsConfigUi(valuesDict)                                  #
     #  def validateDeviceConfigUi(self, valuesDict, typeId, devId)            #
     #                                                                         #
     ###########################################################################
 
-    @staticmethod
-    def validatePrefsConfigUi(valuesDict):
+    def _initializeTravelTimer(self, dev, valuesDict, errorsDict):
         """
-        Set the logging level if the user requests a change after startup.
-        """
-        L.threaddebug('validatePrefsConfigUi called')
-        level = valuesDict['loggingLevel']
-        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
-        return True
+        Validate the ConfigUi open/close travel time entry.  Create a standard
+        travel timer device name derived from the opener device name and add it
+        to the values dictionary with the key tt.
 
-    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
-        """
-        Validate the ConfigUi travel time.  Create a standard travel timer
-        device name based on the opener device name. Configure an existing or
-        new timer device using the ConfigUi travel time and the standard device
-        name.
+        If there is an existing device with the standard name, configure it
+        with the validated travel time and use it.  If not, check for an
+        existing timer device using a prior timer device id.  If there is an
+        existing timer, configure it and rename it with the standard device
+        name.  If no existing timer devices are available, create a new device
+        using the validated travel time and the standard timer device name.
 
-        Validate monitored device ConfigUi entries and create the monitored
-        device dictionary.
+        If there is an error, add it to the errors dictionary with the key
+        tTime and return.
         """
-        dev = indigo.devices[devId]
-        L.threaddebug('validateDeviceConfigUi called "%s"', dev.name)
-        L.debug(valuesDict)
-        errors = indigo.Dict()
-
-        # Validate open/close travel time entry.
+        # Validate the open/close travel time entry.
 
         tTime = 0  # Force an error if try fails.
         try:
@@ -607,51 +620,56 @@ class Plugin(indigo.PluginBase):
             pass
         if not 8 <= tTime <= 20:
             error = 'Travel time must be a number between 8 and 20 seconds'
-            errors['tTime'] = error
-            return False, valuesDict, errors
+            errorsDict['tTime'] = error
+            return valuesDict, errorsDict  # Return with error.
 
         # Derive a standard travel timer device name (tt) from the opener
         # device name (dev.name):
 
-        #    Opener Device Name          Standard Travel Timer Device Name
+        #    Opener Device Name        Standard Travel Timer Device Name
 
-        #  new device x (default)   devIdnnnnnnnnnnn-travelTimer (nnnnnnnnnn = dev id)
-        #  device-opener            device-travelTimer
-        #  arbitraryDeviceName      arbitraryDeviceName-travelTimer
+        #  new device (default)   devIdnnnnnnnnnnn-travelTimer (nnnnnnnnnn = dev id)
+        #  device-opener          device-travelTimer
+        #  arbitraryDeviceName    arbitraryDeviceName-travelTimer
 
         if dev.name.startswith('new device'):
-            tt = 'devId%s' % devId
+            tt = 'devId%s' % dev.id
         elif dev.name.endswith('-opener'):
             tt = dev.name[:-7]
         else:
             tt = dev.name
         tt += '-travelTimer'
-        valuesDict['tt'] = tt
-        L.debug('"%s" standard travel timer device name is "%s"', dev.name, tt)
+        L.debug('"%s" standard travel timer device name is "%s"',
+                dev.name, tt)
 
-        # Select and configure the tt device.
+        # Add the timer device name to the values dictionary.
+
+        valuesDict['tt'] = tt
+
+        # Select and configure the tt device with the validated travel time.
 
         props = dict(amount=tTime, amountType='seconds')
         description = 'Automatically generated timer for "%s"' % dev.name
         try:
-            # Use an existing tt device if available; create a new device if
-            # not.
+            # Use an existing tt device if available; create a new device
+            # if not.
 
-            ttDev = indigo.devices.get(tt)  # Search for standard device name.
+            ttDev = indigo.devices.get(tt)  # Get dev for standard name.
             if ttDev:  # tt device exists with the standard name; use it.
                 L.debug('"%s" using existing travel timer device "%s"',
-                        dev.name, ttDev.name)
+                        dev.name, tt)
                 self.TIMER.executeAction('setTimerStartValue',
                                          deviceId=ttDev.id, props=props)
             else:  # No device with the standard name.
-                ttDevId = valuesDict['ttDevId']  # Search for the tt device id.
+                ttDevId = valuesDict['ttDevId']  # Check prior device id.
                 ttDevId = int(ttDevId) if ttDevId else ttDevId
                 ttDev = indigo.devices.get(ttDevId)
                 if ttDev:  # tt device exists; use it and rename it.
                     L.debug('"%s" using existing travel timer device "%s"',
                             dev.name, ttDev.name)
                     self.TIMER.executeAction('setTimerStartValue',
-                                             deviceId=ttDev.id, props=props)
+                                             deviceId=ttDev.id,
+                                             props=props)
                     L.debug('"%s" renaming travel timer from "%s" to "%s"',
                             dev.name, ttDev.name, tt)
                     ttDev.name = tt
@@ -670,9 +688,44 @@ class Plugin(indigo.PluginBase):
                         folder='doors')
 
         except Exception as errorMessage:
-            error = '"%s" travel timer init failed: %s' % (tt, errorMessage)
-            errors['tTime'] = error
-            return False, valuesDict, errors
+            error = '"%s" Travel timer init failed: %s' % (tt, errorMessage)
+            errorsDict['tTime'] = error
+
+        return valuesDict, errorsDict  # Return with or without errors.
+
+    @staticmethod
+    def validatePrefsConfigUi(valuesDict):
+        """
+        Set the logging level if the user requests a change after startup.
+        """
+        L.threaddebug('validatePrefsConfigUi called')
+        level = valuesDict['loggingLevel']
+        L.setLevel('THREADDEBUG' if level == 'THREAD' else level)
+        return True
+
+    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
+        """
+        Validate the open/close travel time and initialize the travel timer
+        device for the opener.
+
+        Validate all manual entries in the ConfigUi.  Check monitored devices
+        and their onOffState names to ensure that the onOffState name is in the
+        device's states dictionary.  Also check to ensure that a particular
+        device/state combination is not reused in multiple monitored devices
+        for all opener devices.
+
+        Add configuration flags, monitored device id's, and initial monitored
+        device states to the values dictionary for use by other methods.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('validateDeviceConfigUi called "%s"', dev.name)
+        L.debug(valuesDict)
+        errorsDict = indigo.Dict()
+
+        # Validate the travel time and Initialize the travel timer.
+
+        valuesDict, errorsDict = self._initializeTravelTimer(dev, valuesDict,
+                                                             errorsDict)
 
         # Clear self._monitoredDevices for this opener to prevent previous
         # device configurations from generating ConfigUi errors.
@@ -695,7 +748,7 @@ class Plugin(indigo.PluginBase):
                 mDev = indigo.devices.get(mDevName)
                 if not mDev:
                     error = '%s not in the devices dictionary' % mDevName
-                    errors[mDevType] = error
+                    errorsDict[mDevType] = error
                     continue
 
                 # Validate the state name.
@@ -705,20 +758,27 @@ class Plugin(indigo.PluginBase):
                 if mDevStateName not in mDev.states:
                     error = '%s not in device states dictionary'\
                             % mDevStateName
-                    errors[mDevStateKey] = error
+                    errorsDict[mDevStateKey] = error
                     continue
 
                 # Check to ensure that no device/state pairs are reused by this
-                # opener device or others.
+                # opener device or others.  Bypass this test for the travel
+                # timer because the timer devices and state name are generated
+                # automatically.
 
                 mDevId = mDev.id
                 for devId_ in self._monitoredDevices:
                     for mDevId_ in self._monitoredDevices[devId_]:
                         for mDevStateName_ in self._monitoredDevices[devId_][mDevId_]:
                             if mDevId == mDevId_ and mDevStateName == mDevStateName_:
-                                error = 'Device/state name already in use'
-                                errors[mDevType] = error
-                                errors[mDevStateKey] = error
+                                if mDevType == 'tt':
+                                    error = ('Timer device/state name already '
+                                             'in use')
+                                    errorsDict['tTime'] = error
+                                else:
+                                    error = 'Device/state name already in use'
+                                    errorsDict[mDevType] = error
+                                    errorsDict[mDevStateKey] = error
                                 continue
 
                 # Validate the vs reset delay time.
@@ -732,14 +792,14 @@ class Plugin(indigo.PluginBase):
                     if not 0 <= vsResetDelay <= 4:
                         error = ('Reset delay time must be an integer between '
                                  '0 and 4 seconds')
-                        errors['vsResetDelay'] = error
+                        errorsDict['vsResetDelay'] = error
                         continue
 
                 # No error for this monitored device/state; update derived
                 # values in the values dictionary.
 
                 valuesDict[mDevType + 'DevId'] = mDevId
-                valuesDict['mDevConfig'] = mDevConfig
+                mDevConfig += mDevType + ' '
 
                 # Add keys/values to self._monitoredDevices to mark this
                 # device/state combination as used.  Note that these additions
@@ -751,9 +811,39 @@ class Plugin(indigo.PluginBase):
                 self._monitoredDevices[devId][mDevId][mDevStateName] = mDevType
                 L.debug(self._monitoredDevices[devId])
 
+        # All mDevTypes validated. Update the monitored device configuration.
+
+        valuesDict['mDevConfig'] = mDevConfig
+
+        # Validate the closing delay time.
+
+        closingDelayTime = -1  # Force an error if the try fails.
+        try:
+            closingDelayTime = float(valuesDict['closingDelayTime'])
+        except ValueError:
+            pass
+        if not 0 <= closingDelayTime <= 10:
+            error = ('Closing delay time must be a number between 0 and 10 '
+                    'seconds')
+            errorsDict['closingDelayTime'] = error
+
+        # Validate the closing delay time.
+
+        openingDelayTime = -1  # Force an error if the try fails.
+        try:
+            openingDelayTime = float(valuesDict['openingDelayTime'])
+        except ValueError:
+            pass
+        if not 0 <= openingDelayTime <= 10:
+            error = ('Opening delay time must be a number between 0 and 10 '
+                    'seconds')
+            errorsDict['openingDelayTime'] = error
+
         # Return with or without errors.
 
-        return not bool(errors), valuesDict, errors
+        L.debug(valuesDict)
+        L.debug(errorsDict)
+        return not bool(errorsDict), valuesDict, errorsDict
 
     ###########################################################################
     #                                                                         #
@@ -767,11 +857,16 @@ class Plugin(indigo.PluginBase):
     #                              I     I     I                              #
     #                             III   III   III                             #
     #                                                                         #
-    #                      CONFIG UI CALLBACK METHODS                         #
+    #                       CONFIG UI CALLBACK METHODS                        #
+    #                                                                         #
+    #                         List Callback Methods                           #
     #                                                                         #
     #  def getActionGroupList(*args)                                          #
     #  def getRelayDeviceList(self, *args)                                    #
     #  def getSensorDeviceList(self, *args)                                   #
+    #                                                                         #
+    #                       Selection Callback Methods                        #
+    #                                                                         #
     #  def resetClosingActionGroup(valuesDict, *args)                         #
     #  def resetOpeningActionGroup(valuesDict, *args)                         #
     #  def setMDevConfig(self, valuesDict, *args)                             #
@@ -904,12 +999,24 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                         ACTION CALLBACK METHODS                         #
     #                                                                         #
+    #                     Internal Action Support Methods                     #
+    #                                                                         #
     # def _toggleActivationRelay(self, dev)                                   #
+    # def _executeOptionalActions(dev, action='closing')                      #
+    # def _closeGarageDoor(self, dev)                                         #
+    # def _openGarageDoor(self, dev)                                          #
+    #                                                                         #
+    #                         Plugin Callback Methods                         #
+    #                                                                         #
     # def closeGarageDoor(self, pluginAction)                                 #
     # def openGarageDoor(self, pluginAction)                                  #
-    # def toggleGarageDoor(self, pluginAction)                                #
+    # def lockGarageDoor(self, pluginAction)                                  #
+    # def unlockGarageDoor(self, pluginAction)                                #
+    #                                                                         #
+    #                  Device and Universal Callback Methods                  #
+    #                                                                         #
     # def actionControlDevice(self, action, dev)                              #
-    # def actionControlUniversal(action, dev)                                 #
+    # def actionControlUniversal(self, action, dev)                           #
     #                                                                         #
     ###########################################################################
 
@@ -937,7 +1044,7 @@ class Plugin(indigo.PluginBase):
                 sleep(self.AR_CLOSURE_TIME)
                 indigo.device.turnOff(arDevId)
         else:
-            error = 'no activation relay specified; door action ignored.'
+            error = 'no activation relay specified; door action ignored'
             L.warning('"%s" %s', dev.name, error)
 
     @staticmethod
@@ -955,76 +1062,160 @@ class Plugin(indigo.PluginBase):
         if actionGroup:
             indigo.actionGroup.execute(actionGroup)
 
-        delay = dev.pluginProps.get(action + 'Delay')
-        if delay:
-            sleep(float(delay))
+        delayTime = dev.pluginProps.get(action + 'DelayTime')
+        if delayTime:
+            sleep(float(delayTime))
+
+    def _closeGarageDoor(self, dev):
+        """
+        If the garage door is locked, log an error message and return.  No
+        plugin actions are allowed when the door is locked.
+
+        If the door is moving (not in a stationary state), log an error message
+        and return.  Remote door actions are not allowed when the door is in
+        motion.
+
+        If the door is already closed, also log an error message and return.
+        This prevents inadvertently toggling the door to open with a close
+        action.
+
+        Otherwise (door is not locked, moving, or closed), toggle the
+        activation relay to close the garage door.  Execute optional user
+        actions prior to toggling the activation relay.
+        """
+        L.threaddebug('_closeGarageDoor called "%s"', dev.name)
+
+        doorState = dev.states['doorState']
+        if doorState == self.LOCKED:
+            error = ('attempt to close the garage door when it is locked; '
+                     'door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            error = ('attempt to close the garage door when it is moving; '
+                     'door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        elif dev.states['doorState'] == self.CLOSED:
+            error = ('attempt to toggle the garage door closed when it is '
+                     'already closed; door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        else:  # Execute actions and toggle the door closed.
+            self._executeOptionalActions(dev)
+            self._toggleActivationRelay(dev)
+
+    def _openGarageDoor(self, dev):
+        """
+        If the garage door is locked, log an error message and return.  No
+        plugin actions are allowed when the door is locked.
+
+        If the door is moving (not in a stationary state), log an error message
+        and return.  Remote door actions are not allowed when the door is in
+        motion.
+
+        If the door is not closed, also log an error message and return.  This
+        prevents inadvertently toggling the door when it is already open or
+        is stopped (obstructed).
+
+        Otherwise (door is not locked and closed), toggle the activation relay
+        to close the garage door.  Execute optional user actions prior to
+        toggling the activation relay.
+        """
+        L.threaddebug('_openGarageDoor called "%s"', dev.name)
+
+        doorState = dev.states['doorState']
+        if doorState == self.LOCKED:
+            error = ('attempt to open the garage door when it is locked; door '
+                     'action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            error = ('attempt to open the garage door when it is moving; '
+                     'door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        elif doorState != self.CLOSED:
+            error = ('attempt to toggle the garage door open when it is not '
+                     'closed; door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        else:  # Execute actions and toggle the door open.
+            self._executeOptionalActions(dev, action='opening')
+            self._toggleActivationRelay(dev)
 
     def closeGarageDoor(self, pluginAction):
         """
-        Toggle the activation relay to close the garage door if it is not
-        already closed.  This prevents the inadvertent opening of the door with
-        a close command.  Execute optional user actions prior to toggling the
-        activation relay.
+        Get the device and call the internal close method.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('closeGarageDoor called "%s"', dev.name)
-        if not dev.states['onOffState']:  # Door is not closed.
-            self._executeOptionalActions(dev)
-            self._toggleActivationRelay(dev)
-        else:
-            error = ('attempt to toggle the garage door closed when it is '
-                     'already closed; door action ignored.')
-            L.warning('"%s" %s', dev.name, error)
+        self._closeGarageDoor(dev)
 
     def openGarageDoor(self, pluginAction):
         """
-        Toggle the activation relay to open the garage door if it is closed.
-        This prevents the inadvertent closing of the door with an open command.
-        Execute optional user actions prior to toggling the activation relay.
+        Get the device and call the internal open method.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('openGarageDoor called "%s"', dev.name)
-        if dev.states['onOffState']:  # Door is closed.
-            self._executeOptionalActions(dev, action='opening')
-            self._toggleActivationRelay(dev)
-        else:
-            error = ('attempt to toggle the garage door open when it is '
-                     'not closed; door action ignored.')
-            L.warning('"%s" %s', dev.name, error)
+        self._openGarageDoor(dev)
 
-    def toggleGarageDoor(self, pluginAction):
+    def lockGarageDoor(self, pluginAction):
         """
-        Toggle the activation relay with no state conditions.
+        If the doorState is not closed, log an error message and return.  The
+        garage door can only be locked when it is stationary and closed.  If
+        the doorState is closed, send the VirtualGarageDoor update method a
+        'lock' event to trigger a transition to the locked state.
         """
         dev = indigo.devices[pluginAction.deviceId]
-        L.threaddebug('toggleGarageDoor called "%s"', dev.name)
-        self._toggleActivationRelay(dev)
+        L.threaddebug('lockGarageDoor called "%s"', dev.name)
+
+        if dev.states['doorState'] != self.CLOSED:
+            error = ('attempt to lock the garage door when it is not closed; '
+                     'door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        else:  # Door is closed.
+            vgd = self._virtualGarageDoors[dev.id]
+            vgd.update('lk-on')
+
+    def unlockGarageDoor(self, pluginAction):
+        """
+        If the doorState is not locked, log an error message and return.  The
+        garage door can only be unlocked when it is closed and locked.  If the
+        doorState is locked, send the VirtualGarageDoor update method an
+        'unlock' event to trigger a transition to the closed state.
+        """
+        dev = indigo.devices[pluginAction.deviceId]
+        L.threaddebug('unlockGarageDoor called "%s"', dev.name)
+
+        if dev.states['doorState'] != self.LOCKED:
+            error = ('attempt to unlock the garage door when it is not locked;'
+                     ' door action ignored')
+            L.warning('"%s" %s', dev.name, error)
+
+        else:  # Door is locked.
+            vgd = self._virtualGarageDoors[dev.id]
+            vgd.update('lk-off')
 
     def actionControlDevice(self, action, dev):
         """
-        Implement the device turnOn (close), turnOff (open) and toggle commands
-        by selectively toggling the activation relay.  Allow the turnOn (close)
-        activation only if the door is not already closed. This prevents the
-        inadvertent opening of the door with a close command.  Allow the
-        turnOff (open) activation only if the door is closed.  Do not restrict
-        toggle activation.  Execute optional actions prior to toggling the
-        activation relay for turnOn (close) and turnOff (open).
+        Implement the device turnOn (close) and turnOff (open) using the
+        internal _closeGarageDoor and _openGarageDoor methods.  Log an error
+        message if the device toggle action is selected.  Remote toggling of
+        the garage door is not allowed for safety reasons.
         """
         L.threaddebug('actionControlDevice called "%s"', dev.name)
         if action.deviceAction == indigo.kDeviceAction.TurnOn:  # Close.
-            if not dev.states['onOffState']:  # Door is not closed.
-                self._executeOptionalActions(dev)
-                self._toggleActivationRelay(dev)
-            else:
-                error = ('attempt to toggle the garage door open when it is '
-                         'not closed; door action ignored.')
-                L.warning('"%s" %s', dev.name, error)
+            self._closeGarageDoor(dev)
+
         elif action.deviceAction == indigo.kDeviceAction.TurnOff:  # Open.
-            if dev.states['onOffState']:  # Door is closed.
-                self._executeOptionalActions(dev, action='opening')
-                self._toggleActivationRelay(dev)
+            self._openGarageDoor(dev)
+
         elif action.deviceAction == indigo.kDeviceAction.Toggle:
-            self._toggleActivationRelay(dev)
+            error = ('attempt to toggle the garage door remotely; door action '
+                     'ignored')
+            L.warning('"%s" %s', dev.name, error)
 
     def actionControlUniversal(self, action, dev):
         """
