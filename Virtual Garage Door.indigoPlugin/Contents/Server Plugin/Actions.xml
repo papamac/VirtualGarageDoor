@@ -30,18 +30,6 @@ v1.3.1   6/21/2024  (1) Remove the toggleGarageDoor action because it is
 
 <Actions>
 
-	<!-- ################## Close/Open the Garage Door #################### -->
-
-	<Action id="closeGarageDoor" uiPath="DeviceActions" deviceFilter="self">
-		<Name>Close Garage Door</Name>
-		<CallbackMethod>closeGarageDoor</CallbackMethod>
-	</Action>
-
-	<Action id="openGarageDoor" uiPath="DeviceActions" deviceFilter="self">
-		<Name>Open Garage Door</Name>
-		<CallbackMethod>openGarageDoor</CallbackMethod>
-	</Action>
-
 	<!-- ################## Lock/Unlock the Garage Door ################### -->
 
 	<Action id="lockGarageDoor" uiPath="DeviceActions" deviceFilter="self">
@@ -52,6 +40,18 @@ v1.3.1   6/21/2024  (1) Remove the toggleGarageDoor action because it is
 	<Action id="unlockGarageDoor" uiPath="DeviceActions" deviceFilter="self">
 		<Name>Unlock Garage Door</Name>
 		<CallbackMethod>unlockGarageDoor</CallbackMethod>
+	</Action>
+
+	<!-- ################## Close/Open the Garage Door #################### -->
+
+	<Action id="closeGarageDoor" uiPath="DeviceActions" deviceFilter="self">
+		<Name>Close Garage Door</Name>
+		<CallbackMethod>closeGarageDoor</CallbackMethod>
+	</Action>
+
+	<Action id="openGarageDoor" uiPath="DeviceActions" deviceFilter="self">
+		<Name>Open Garage Door</Name>
+		<CallbackMethod>openGarageDoor</CallbackMethod>
 	</Action>
 
 </Actions>

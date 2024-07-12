@@ -92,6 +92,8 @@ v1.3.1   6/21/2024  (1) Add LOCKED door state as part of a larger VGD security
                     transition from REVERSING to OPENING.  Enforce state
                     transition rules by including only allowed transitions in
                     the table.
+v1.3.2   7/12/2024  Set the door state image to a green lock if the door is in
+                    the LOCKED state.
 """
 ###############################################################################
 #                                                                             #
@@ -250,21 +252,28 @@ class VirtualGarageDoor:
         The doorState can be OPEN, CLOSED, OPENING, CLOSING, STOPPED, and
         REVERSING (see enumeration in the class constants).  The doorStatus is
         a lower case string representation of the doorState, and the onOffState
-        is on if the doorState is CLOSED and off otherwise.
+        is on if the doorState is CLOSED or LOCKED and off otherwise.
 
         Also, set the state image on the Indigo Home window based on the value
-        of the onOffState.  Select a green dot if the onOffState is on
-        (doorState is CLOSED) and a red dot if it is off.
+        of the doorState.  Select a green dot if the doorState is CLOSED,
+        a green lock if it is LOCKED, and a red dot otherwise.
         """
         onOffState = self._doorState in (self.CLOSED, self.LOCKED)
         doorStatus = self.DOOR_STATUS[self._doorState]
         self._dev.updateStateOnServer('onOffState', onOffState,
                                       uiValue=doorStatus)
-        image = (indigo.kStateImageSel.SensorOn if onOffState
-                 else indigo.kStateImageSel.SensorTripped)
+
+        if self._doorState is self.CLOSED:
+            image = indigo.kStateImageSel.SensorOn
+        elif self._doorState is self.LOCKED:
+            image = indigo.kStateImageSel.Locked
+        else:
+            image = indigo.kStateImageSel.SensorTripped
         self._dev.updateStateImageOnServer(image)
+
         self._dev.updateStateOnServer('doorStatus', doorStatus)
         self._dev.updateStateOnServer('doorState', self._doorState)
+
         L.info('"%s" update to %s',
                self._dev.name, self.DOOR_STATES[self._doorState])
 
