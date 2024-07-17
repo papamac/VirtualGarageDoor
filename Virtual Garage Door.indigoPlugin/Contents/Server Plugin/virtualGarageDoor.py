@@ -14,8 +14,8 @@ FUNCTION:  Receives and checks monitored device events from plugin.py.
            Uses the events to update door states and tracks.
    USAGE:  virtualGarageDoor.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.3.1
-    DATE:  June 21, 2024
+ VERSION:  1.3.3
+    DATE:  July 17, 2024
 
 
 UNLICENSE:
@@ -94,6 +94,7 @@ v1.3.1   6/21/2024  (1) Add LOCKED door state as part of a larger VGD security
                     the table.
 v1.3.2   7/12/2024  Set the door state image to a green lock if the door is in
                     the LOCKED state.
+v1.3.3   7/17/2024  Set the priorDoorState when updating door states..
 """
 ###############################################################################
 #                                                                             #
@@ -102,8 +103,8 @@ v1.3.2   7/12/2024  Set the door state image to a green lock if the door is in
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.1'
-__date__ = 'June 21, 2024'
+__version__ = '1.3.3'
+__date__ = 'July 17, 2024'
 
 import indigo
 
@@ -228,10 +229,14 @@ class VirtualGarageDoor:
 
         initialState [transition 1] [transition2]...
         """
+
+        # Initialize local instance attributes.
+
         self._plugin = plugin
         self._dev = dev
         self._priorEvent = None
         self._priorEventTime = datetime.now()
+        self._priorDoorState = None
 
         # Initialize the opener device state and door state track.  Assume that
         # door is not in motion and that it is closed unless the closedSensor
@@ -248,20 +253,36 @@ class VirtualGarageDoor:
         Update the door states on the Indigo server for use by the Home window,
         scripts, action groups, control pages, triggers, and other plugins.
 
-        The door states include the doorState, doorStatus and the onOffState.
-        The doorState can be OPEN, CLOSED, OPENING, CLOSING, STOPPED, and
-        REVERSING (see enumeration in the class constants).  The doorStatus is
-        a lower case string representation of the doorState, and the onOffState
-        is on if the doorState is CLOSED or LOCKED and off otherwise.
+        The door states include the doorState/priorDoorState, doorStatus and
+        the onOffState.  The doorState/priorDoorState can be OPEN, CLOSED,
+        OPENING, CLOSING, STOPPED, REVERSING, and LOCKED (see enumeration in
+        the class constants).  The doorStatus is a lower case string
+        representation of the doorState, and the onOffState is on if the
+        doorState is CLOSED or LOCKED and off otherwise.
 
         Also, set the state image on the Indigo Home window based on the value
         of the doorState.  Select a green dot if the doorState is CLOSED,
         a green lock if it is LOCKED, and a red dot otherwise.
         """
+
+        # Compute derived states.
+
         onOffState = self._doorState in (self.CLOSED, self.LOCKED)
         doorStatus = self.DOOR_STATUS[self._doorState]
+
+        # Update states on server.
+
+        self._dev.updateStateOnServer('doorState', self._doorState)
+        if 'priorDoorState' in self._dev.states:  # Keep backward compatibility
+            self._dev.updateStateOnServer('priorDoorState',
+                                          self._priorDoorState)
+        self._dev.updateStateOnServer('doorStatus', doorStatus)
         self._dev.updateStateOnServer('onOffState', onOffState,
                                       uiValue=doorStatus)
+        L.info('"%s" update to %s',
+               self._dev.name, self.DOOR_STATES[self._doorState])
+
+        # Compute and update state image.
 
         if self._doorState is self.CLOSED:
             image = indigo.kStateImageSel.SensorOn
@@ -270,12 +291,6 @@ class VirtualGarageDoor:
         else:
             image = indigo.kStateImageSel.SensorTripped
         self._dev.updateStateImageOnServer(image)
-
-        self._dev.updateStateOnServer('doorStatus', doorStatus)
-        self._dev.updateStateOnServer('doorState', self._doorState)
-
-        L.info('"%s" update to %s',
-               self._dev.name, self.DOOR_STATES[self._doorState])
 
     def update(self, event):
         """
@@ -364,6 +379,7 @@ class VirtualGarageDoor:
 
         if newDoorState == self._doorState:  # No change.
             return
+        self._priorDoorState = self._doorState
         self._doorState = newDoorState
         self._updateDoorStatesOnServer()
 
