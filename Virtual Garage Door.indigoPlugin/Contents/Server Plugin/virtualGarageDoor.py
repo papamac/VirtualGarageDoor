@@ -14,8 +14,8 @@ FUNCTION:  Receives and checks monitored device events from plugin.py.
            Uses the events to update door states and tracks.
    USAGE:  virtualGarageDoor.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.3.3
-    DATE:  July 17, 2024
+ VERSION:  1.3.4
+    DATE:  August 18, 2024
 
 
 UNLICENSE:
@@ -94,7 +94,10 @@ v1.3.1   6/21/2024  (1) Add LOCKED door state as part of a larger VGD security
                     the table.
 v1.3.2   7/12/2024  Set the door state image to a green lock if the door is in
                     the LOCKED state.
-v1.3.3   7/17/2024  Set the priorDoorState when updating door states..
+v1.3.3   7/17/2024  Set the priorDoorState when updating door states.
+v1.3.4   8/18/2024  (1) Eliminate the LOCKED state from the door state
+                    enumeration and the _DOOR_STATE_TRANSITIONS
+                    tuple/dictionary
 """
 ###############################################################################
 #                                                                             #
@@ -103,8 +106,8 @@ v1.3.3   7/17/2024  Set the priorDoorState when updating door states..
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.3'
-__date__ = 'July 17, 2024'
+__version__ = '1.3.4'
+__date__ = 'August 18, 2024'
 
 import indigo
 
@@ -133,11 +136,12 @@ class VirtualGarageDoor:
                                by the Plugin deviceStartComm method for each
                                new instance (one for each Indigo door device).
     _updateDoorStatesOnServer  Updates all Indigo device states based on the
-                               internal door state.  It is called by the update
-                               method.
+                               door state.  It is called by the __init__ and
+                               update methods.
     update                     Updates the door state and door state track in
-                               response to a new monitored device event.  It is
-                               called by the Plugin deviceUpdated method.
+                               response to a new event.  It is called by the
+                               Plugin deviceUpdated method.  It is also called
+                               recursively within the update method.
     """
 
     # Class constants:
@@ -149,10 +153,10 @@ class VirtualGarageDoor:
     # HMCharacteristicValueDoorState enumeration in the Apple developer HomeKit website:
     # https://developer.apple.com/documentation/homekit/hmcharacteristicvaluedoorstate
 
-    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING, LOCKED = range(7)
-    STATIONARY_STATES = (OPEN, CLOSED, STOPPED, LOCKED)
+    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING = range(6)
+    STATIONARY_STATES = (OPEN, CLOSED, STOPPED)
     DOOR_STATUS = ('open', 'closed', 'opening', 'closing', 'stopped',
-                   'reversing', 'locked')
+                   'reversing')
     DOOR_STATES = [status.upper() for status in DOOR_STATUS]
 
     # The door state transitions table is a compound tuple/dictionary used by
@@ -179,54 +183,52 @@ class VirtualGarageDoor:
         {'ar-on':      OPENING,    # 5      normal opening
          'cs-off':     OPENING,    # 6      normal opening
          'vs-on':      OPENING,    # 7      normal opening
-         'os-on':      OPEN,       # 8      out-of-sync recovery
-         'lk-on':      LOCKED},    # 9      normal locking
+         'os-on':      OPEN},      # 8      out-of-sync recovery
 
         # Transitions from the OPENING state (doorState == 2):
 
-        {'os-on':      OPEN,       # 10     normal open
-         'tt-exp&!os': OPEN,       # 11     normal open if no os
-         'ar-on':      STOPPED,    # 12     interrupted opening
-         'tt-exp':     STOPPED,    # 13     interrupted opening
-         'cs-off':     OPENING,    # 14     redundant event
-         'vs-on':      OPENING,    # 15     redundant event
-         'cs-on':      CLOSED},    # 16     out-of-sync recovery
+        {'os-on':      OPEN,       # 9      normal open
+         'tt-exp&!os': OPEN,       # 10     normal open if no os
+         'ar-on':      STOPPED,    # 11     interrupted opening
+         'tt-exp':     STOPPED,    # 12     interrupted opening
+         'cs-off':     OPENING,    # 12     redundant event
+         'vs-on':      OPENING,    # 14     redundant event
+         'cs-on':      CLOSED},    # 15     out-of-sync recovery
 
         # Transitions from the CLOSING state (doorState == 3):
 
-        {'cs-on':      CLOSED,     # 17     normal closed
-         'tt-exp&!cs': CLOSED,     # 18     normal closed if no cs
-         'tt-exp':     REVERSING,  # 19     interrupted closing
-         'os-off':     CLOSING,    # 20     redundant event
-         'vs-on':      CLOSING,    # 21     redundant event
-         'os-on':      OPEN},      # 22     out-of-sync recovery
+        {'cs-on':      CLOSED,     # 16     normal closed
+         'tt-exp&!cs': CLOSED,     # 17     normal closed if no cs
+         'tt-exp':     REVERSING,  # 18     interrupted closing
+         'os-off':     CLOSING,    # 19     redundant event
+         'vs-on':      CLOSING,    # 20     redundant event
+         'os-on':      OPEN},      # 21     out-of-sync recovery
 
         # Transitions from the STOPPED state (doorState == 4):
 
-        {'ar-on':     CLOSING,     # 23     normal closing from stopped
-         'vs-on':     CLOSING,     # 24     normal closing from stopped
-         'cs-on':     CLOSED,      # 25     out-of-sync recovery
-         'os-on':     OPEN},       # 26     out-of-sync recovery
+        {'ar-on':     CLOSING,     # 22     normal closing from stopped
+         'vs-on':     CLOSING,     # 23     normal closing from stopped
+         'cs-on':     CLOSED,      # 24     out-of-sync recovery
+         'os-on':     OPEN},       # 25     out-of-sync recovery
 
         # Transition from the REVERSING state (doorState == 5):
 
-        {'reverse':   OPENING},    # 27     normal opening from auto-reverse
+        {'reverse':   OPENING}     # 26     normal opening from auto-reverse
 
-        # Transition from the LOCKED state (doorState == 6):
-
-        {'lk-off':    CLOSED}      # 28     normal unlocking
     )
 
     def __init__(self, plugin, dev, mDevStates):
         """
-        Initialize local instance attributes including the door state and the
-        door state track.  The door state is an integer as defined in the class
-        constants.  The (virtual) door state track is a time sequence of
-        transitions from state to state as the door moves through its
-        operational cycle. Each transition is a string of the form:
+        Initialize local instance attributes.
 
+        Guess the starting door state.  Assume that door is not in motion and
+        that it is closed unless the closedSensor is off and openSensor is on.
+        Update the door states on the server.
+
+        Initialize the starting door state track. The door state track is a
+        time sequence of transitions from state to state as the door moves
+        through its operational cycle. Each transition is a string of the form:
         [timeSinceLastEvent event newDoorState], and tracks look like:
-
         initialState [transition 1] [transition2]...
         """
 
@@ -236,83 +238,80 @@ class VirtualGarageDoor:
         self._dev = dev
         self._priorEvent = None
         self._priorEventTime = datetime.now()
-        self._priorDoorState = None
 
-        # Initialize the opener device state and door state track.  Assume that
-        # door is not in motion and that it is closed unless the closedSensor
-        # is off and openSensor is on.
+        # Guess the starting door state and update the door states on the
+        # server.
 
         csState = mDevStates.get('cs')
         osState = mDevStates.get('os')
-        self._doorState = self.OPEN if not csState and osState else self.CLOSED
-        self._doorStateTrack = self.DOOR_STATES[self._doorState]
-        self._updateDoorStatesOnServer()
+        doorState = self.OPEN if not csState and osState else self.CLOSED
+        self._updateDoorStatesOnServer(doorState)
 
-    def _updateDoorStatesOnServer(self):
+        # Initialize the door state track.
+
+        self._doorStateTrack = self.DOOR_STATES[doorState]
+
+    def _updateDoorStatesOnServer(self, doorState):
         """
         Update the door states on the Indigo server for use by the Home window,
         scripts, action groups, control pages, triggers, and other plugins.
 
-        The door states include the doorState/priorDoorState, doorStatus and
-        the onOffState.  The doorState/priorDoorState can be OPEN, CLOSED,
-        OPENING, CLOSING, STOPPED, REVERSING, and LOCKED (see enumeration in
-        the class constants).  The doorStatus is a lower case string
-        representation of the doorState, and the onOffState is on if the
-        doorState is CLOSED or LOCKED and off otherwise.
+        The door states include the doorState, the doorStatus and the
+        onOffState. The doorState can be OPEN, CLOSED, OPENING, CLOSING,
+        STOPPED, and REVERSING (see enumeration in the class constants).  The
+        doorStatus is a lower case string representation of the doorState, and
+        the onOffState is on if the doorState is CLOSED and off otherwise.
 
         Also, set the state image on the Indigo Home window based on the value
-        of the doorState.  Select a green dot if the doorState is CLOSED,
-        a green lock if it is LOCKED, and a red dot otherwise.
+        of the doorState.  Select a green dot if the doorState is CLOSED
+        (onOffState is on) and a red dot otherwise.
         """
-
-        # Compute derived states.
-
-        onOffState = self._doorState in (self.CLOSED, self.LOCKED)
-        doorStatus = self.DOOR_STATUS[self._doorState]
 
         # Update states on server.
 
-        self._dev.updateStateOnServer('doorState', self._doorState)
-        if 'priorDoorState' in self._dev.states:  # Keep backward compatibility
-            self._dev.updateStateOnServer('priorDoorState',
-                                          self._priorDoorState)
+        self._dev.updateStateOnServer('doorState', doorState)
+
+        doorStatus = self.DOOR_STATUS[doorState]
         self._dev.updateStateOnServer('doorStatus', doorStatus)
+
+        onOffState = doorState is self.CLOSED
         self._dev.updateStateOnServer('onOffState', onOffState,
                                       uiValue=doorStatus)
         L.info('"%s" update to %s',
-               self._dev.name, self.DOOR_STATES[self._doorState])
+               self._dev.name, self.DOOR_STATES[doorState])
 
         # Compute and update state image.
 
-        if self._doorState is self.CLOSED:
-            image = indigo.kStateImageSel.SensorOn
-        elif self._doorState is self.LOCKED:
-            image = indigo.kStateImageSel.Locked
-        else:
-            image = indigo.kStateImageSel.SensorTripped
+        image = (indigo.kStateImageSel.SensorOn if onOffState else
+                 indigo.kStateImageSel.SensorTripped)
         self._dev.updateStateImageOnServer(image)
 
     def update(self, event):
         """
-        Update the door state and the door track in response to the monitored
-        device event provided in the event argument.
+        Update the door state and the door track in response to the event
+        provided in the argument.
 
-        Check for a valid monitored device event and add event qualifiers for
-        travel timer events that are dependent on the door state.  Look up the
-        new door state in the DOOR_STATE_TRANSITIONS dictionary.  Update the
-        door state track with the transition including the time since the last
-        event, the event, and the new door state. Update the door states on the
-        Indigo server.
+        Check for a valid event and add event qualifiers for travel timer
+        events that are dependent on the door state.  Look up the new door
+        state in the DOOR_STATE_TRANSITIONS dictionary.  Update the door state
+        track with a new transition including the time since the last event,
+        the event, and the new door state. Warn the user if the new state
+        transition occurred while the door was locked.  This can happen if
+        monitored device sensors malfunction or if the door is manually moved
+        after locking.
 
-        If the new door state is REVERSING, force a second transition to
-        OPENING to reflect the auto-reversing behavior of the door.  Update the
-        door state track and the door states on the Indigo Server.
+        If the new door state is different from the current door state, update
+        the door states on the server.
 
         Perform new state processing functions.  If the new door state is a
         stationary state (CLOSED, OPEN, or STOPPED), log the door state track,
         stop the travel timer, and reset the vibration sensor (if present).  If
         the new door state os moving (OPENING or CLOSING), restart the travel
         timer.
+
+        Finally, if the new door state is REVERSING, force a transition to the
+        OPENING state using a recursive call to the update method with a
+        'reverse' event.
         """
 
         # Ignore events that can't affect the door state.
@@ -338,30 +337,27 @@ class VirtualGarageDoor:
         # Add qualifiers for travel timer expired events that have different
         # meanings during OPENING and CLOSING.
 
+        doorState = self._dev.states['doorState']
         if event == 'tt-exp':
-            if self._doorState is self.OPENING:
+
+            if doorState is self.OPENING:
                 os = self._dev.pluginProps.get('os')
                 event += '&!os' if not os else ''
-            elif self._doorState is self.CLOSING:
+
+            elif doorState is self.CLOSING:
                 cs = self._dev.pluginProps.get('cs')
                 event += '&!cs' if not cs else ''
-            L.debug('"%s" %s', self._dev.name, event)
 
         # Get the new door state from the DOOR_STATE_TRANSITIONS dictionary as
-        # a function of the current door state and the monitored device event.
+        # a function of the current door state and the event.
 
         try:
-            newDoorState = self.DOOR_STATE_TRANSITIONS[self._doorState][event]
-        except KeyError:  # Ignore event if no legal transition.
-            if self._doorState == self.LOCKED:
-                message = ('"%s" %s event detected while the door is %s; '
-                           'return the door to the CLOSED state before '
-                           'unlocking')
-            else:
-                message = ('"%s" event %s is inconsistent with door state %s; '
-                           'transition ignored')
-            L.warning(message, self._dev.name, event,
-                      self.DOOR_STATES[self._doorState])
+            newDoorState = self.DOOR_STATE_TRANSITIONS[doorState][event]
+
+        except KeyError:  # Event is not in the dictionary for the door state.
+            L.warning('"%s" event %s is not in the dictionary for the door '
+                      'state %s; event ignored', self._dev.name, event,
+                      self.DOOR_STATES[doorState])
             return
 
         # Valid new door state.  Format a transition string in the form of
@@ -375,18 +371,26 @@ class VirtualGarageDoor:
                                       self.DOOR_STATES[newDoorState])
         self._doorStateTrack += transition
 
+        # Warn the user if the door was locked during the door state
+        # transition.
+
+        lkDevId = int(self._dev.pluginProps['lkDevId'])
+        lkDev = indigo.devices[lkDevId]
+        if lkDev.onState:  # Door is locked.
+            L.warning('"%s" door was LOCKED during the door state '
+                      'transition; return the door to the CLOSED state '
+                      'before unlocking', self._dev.name, event)
+
         # Update the door states if there has been a state change.
 
-        if newDoorState == self._doorState:  # No change.
+        if newDoorState == doorState:  # No change.
             return
-        self._priorDoorState = self._doorState
-        self._doorState = newDoorState
-        self._updateDoorStatesOnServer()
+        self._updateDoorStatesOnServer(newDoorState)
 
         # Perform new state actions.
 
         ttDevId = int(self._dev.pluginProps['ttDevId'])
-        if self._doorState in self.STATIONARY_STATES:
+        if newDoorState in self.STATIONARY_STATES:
 
             # Log the existing door state track if requested,
             # initialize a new door state track, stop the timer,
@@ -397,7 +401,7 @@ class VirtualGarageDoor:
                        self._dev.name, self._dev.pluginProps['mDevConfig'],
                        self._doorStateTrack)
 
-            self._doorStateTrack = self.DOOR_STATES[self._doorState]
+            self._doorStateTrack = self.DOOR_STATES[newDoorState]
 
             self._plugin.TIMER.executeAction('stopTimer', deviceId=ttDevId)
 
@@ -414,5 +418,5 @@ class VirtualGarageDoor:
         # If the door state is REVERSING, immediately declare a reverse event
         # and perform a recursive update to force a new transition.
 
-        if self._doorState is self.REVERSING:
+        if newDoorState is self.REVERSING:
             self.update('reverse')

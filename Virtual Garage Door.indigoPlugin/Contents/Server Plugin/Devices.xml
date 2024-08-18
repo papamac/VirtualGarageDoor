@@ -15,8 +15,8 @@ FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.3.3
-    DATE:  July 17, 2024
+ VERSION:  1.3.4
+    DATE:  August 18, 2024
 
 CHANGE LOG:
 
@@ -60,134 +60,12 @@ v1.3.0   5/23/2024  Add optional closing/opening actions to the opener
                     ConfigUi.
 v1.3.2   7/12/2024  Add a new lock device to the plugin.
 v1.3.3   7/17/2024  Add priorDoorState to the opener device.
+v1.3.4   8/18/2024  (1) Reverse order of opener and lock devices to reverse the
+                    order of the presentation in the Home page New dialog.
+                    (2) Remove the priorDoorState from the opener device.
 -->
 
 <Devices>
-
-    <!-- ################################################################## -->
-    <!-- #                                                                # -->
-    <!-- #                Virtual Garage Door Lock Device                 # -->
-    <!-- #                                                                # -->
-    <!-- ################################################################## -->
-
-    <Device id="lock" type="relay" subType="kRelayDeviceSubType.Lock"
-            ui="Lock">
-        <Name>Virtual Garage Door Lock</Name>
-        <ConfigUI>
-
-            <!-- ###################### Hidden Field ###################### -->
-
-            <Field id="opDevId" type="textfield" hidden="true">
-                <Label> </Label>
-            </Field>
-
-            <!-- ############ Optional Locking Devices Header ############# -->
-
-            <Field id="lockingDevicesSeparator" type="separator"> </Field>
-
-            <Field id="lockingDevicesTitle" type="label" alignText="center">
-                <Label>Optional Garage Door Locking Devices</Label>
-            </Field>
-
-            <!-- ###################### Power Switch ###################### -->
-
-            <Field id="powerSwitchSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="powerSwitch" type="menu">
-                <Label>Power Switch:</Label>
-                <List class="self" filter="switch" method="getDeviceList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="powerSwitchLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
-            </Field>
-
-            <!-- #################### Mechanical Lock ##################### -->
-
-            <Field id="mechanicalLockSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="mechanicalLock" type="menu">
-                <Label>Mechanical Lock:</Label>
-                <List class="self" filter="lock" method="getDeviceList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="mechanicalLockLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a lock device that can physically lock the garage door.</Label>
-            </Field>
-
-             <!-- ########## Optional Locking/Unlocking Actions ########### -->
-
-            <Field id="optionsSeparator" type="separator"> </Field>
-
-            <Field id="optionsTitle" type="label" alignText="center">
-                <Label>Optional Locking/Unlocking Actions</Label>
-            </Field>
-
-            <Field id="optionsSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="optionsLabel" type="label" alignText="center"
-                   fontSize="small" fontColor="darkgray">
-                <Label>When locking or unlocking the door, optionally execute an action group before commanding the lock device.</Label>
-            </Field>
-
-            <!-- ############# Optional Locking Action Group ############## -->
-
-            <Field id="lockingSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="lockingActionGroup" type="menu">
-                <Label>Locking                         Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <!-- ############ Optional Unlocking Action Group ############# -->
-
-            <Field id="unlockingSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="unlockingActionGroup" type="menu">
-                <Label>Unlocking                     Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-        </ConfigUI>
-
-        <!-- ########################## States ############################ -->
-
-        <States>
-
-            <State id="lockStatus">
-                <ValueType>
-                    <List>
-                        <Option value="unlocked">Unlocked</Option>
-                        <Option value="locked">Locked</Option>
-                    </List>
-                </ValueType>
-                <TriggerLabel>Lock Status</TriggerLabel>
-                <TriggerLabelPrefix>Lock Status</TriggerLabelPrefix>
-                <ControlPageLabel>Lock Status</ControlPageLabel>
-                <ControlPageLabelPrefix>Lock Status</ControlPageLabelPrefix>
-            </State>
-
-        </States>
-
-        <UiDisplayStateId>lockStatus</UiDisplayStateId>
-
-    </Device>
 
     <!-- ################################################################## -->
     <!-- #                                                                # -->
@@ -196,7 +74,7 @@ v1.3.3   7/17/2024  Add priorDoorState to the opener device.
     <!-- ################################################################## -->
 
     <Device id="opener" type="relay"
-            subType="kRelayDeviceSubType.GarageController">
+            subType="kRelayDeviceSubType.GarageController" ui="Opener">
         <Name>Virtual Garage Door Opener</Name>
         <ConfigUI>
 
@@ -499,14 +377,6 @@ v1.3.3   7/17/2024  Add priorDoorState to the opener device.
                 <ControlPageLabelPrefix>Door State</ControlPageLabelPrefix>
             </State>
 
-            <State id="priorDoorState">
-                <ValueType>Integer</ValueType>
-                <TriggerLabel>Prior Door State Changed</TriggerLabel>
-                <TriggerLabelPrefix>Prior Door State</TriggerLabelPrefix>
-                <ControlPageLabel>Prior Door State</ControlPageLabel>
-                <ControlPageLabelPrefix>Prior Door State</ControlPageLabelPrefix>
-            </State>
-
             <State id="doorStatus">
                 <ValueType>
                     <List>
@@ -530,4 +400,131 @@ v1.3.3   7/17/2024  Add priorDoorState to the opener device.
         <UiDisplayStateId>doorStatus</UiDisplayStateId>
 
     </Device>
+
+    <!-- ################################################################## -->
+    <!-- #                                                                # -->
+    <!-- #                Virtual Garage Door Lock Device                 # -->
+    <!-- #                                                                # -->
+    <!-- ################################################################## -->
+
+    <Device id="lock" type="relay" subType="kRelayDeviceSubType.Lock"
+            ui="Lock">
+        <Name>Virtual Garage Door Lock</Name>
+        <ConfigUI>
+
+            <!-- ###################### Hidden Field ###################### -->
+
+            <Field id="opDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <!-- ############ Optional Locking Devices Header ############# -->
+
+            <Field id="lockingDevicesSeparator" type="separator"> </Field>
+
+            <Field id="lockingDevicesTitle" type="label" alignText="center">
+                <Label>Optional Garage Door Locking Devices</Label>
+            </Field>
+
+            <!-- ###################### Power Switch ###################### -->
+
+            <Field id="powerSwitchSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="powerSwitch" type="menu">
+                <Label>Power Switch:</Label>
+                <List class="self" filter="switch" method="getDeviceList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="powerSwitchLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
+            </Field>
+
+            <!-- #################### Mechanical Lock ##################### -->
+
+            <Field id="mechanicalLockSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="mechanicalLock" type="menu">
+                <Label>Mechanical Lock:</Label>
+                <List class="self" filter="lock" method="getDeviceList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="mechanicalLockLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Optionally select a lock device that can physically lock the garage door.</Label>
+            </Field>
+
+             <!-- ########## Optional Locking/Unlocking Actions ########### -->
+
+            <Field id="optionsSeparator" type="separator"> </Field>
+
+            <Field id="optionsTitle" type="label" alignText="center">
+                <Label>Optional Locking/Unlocking Actions</Label>
+            </Field>
+
+            <Field id="optionsSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="optionsLabel" type="label" alignText="center"
+                   fontSize="small" fontColor="darkgray">
+                <Label>When locking or unlocking the door, optionally execute an action group before commanding the lock device.</Label>
+            </Field>
+
+            <!-- ############# Optional Locking Action Group ############## -->
+
+            <Field id="lockingSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lockingActionGroup" type="menu">
+                <Label>Locking                         Action Group:</Label>
+                <List class="self" method="getActionGroupList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <!-- ############ Optional Unlocking Action Group ############# -->
+
+            <Field id="unlockingSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="unlockingActionGroup" type="menu">
+                <Label>Unlocking                     Action Group:</Label>
+                <List class="self" method="getActionGroupList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+        </ConfigUI>
+
+        <!-- ########################## States ############################ -->
+
+        <States>
+
+            <State id="lockStatus">
+                <ValueType>
+                    <List>
+                        <Option value="unlocked">Unlocked</Option>
+                        <Option value="locked">Locked</Option>
+                    </List>
+                </ValueType>
+
+                <TriggerLabel>Lock Status</TriggerLabel>
+                <TriggerLabelPrefix>Lock Status</TriggerLabelPrefix>
+                <ControlPageLabel>Lock Status</ControlPageLabel>
+                <ControlPageLabelPrefix>Lock Status</ControlPageLabelPrefix>
+            </State>
+
+        </States>
+
+        <UiDisplayStateId>lockStatus</UiDisplayStateId>
+
+    </Device>
+
 </Devices>

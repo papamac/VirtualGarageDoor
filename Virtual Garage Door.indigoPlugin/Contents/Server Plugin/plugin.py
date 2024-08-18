@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.3
-    DATE:  July 17, 2024
+ VERSION:  1.3.4
+    DATE:  August 18, 2024
 
 UNLICENSE:
 
@@ -261,19 +261,27 @@ v1.3.1   6/21/2024  (1) Remove the toggleGarageDoor action because it is
                     a new internal method _initTravelTimerDevice(self, dev) in
                     preparation for introducing a new lock device.
 v1.3.2   7/12/2024  Add a new lock device to the plugin.
-v3.1.3   7/17/2024  (1) Fix a bug in the _initializeLockDevice method.
+v1.3.3   7/17/2024  (1) Fix a bug in the _initializeLockDevice method.
                     (2) Add validation code for lock devices in
                     validateDeviceConfigUi.
+v1.3.4   8/18/2024  (1) Add a deviceTypeId check when looking for existing lock
+                    and travel timer devices.
+                    (2) Eliminate the LOCKED state from the door state
+                    enumeration.
+                    (3) Update action callback methods to use the lock device
+                    state for locked/unlocked decisions.
+                    (4) Update image files for wiki figures and tables.
+"""
 
 ###############################################################################
 #                                                                             #
 #                       DUNDERS, IMPORTS, AND GLOBALS                         #
 #                                                                             #
 ###############################################################################
-"""
+
 __author__ = 'papamac'
-__version__ = '1.3.3'
-__date__ = 'July 17, 2024'
+__version__ = '1.3.4'
+__date__ = 'August 18, 2024'
 
 import indigo
 
@@ -312,14 +320,14 @@ class Plugin(indigo.PluginBase):
 
     # Lock state enumeration and lock status.
 
-    UNLOCKED, LOCKED_ = range(2)
+    UNLOCKED, LOCKED = (False, True)
     LOCK_STATUS = ('unlocked', 'locked')
     LOCK_STATES = [status.upper() for status in LOCK_STATUS]
 
     # Door state enumeration and stationary states.
 
-    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING, LOCKED = range(7)
-    STATIONARY_STATES = (OPEN, CLOSED, STOPPED, LOCKED)
+    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING = range(6)
+    STATIONARY_STATES = (OPEN, CLOSED, STOPPED)
 
     # Monitored device types used in deviceStartComm and validateDeviceConfigUi
     # methods.
@@ -472,7 +480,7 @@ class Plugin(indigo.PluginBase):
         The lock states include the onOffState and the lockStatus.  The
         onOffState is the lockState with values UNLOCKED (off) and LOCKED (on).
         The lockStatus is a lower case string representation of the lockState
-        enumeration (unlocked or locked).
+        enumeration (locked or unlocked).
 
         Also, set the state image on the Indigo Home window based on the value
         of the lockState (onOffState).  Select a green lock image if the
@@ -486,7 +494,7 @@ class Plugin(indigo.PluginBase):
         dev.updateStateOnServer('lockStatus', lockStatus)
         L.info('"%s" update to %s', dev.name, self.LOCK_STATES[lockState])
 
-        # Compute and update state image.
+        # Select and update state image.
 
         image = (indigo.kStateImageSel.Locked if lockState
                  else indigo.kStateImageSel.Unlocked)
@@ -533,7 +541,7 @@ class Plugin(indigo.PluginBase):
         # states of the devices for use in setting the initial device opener
         # state.
 
-        errors = False
+        error = False
         mDevStates = {}  # Initial states of monitored devices by device type.
         for mDevType in self.MONITORED_DEVICE_TYPES:
             mDevId = dev.pluginProps[mDevType + 'DevId']
@@ -546,13 +554,13 @@ class Plugin(indigo.PluginBase):
                 if not mDev:
                     L.error('"%s" mDevId %s is not in devices dictionary',
                             dev.name, mDevId)
-                    errors = True
+                    error = True
                     continue
                 mDevStateName = dev.pluginProps[mDevType + 'State']
                 if mDevStateName not in mDev.states:
                     L.error('"%s" "%s" state %s is not in states dictionary',
                             dev.name, mDev.name, mDevStateName)
-                    errors = True
+                    error = True
                     continue
 
                 # Add a new entry in the monitored devices dictionary.
@@ -569,12 +577,12 @@ class Plugin(indigo.PluginBase):
         L.debug(self._monitoredDevices[devId])
         L.debug(mDevStates)
 
-        if errors:  # Abort deviceStartComm if there were errors.
+        if error:  # Abort deviceStartComm if there was an error.
             self.deviceStopComm(dev)
             L.error('"%s" init error(s): check/run ConfigUi', dev.name)
             dev.setErrorStateOnServer('init err')  # Set error state.
 
-        else:  # No errors.
+        else:  # No error.
 
             # Instantiate a VirtualGarageDoor object for the device and clear
             # the error state on the server, if any.
@@ -626,7 +634,7 @@ class Plugin(indigo.PluginBase):
                     # debug.
 
                     mDevEvent = mDevType + ('-off', '-on')[newState]
-                    L.debug('"%s" %s', dev.name, mDevEvent)
+                    L.debug('"%s" event %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
 
@@ -710,7 +718,7 @@ class Plugin(indigo.PluginBase):
             # if not.
 
             lkDev = indigo.devices.get(lk)  # Get dev for standard name.
-            if lkDev:  # lock device exists with the standard name; use it.
+            if lkDev and lkDev.deviceTypeId == 'lock':  # lock device exists.
                 L.debug('"%s" using existing lock device "%s"',
                         dev.name, lk)
 
@@ -740,7 +748,7 @@ class Plugin(indigo.PluginBase):
                         description=description,
                         pluginId=self.LOCK_PLUGIN_ID,
                         deviceTypeId='lock',
-                        props=dict(opDevId=devId,
+                        props=dict(opDevId=devId,  # Lock dev link to opener.
                                    powerSwitch='',
                                    mechanicalLock='',
                                    lockingActionGroup='',
@@ -748,10 +756,10 @@ class Plugin(indigo.PluginBase):
                         folder='doors')
                     lkDev = indigo.devices.get(lk)
 
-            valuesDict['lkDevId'] = str(lkDev.id)
+            valuesDict['lkDevId'] = str(lkDev.id)  # Opener dev link to lock.
 
         except Exception as errorMessage:
-            L.warning('"%s" Lock device init failed: %s', lk, errorMessage)
+            L.error('"%s" lock device init failed: %s', lk, errorMessage)
 
         return valuesDict  # Return with or without errors.
 
@@ -817,7 +825,7 @@ class Plugin(indigo.PluginBase):
             # if not.
 
             ttDev = indigo.devices.get(tt)  # Get dev for standard name.
-            if ttDev:  # tt device exists with the standard name; use it.
+            if ttDev and ttDev.deviceTypeId == 'timer':  # tt device exists.
                 L.debug('"%s" using existing travel timer device "%s"',
                         dev.name, tt)
                 self.TIMER.executeAction('setTimerStartValue',
@@ -902,9 +910,9 @@ class Plugin(indigo.PluginBase):
                 opDev = indigo.devices.get(int(opDevId))  # Opener device.
                 if opDev and opDev.deviceTypeId == 'opener':
                     return True
-            L.warning('"%s" lock device is not liked to an valid opener '
+            L.warning('"%s" lock device is not linked to an valid opener '
                       'device; create and initialize lock devices only with '
-                      'the opener ConfigUi')
+                      'the opener device ConfigUi')
             return False
 
         # Validate VGD opener device:
@@ -1157,19 +1165,19 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                     Internal Action Support Methods                     #
     #                                                                         #
-    #  def _toggleActivationRelay(self, dev)                                  #
-    #  def _executeOptionalActions(dev, action='closing')                     #
-    #  def _lockGarageDoor(self, dev)                                         #
-    #  def _unlockGarageDoor(self, dev)                                       #
-    #  def _closeGarageDoor(self, dev)                                        #
-    #  def _openGarageDoor(self, dev)                                         #
+    #  def _toggleActivationRelay(self, opDev)                                #
+    #  def _executeOptionalActions(opDev, action='opening')                   #
+    #  def _openGarageDoor(self, opDev)                                       #
+    #  def _closeGarageDoor(self, opDev)                                      #
+    #  def _lockGarageDoor(self, lkDev)                                       #
+    #  def _unlockGarageDoor(self, lkDev)                                     #
     #                                                                         #
     #                         Plugin Callback Methods                         #
     #                                                                         #
+    #  def openGarageDoor(self, pluginAction)                                 #
+    #  def closeGarageDoor(self, pluginAction)                                #
     #  def lockGarageDoor(self, pluginAction)                                 #
     #  def unlockGarageDoor(self, pluginAction)                               #
-    #  def closeGarageDoor(self, pluginAction)                                #
-    #  def openGarageDoor(self, pluginAction)                                 #
     #                                                                         #
     #                  Device and Universal Callback Methods                  #
     #                                                                         #
@@ -1178,21 +1186,21 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     ###########################################################################
 
-    def _toggleActivationRelay(self, dev):
+    def _toggleActivationRelay(self, opDev):
         """
         Turn on the activation relay for a period equal to the global
         AR_CLOSURE_TIME.  Use special plugin actions for EasyDAQ relay devices;
         otherwise use the standard Indigo device turnOn method.
         """
-        L.threaddebug('_toggleActivationRelay called "%s"', dev.name)
+        L.threaddebug('_toggleActivationRelay called "%s"', opDev.name)
 
-        arDevId = dev.pluginProps.get('arDevId')
+        arDevId = opDev.pluginProps.get('arDevId')
         if arDevId:
             arDevId = int(arDevId)
             arDev = indigo.devices[arDevId]
             if arDev.deviceTypeId.startswith('easyDaq'):  # EasyDAQ relay.
                 plugin = indigo.server.getPlugin(arDev.pluginId)
-                props = dict(channelSel=int(dev.pluginProps['arState'][8:9]))
+                props = dict(channelSel=int(opDev.pluginProps['arState'][8:9]))
                 plugin.executeAction('turnOnOutput', deviceId=arDevId,
                                      props=props)
                 sleep(self.AR_CLOSURE_TIME)
@@ -1203,11 +1211,11 @@ class Plugin(indigo.PluginBase):
                 sleep(self.AR_CLOSURE_TIME)
                 indigo.device.turnOff(arDevId)
         else:
-            error = 'no activation relay specified; door action ignored'
-            L.warning('"%s" %s', dev.name, error)
+            L.warning('"%s" no activation relay specified; door action '
+                      'ignored', opDev.name)
 
     @staticmethod
-    def _executeOptionalActions(dev, action='closing'):
+    def _executeOptionalActions(opDev, action='opening'):
         """
         Optionally execute closing or opening action group and closing/opening
         delay based on pluginProps entries.  Do nothing if the action group
@@ -1215,261 +1223,183 @@ class Plugin(indigo.PluginBase):
         backward compatibility with opener devices created by older plugin
         versions.
         """
-        L.threaddebug('_executeOptionalActions called "%s"', dev.name)
+        L.threaddebug('_executeOptionalActions called "%s"', opDev.name)
 
-        actionGroup = dev.pluginProps[action + 'ActionGroup']
+        actionGroup = opDev.pluginProps[action + 'ActionGroup']
         if actionGroup:
             indigo.actionGroup.execute(actionGroup)
 
-        delayTime = dev.pluginProps[action + 'DelayTime']
+        delayTime = opDev.pluginProps[action + 'DelayTime']
         if delayTime:
             sleep(float(delayTime))
 
-    def _lockGarageDoor(self, dev):
+    def _openGarageDoor(self, opDev):
         """
-        If the doorState is not closed, log an error message and return.  The
-        garage door can only be locked when it is stationary and closed.  If
-        the doorState is closed, send the VirtualGarageDoor update method an
-        'lk-on' event to trigger a transition to the locked state.  Log an
-        error message and return if the door state does not change.
+        If the garage door is locked, log a warning message and return.  No
+        opening/closing actions are allowed when the door is locked.
+
+        If the door is moving (not in a stationary state), log a warning
+        message and return.  Remote door actions are not allowed when the door
+        is in motion.
+
+        If the door is not closed, also log a warning message and return.  This
+        prevents inadvertently toggling the door when it is already open or
+        is stopped (obstructed).
+
+        Otherwise (door is not locked and closed), execute optional user
+        actions and then toggle the activation relay to open the garage door.
+        """
+        L.threaddebug('_openGarageDoor called "%s"', opDev.name)
+        lkDevId = int(opDev.pluginProps['lkDevId'])  # Get lock device id.
+        lkDev = indigo.devices[lkDevId]  # Get lock device object.
+        doorState = opDev.states['doorState']
+
+        if lkDev.onState:  # Door is locked.
+            L.warning('"%s" attempt to open the garage door when it is '
+                      'locked; door action ignored', opDev.name)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            L.warning('"%s" attempt to open the garage door when it is '
+                      'moving; door action ignored', opDev.name)
+
+        elif doorState != self.CLOSED:  # Door is not closed.
+            L.warning('"%s" attempt to open the garage door when it is '
+                      'not closed; door action ignored', opDev.name)
+
+        else:  # Execute user actions and toggle the door open.
+            self._executeOptionalActions(opDev)
+            self._toggleActivationRelay(opDev)
+
+    def _closeGarageDoor(self, opDev):
+        """
+        If the garage door is locked, log a warning message and return.  No
+        opening/closing actions are allowed when the door is locked.
+
+        If the door is moving (not in a stationary state), log a warning
+        message and return.  Remote door actions are not allowed when the door
+        is in motion.
+
+        If the door is already closed, also log a warning message and return.
+        This prevents inadvertently toggling the door to open with a close
+        action.
+
+        Otherwise (door is not locked, moving, or closed), execute optional
+        user actions and then toggle the activation relay to close the garage
+        door.
+        """
+        L.threaddebug('_closeGarageDoor called "%s"', opDev.name)
+        lkDevId = int(opDev.pluginProps['lkDevId'])  # Get lock device id.
+        lkDev = indigo.devices[lkDevId]  # Get lock device object.
+        doorState = opDev.states['doorState']
+
+        if lkDev.onState:  # Door is locked.
+            L.warning('"%s" attempt to close the garage door when it is '
+                      'locked; door action ignored', opDev.name)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            L.warning('"%s" attempt to close the garage door when it is '
+                      'moving; door action ignored', opDev.name)
+
+        elif doorState == self.CLOSED:  # Door is closed.
+            L.warning('"%s" attempt to close the garage door when it is '
+                      'already closed; door action ignored', opDev.name)
+
+        else:  # Execute user actions and toggle the door closed.
+            self._executeOptionalActions(opDev, action='closing')
+            self._toggleActivationRelay(opDev)
+
+    def _lockGarageDoor(self, lkDev):
+        """
+        If the doorState is not closed, log a warning message and return.  The
+        garage door can only be locked when it is closed.  If the doorState is
+        closed, set the lock device states on the server to locked.
 
         Optionally execute locking actions to (1) turn off the garage door
         opener power, (2) turn on (lock) a garage door mechanical lock, and
-        (3) execute a user-specified locking actin group.  If all optional
-        actions succeed, update the lock state on the server to LOCKED.
+        (3) execute a user-specified locking actin group.  Log a warning
+        message if any of the optional actions fails to execute.
         """
-        L.threaddebug('_lockGarageDoor called "%s"', dev.name)
-        opDevId = int(dev.pluginProps['opDevId'])
-        opDev = indigo.devices[opDevId]
+        L.threaddebug('_lockGarageDoor called "%s"', lkDev.name)
+        opDevId = int(lkDev.pluginProps['opDevId'])  # Get opener device id.
+        opDev = indigo.devices[opDevId]  # Get opener device object.
 
         # Ensure that the door state is CLOSED.
 
         if opDev.states['doorState'] != self.CLOSED:
-            error = ('attempt to lock the garage door when it is not closed; '
-                     'door action ignored')
-            L.warning('"%s" %s', dev.name, error)
+            L.warning('"%s" attempt to lock the garage door when it is not '
+                      'closed; door action ignored', lkDev.name)
             return
 
-        # Update and check the door state.
+        # Update lock device states.
 
-        vgd = self._virtualGarageDoors[opDevId]
-        vgd.update('lk-on')
-        opDev = indigo.devices[opDevId]  # Refresh the opDev object.
-        if opDev.states['doorState'] != self.LOCKED:
-            L.warning('"%s" locking action failed', dev.name)
-            return
+        self._updateLockStatesOnServer(lkDev, self.LOCKED)
 
         # Execute optional locking actions in order (1) power switch off,
         # (2) mechanical lock on, and (3) locking action group.
 
         try:
-            powerSwitch = dev.pluginProps['powerSwitch']
+            powerSwitch = lkDev.pluginProps['powerSwitch']
             if powerSwitch:
                 indigo.device.turnOff(powerSwitch)
 
-            mechanicalLock = dev.pluginProps['mechanicalLock']
+            mechanicalLock = lkDev.pluginProps['mechanicalLock']
             if mechanicalLock:
                 indigo.device.turnOn(mechanicalLock)
 
-            lockingActionGroup = dev.pluginProps['lockingActionGroup']
+            lockingActionGroup = lkDev.pluginProps['lockingActionGroup']
             if lockingActionGroup:
                 indigo.actionGroup.execute(lockingActionGroup)
 
-        except Exception as errorMessage:
-            error = '"%s" optional locking action failed: %s'
-            L.warning(error, dev.name, errorMessage)
+        except Exception as warningMessage:
+            L.warning('"%s" optional locking action failed: %s',
+                      lkDev.name, warningMessage)
+
+    def _unlockGarageDoor(self, lkDev):
+        """
+        If the doorState is not closed, log a warning message and return.  The
+        garage door can only be unlocked when it is closed.  If the doorState
+        is closed, set the lock device states on the server to unlocked.
+
+        Optionally execute unlocking actions to (1) execute a user-specified
+        unlocking actin group, (2) turn off (unlock) a garage door mechanical
+        lock, and (3) turn on the garage door opener power.  Log a warning
+        message if any of the optional actions fails to execute.
+        """
+        L.threaddebug('unlockGarageDoor called "%s"', lkDev.name)
+        opDevId = int(lkDev.pluginProps['opDevId'])  # Get opener device id.
+        opDev = indigo.devices[opDevId]  # Get opener device object.
+
+        # Ensure that the door state is CLOSED.
+
+        if opDev.states['doorState'] != self.CLOSED:
+            L.warning('"%s" attempt to unlock the garage door when it is not '
+                      'closed; door action ignored', lkDev.name)
             return
 
         # Update lock device states.
 
-        self._updateLockStatesOnServer(dev, self.LOCKED_)
-
-    def _unlockGarageDoor(self, dev):
-        """
-        If the doorState is not locked, log an error message and return.  The
-        garage door can only be unlocked when it is closed and locked.  If the
-        doorState is locked, send the VirtualGarageDoor update method an
-        'lk-off' event to trigger a transition to the closed state.  Log an
-        error message and return if the door state does not change.
-
-        Optionally execute unlocking actions to (1) execute a user-specified
-        unlocking actin group, (2) turn off (unlock) a garage door mechanical
-        lock, and (3) turn on the garage door opener power.  If all
-        optional actions execute successfully, update the lock state on the
-        server to UNLOCKED.
-        """
-        L.threaddebug('unlockGarageDoor called "%s"', dev.name)
-        opDevId = int(dev.pluginProps['opDevId'])
-        opDev = indigo.devices[opDevId]
-
-        # Ensure that the door state is LOCKED.
-
-        if opDev.states['doorState'] != self.LOCKED:
-            error = ('attempt to unlock the garage door when it is not locked;'
-                     ' door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-            return
-
-        # Update and check the door state.
-
-        vgd = self._virtualGarageDoors[opDev.id]
-        vgd.update('lk-off')
-        opDev = indigo.devices[opDevId]  # Refresh the opDev object.
-        if opDev.states['doorState'] != self.CLOSED:
-            L.warning('"%s" unlocking attempt failed', dev.name)
-            return
+        self._updateLockStatesOnServer(lkDev, self.UNLOCKED)
 
         # Execute optional unlocking actions in order (1) unlocking action
         # group, (2) mechanical lock off, and (3) power switch on.
 
         try:
-            unlockingActionGroup = dev.pluginProps['unlockingActionGroup']
+            unlockingActionGroup = lkDev.pluginProps['unlockingActionGroup']
             if unlockingActionGroup:
                 indigo.actionGroup.execute(unlockingActionGroup)
 
-            mechanicalLock = dev.pluginProps['mechanicalLock']
+            mechanicalLock = lkDev.pluginProps['mechanicalLock']
             if mechanicalLock:
                 indigo.device.turnOff(mechanicalLock)
 
-            powerSwitch = dev.pluginProps['powerSwitch']
+            powerSwitch = lkDev.pluginProps['powerSwitch']
             if powerSwitch:
                 indigo.device.turnOn(powerSwitch)
 
-        except Exception as errorMessage:
-            error = '"%s" optional unlocking action failed: %s'
-            L.warning(error, dev.name, errorMessage)
+        except Exception as warningMessage:
+            L.warning('"%s" optional unlocking action failed: %s',
+                      lkDev.name, warningMessage)
             return
-
-        # Update lock device states.
-
-        self._updateLockStatesOnServer(dev, self.UNLOCKED)
-
-    def _closeGarageDoor(self, dev):
-        """
-        If the garage door is locked, log an error message and return.  No
-        closing/opening actions are allowed when the door is locked.
-
-        If the door is moving (not in a stationary state), log an error message
-        and return.  Remote door actions are not allowed when the door is in
-        motion.
-
-        If the door is already closed, also log an error message and return.
-        This prevents inadvertently toggling the door to open with a close
-        action.
-
-        Otherwise (door is not locked, moving, or closed), toggle the
-        activation relay to close the garage door.  Execute optional user
-        actions prior to toggling the activation relay.
-        """
-        L.threaddebug('_closeGarageDoor called "%s"', dev.name)
-        doorState = dev.states['doorState']
-        if doorState == self.LOCKED:
-            error = ('attempt to close the garage door when it is locked; '
-                     'door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
-            error = ('attempt to close the garage door when it is moving; '
-                     'door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        elif dev.states['doorState'] == self.CLOSED:
-            error = ('attempt to toggle the garage door closed when it is '
-                     'already closed; door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        else:  # Execute actions and toggle the door closed.
-            self._executeOptionalActions(dev)
-            self._toggleActivationRelay(dev)
-
-    def _openGarageDoor(self, dev):
-        """
-        If the garage door is locked, log an error message and return.  No
-        closing/opening actions are allowed when the door is locked.
-
-        If the door is moving (not in a stationary state), log an error message
-        and return.  Remote door actions are not allowed when the door is in
-        motion.
-
-        If the door is not closed, also log an error message and return.  This
-        prevents inadvertently toggling the door when it is already open or
-        is stopped (obstructed).
-
-        Otherwise (door is not locked and closed), toggle the activation relay
-        to open the garage door.  Execute optional user actions prior to
-        toggling the activation relay.
-        """
-        L.threaddebug('_openGarageDoor called "%s"', dev.name)
-        doorState = dev.states['doorState']
-        if doorState == self.LOCKED:
-            error = ('attempt to open the garage door when it is locked; door '
-                     'action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
-            error = ('attempt to open the garage door when it is moving; '
-                     'door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        elif doorState != self.CLOSED:
-            error = ('attempt to toggle the garage door open when it is not '
-                     'closed; door action ignored')
-            L.warning('"%s" %s', dev.name, error)
-
-        else:  # Execute actions and toggle the door open.
-            self._executeOptionalActions(dev, action='opening')
-            self._toggleActivationRelay(dev)
-
-    def lockGarageDoor(self, pluginAction):
-        """
-        Lock a garage door given either a lock device or an opener device.
-        If a lock device is referenced in the pluginAction argument, get the
-        lock device from the argument.  If an opener device is provided, look
-        up the lock device id in the opener's pluginProps and then look up the
-        lock device.  Call the internal lock method with the lock device
-        obtained either way.
-        """
-        dev = indigo.devices[pluginAction.deviceId]
-        L.threaddebug('lockGarageDoor called "%s"', dev.name)
-
-        lkDev = dev
-        if dev.deviceTypeId == 'opener':
-            lkDevId = int(dev.pluginProps['lkDevId'])
-            lkDev = indigo.devices[lkDevId]
-        self._lockGarageDoor(lkDev)
-
-    def unlockGarageDoor(self, pluginAction):
-        """
-        Unlock a garage door given either a lock device or an opener device.
-        If a lock device is referenced in the pluginAction argument, get the
-        lock device from the argument.  If an opener device is provided, look
-        up the lock device id in the opener's pluginProps and then look up the
-        lock device.  Call the internal unlock method with the lock device
-        obtained either way.
-        """
-        dev = indigo.devices[pluginAction.deviceId]
-        L.threaddebug('unlockGarageDoor called "%s"', dev.name)
-
-        lkDev = dev
-        if dev.deviceTypeId == 'opener':
-            lkDevId = int(dev.pluginProps['lkDevId'])
-            lkDev = indigo.devices[lkDevId]
-        self._unlockGarageDoor(lkDev)
-
-    def closeGarageDoor(self, pluginAction):
-        """
-        Get the device from the pluginAction argument and call the internal
-        close method.  Log a warning message if the pluginAction device is not
-        an opener.
-        """
-        dev = indigo.devices[pluginAction.deviceId]
-        L.threaddebug('closeGarageDoor called "%s"', dev.name)
-
-        if dev.deviceTypeId == 'opener':
-            self._closeGarageDoor(dev)
-        else:
-            L.warning('"%s" close action requested for a lock device; '
-                      'action ignored', dev.name)
 
     def openGarageDoor(self, pluginAction):
         """
@@ -1486,39 +1416,90 @@ class Plugin(indigo.PluginBase):
             L.warning('"%s" open action requested for a lock device; '
                       'action ignored', dev.name)
 
+    def closeGarageDoor(self, pluginAction):
+        """
+        Get the device from the pluginAction argument and call the internal
+        close method.  Log a warning message if the pluginAction device is not
+        an opener.
+        """
+        dev = indigo.devices[pluginAction.deviceId]
+        L.threaddebug('closeGarageDoor called "%s"', dev.name)
+
+        if dev.deviceTypeId == 'opener':
+            self._closeGarageDoor(dev)
+        else:
+            L.warning('"%s" close action requested for a lock device; '
+                      'action ignored', dev.name)
+
+    def lockGarageDoor(self, pluginAction):
+        """
+        Lock a garage door given either a lock device or an opener device.
+        If a lock device is referenced in the pluginAction argument, get the
+        lock device from the argument.  If an opener device is provided, look
+        up the lock device id in the opener's pluginProps and then look up the
+        lock device.  Call the internal lock method with the lock device
+        obtained either way.
+        """
+        dev = indigo.devices[pluginAction.deviceId]
+        L.threaddebug('lockGarageDoor called "%s"', dev.name)
+
+        lkDev = dev  # Assume that dev is a lock device.
+        if dev.deviceTypeId == 'opener':  # Not true, dev is an opener device.
+            lkDevId = int(dev.pluginProps['lkDevId'])  # Get lock device id.
+            lkDev = indigo.devices[lkDevId]  # Get lock device object.
+        self._lockGarageDoor(lkDev)
+
+    def unlockGarageDoor(self, pluginAction):
+        """
+        Unlock a garage door given either a lock device or an opener device.
+        If a lock device is referenced in the pluginAction argument, get the
+        lock device from the argument.  If an opener device is provided, look
+        up the lock device id in the opener's pluginProps and then look up the
+        lock device.  Call the internal unlock method with the lock device
+        obtained either way.
+        """
+        dev = indigo.devices[pluginAction.deviceId]
+        L.threaddebug('unlockGarageDoor called "%s"', dev.name)
+
+        lkDev = dev  # Assume that dev is a lock device.
+        if dev.deviceTypeId == 'opener':  # Not true, dev is an opener device.
+            lkDevId = int(dev.pluginProps['lkDevId'])  # Get lock device id.
+            lkDev = indigo.devices[lkDevId]  # Get lock device object.
+        self._unlockGarageDoor(lkDev)
+
     def actionControlDevice(self, action, dev):
         """
         Implement the device turnOn (close) and turnOff (open) using the
-        internal _closeGarageDoor and _openGarageDoor methods.  Log an error
+        internal _closeGarageDoor and _openGarageDoor methods.  Log a warning
         message if the device toggle action is selected.  Remote toggling of
         the garage door is not allowed for safety reasons.
         """
         L.threaddebug('actionControlDevice called "%s"', dev.name)
-        if action.deviceAction == indigo.kDeviceAction.TurnOn:  # Lock/close.
-            if dev.deviceTypeId == 'lock':
-                self._lockGarageDoor(dev)
-            elif dev.deviceTypeId == 'opener':
+        if action.deviceAction == indigo.kDeviceAction.TurnOn:  # Close/lock.
+            if dev.deviceTypeId == 'opener':
                 self._closeGarageDoor(dev)
+            elif dev.deviceTypeId == 'lock':
+                self._lockGarageDoor(dev)
 
-        elif action.deviceAction == indigo.kDeviceAction.TurnOff:  # Unlock/open.
-            if dev.deviceTypeId == 'lock':
-                self._unlockGarageDoor(dev)
-            elif dev.deviceTypeId == 'opener':
+        elif action.deviceAction == indigo.kDeviceAction.TurnOff:  # Open/unlock.
+            if dev.deviceTypeId == 'opener':
                 self._openGarageDoor(dev)
+            elif dev.deviceTypeId == 'lock':
+                self._unlockGarageDoor(dev)
 
         elif action.deviceAction == indigo.kDeviceAction.Toggle:
-            error = ('the toggle action is not allowed for lock or opener '
-                     'devices; action ignored')
-            L.warning('"%s" %s', dev.name, error)
+            warning = ('the toggle action is not allowed for lock or opener '
+                       'devices; action ignored')
+            L.warning('"%s" %s', dev.name, warning)
 
     def actionControlUniversal(self, action, dev):
         """
-        Implement the requestStatus command by logging the current lock or door
+        Implement the requestStatus command by logging the current door or lock
         state.
         """
         L.threaddebug('actionControlUniversal called "%s"', dev.name)
         if action.deviceAction == indigo.kUniversalAction.RequestStatus:
+            if dev.deviceTypeId == 'opener':
+                L.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())
             if dev.deviceTypeId == 'lock':
                 L.info('"%s" is %s', dev.name, dev.states['lockStatus'].upper())
-            elif dev.deviceTypeId == 'opener':
-                L.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())
