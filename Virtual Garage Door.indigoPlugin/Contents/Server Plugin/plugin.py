@@ -270,9 +270,7 @@ v1.3.4   8/18/2024  (1) Add a deviceTypeId check when looking for existing lock
                     enumeration.
                     (3) Update action callback methods to use the lock device
                     state for locked/unlocked decisions.
-                    (4) Update image files for wiki figures and tables.
 """
-
 ###############################################################################
 #                                                                             #
 #                       DUNDERS, IMPORTS, AND GLOBALS                         #
@@ -344,12 +342,12 @@ class Plugin(indigo.PluginBase):
 
     DYNAMIC_CONFIG_FIELD_IDs = ((
 
+        'openingActionGroup',          # Action group executed before opening
+        'closingActionGroup',          # Action group executed before closing
         'powerSwitch',                 # Opener physical power switch device
         'mechanicalLock',              # Garage door mechanical lock device
         'lockingActionGroup',          # Action group executed before locking
-        'unlockingActionGroup',        # Action group executed before unlocking
-        'closingActionGroup',          # Action group executed before closing
-        'openingActionGroup')          # Action group executed before opening
+        'unlockingActionGroup')        # Action group executed before unlocking
         + MONITORED_DEVICE_TYPES[:4])  # Monitored devices sans tt
 
     # Relay, sensor, and switch device type id tuples used by the dynamic

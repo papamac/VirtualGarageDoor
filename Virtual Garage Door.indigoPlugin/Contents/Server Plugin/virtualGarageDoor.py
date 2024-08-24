@@ -14,8 +14,8 @@ FUNCTION:  Receives and checks monitored device events from plugin.py.
            Uses the events to update door states and tracks.
    USAGE:  virtualGarageDoor.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.3.4
-    DATE:  August 18, 2024
+ VERSION:  1.3.5
+    DATE:  August 24, 2024
 
 
 UNLICENSE:
@@ -97,7 +97,12 @@ v1.3.2   7/12/2024  Set the door state image to a green lock if the door is in
 v1.3.3   7/17/2024  Set the priorDoorState when updating door states.
 v1.3.4   8/18/2024  (1) Eliminate the LOCKED state from the door state
                     enumeration and the _DOOR_STATE_TRANSITIONS
-                    tuple/dictionary
+                    tuple/dictionary.
+                    (2) Remove code to update the priorDoorState in the
+                    _updateDoorStatesOnServer method,
+                    (3) Use the lock device state in the update method to warn
+                    the user about state transitions while the door is locked.
+v1.3.5   8/24/2024  Fix a message formatting bug in the update method.
 """
 ###############################################################################
 #                                                                             #
@@ -106,8 +111,8 @@ v1.3.4   8/18/2024  (1) Eliminate the LOCKED state from the door state
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.4'
-__date__ = 'August 18, 2024'
+__version__ = '1.3.5'
+__date__ = 'August 24, 2024'
 
 import indigo
 
@@ -134,8 +139,8 @@ class VirtualGarageDoor:
     __init__                   Initializes instance attributes including the
                                door state and door state track.  It is called
                                by the Plugin deviceStartComm method for each
-                               new instance (one for each Indigo door device).
-    _updateDoorStatesOnServer  Updates all Indigo device states based on the
+                               new instance (one for each opener device).
+    _updateDoorStatesOnServer  Updates all opener device states based on the
                                door state.  It is called by the __init__ and
                                update methods.
     update                     Updates the door state and door state track in
@@ -376,10 +381,10 @@ class VirtualGarageDoor:
 
         lkDevId = int(self._dev.pluginProps['lkDevId'])
         lkDev = indigo.devices[lkDevId]
-        if lkDev.onState:  # Door is locked.
-            L.warning('"%s" door was LOCKED during the door state '
-                      'transition; return the door to the CLOSED state '
-                      'before unlocking', self._dev.name, event)
+        if lkDev.onState:  # Door was locked.
+            closeIt = ' close it and' if newDoorState != self.CLOSED else ''
+            L.warning('"%s" door LOCKED during transition%s;%s unlock it',
+                      self._dev.name, transition, closeIt)
 
         # Update the door states if there has been a state change.
 

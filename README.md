@@ -36,9 +36,9 @@ _monitored devices_ to best meet his specific needs.
 VGD v2 includes two optional capabilities that provide improved user safety and
 security:
 
-The first capability provides closing/opening action groups and delays. It
+The first capability provides opening/closing action groups and delays. It
 allows users to optionally specify an action group and/or a delay to be
-executed before the garage door is closed or opened.  It can be used for any
+executed before the garage door is opened or closed.  It can be used for any
 purpose, but is well suited to mitigate the safety issue inherent in unattended
 door operation (see the VGD wiki
 [Section 5.1](https://github.com/papamac/VirtualGarageDoor/wiki/5.-User-Notes)).
@@ -48,19 +48,18 @@ unattended door operations.
 
 The second capability provides VGD lock devices and optional locking/unlocking
 action groups. The VGD plugin creates a new lock device for each opener device.
-Locking the lock device will set the state of the linked opener device to
-locked and disable all plugin actions except unlock. It will then optionally
-disable power to the opener and/or engage a separate mechanical lock device to
-physically secure the door. Use of the lock device with Apple HomeKit requires
-the latest version of the HomeKitLink Siri (HLKS) plugin.
+Locking the lock device will disable all plugin actions except unlock. It will
+then optionally disable power to the opener and/or engage a separate mechanical
+lock device to physically secure the door. Optional locking/unlocking action
+groups can also be configured to meet any other user security needs.
 
 ## Top Level Requirements
 
 | **Requirement**        | **Description**                                                                                                                            |
 |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| Indigo Version         | 2022.1.0 or higher                                                                                                                         |
+| Indigo Version         | 2022.1.0 or later                                                                                                                          |
 | Python Library (API)   | Official (3.x)                                                                                                                             |
-| HKLS Version           | v0.6.65 + custom changes                                                                                                                   |
+| HKLS Version           | v0.6.61 or later                                                                                                                           |
 | Requires Local Network | Yes                                                                                                                                        |
 | Requires Internet      | Yes                                                                                                                                        |
 | Hardware Interfaces    | Various z-wave / custom devices from the [supported devices](https://github.com/papamac/VirtualGarageDoor/wiki/2.-Supported-Devices) list. |
