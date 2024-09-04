@@ -1,11 +1,12 @@
 # coding=utf-8
+"""
 ###############################################################################
 #                                                                             #
 #                     Virtual Garage Door Indigo Plugin                       #
 #                        MODULE virtualGarageDoor.py                          #
 #                                                                             #
 ###############################################################################
-"""
+
   BUNDLE:  Monitoring and control of conventional garage door openers in Indigo
            (Virtual Garage Door.indigoPlugin)
   MODULE:  virtualGarageDoor.py
@@ -51,8 +52,12 @@ The Virtual Garage Door (VGD) plugin monitors one or more Indigo devices to
 track the garage door as it moves through its operational cycles. It saves the
 door states in the states dictionary of a VGD opener device. The states are
 displayed in the Indigo Home window and are available for use by scripts,
-action groups, control pages, triggers, and other plugins. The VGD plugin also
-provides actions to open, close and toggle the garage door.
+action groups, control pages, triggers, and other plugins.
+
+The plugin also creates a VGD lock device for each VGD opener device.  Engaging
+the lock device locks the garage door by disabling open/close actions and
+optionally powering down the physical opener and/or engaging a physical lock.
+The plugin provides actions to open, close, lock and unlock the garage door.
 
 The VGD plugin bundle has two primary Python modules/classes: this module,
 virtualGarageDoor.py encapsulates detailed door behavior in the
@@ -103,6 +108,7 @@ v1.3.4   8/18/2024  (1) Eliminate the LOCKED state from the door state
                     (3) Use the lock device state in the update method to warn
                     the user about state transitions while the door is locked.
 v1.3.5   8/24/2024  Fix a message formatting bug in the update method.
+v1.3.6    9/4/2024  Update comments and wiki figures/tables.
 """
 ###############################################################################
 #                                                                             #
