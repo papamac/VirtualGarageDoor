@@ -15,8 +15,8 @@ FUNCTION:  Receives and checks monitored device events from plugin.py.
            Uses the events to update door states and tracks.
    USAGE:  virtualGarageDoor.py is included in a standard Indigo plugin bundle.
   AUTHOR:  papamac
- VERSION:  1.3.5
-    DATE:  August 24, 2024
+ VERSION:  1.3.7
+    DATE:  September 13, 2024
 
 
 UNLICENSE:
@@ -109,6 +109,7 @@ v1.3.4   8/18/2024  (1) Eliminate the LOCKED state from the door state
                     the user about state transitions while the door is locked.
 v1.3.5   8/24/2024  Fix a message formatting bug in the update method.
 v1.3.6    9/4/2024  Update comments and wiki figures/tables.
+v1.3.7   9/13/2024  Update comments and wiki figures/tables.
 """
 ###############################################################################
 #                                                                             #
@@ -117,8 +118,8 @@ v1.3.6    9/4/2024  Update comments and wiki figures/tables.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.5'
-__date__ = 'August 24, 2024'
+__version__ = '1.3.7'
+__date__ = 'September 13, 2024'
 
 import indigo
 

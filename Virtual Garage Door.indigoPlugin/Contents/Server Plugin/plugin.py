@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.4
-    DATE:  August 18, 2024
+ VERSION:  1.3.7
+    DATE:  September 13, 2024
 
 UNLICENSE:
 
@@ -276,6 +276,7 @@ v1.3.4   8/18/2024  (1) Add a deviceTypeId check when looking for existing lock
                     (3) Update action callback methods to use the lock device
                     state for locked/unlocked decisions.
 v1.3.6    9/4/2024  Update comments and wiki figures/tables.
+v1.3.7   9/13/2024  Update comments and wiki figures/tables.
 """
 ###############################################################################
 #                                                                             #
@@ -284,8 +285,8 @@ v1.3.6    9/4/2024  Update comments and wiki figures/tables.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.4'
-__date__ = 'August 18, 2024'
+__version__ = '1.3.7'
+__date__ = 'September 13, 2024'
 
 import indigo
 
@@ -1242,13 +1243,13 @@ class Plugin(indigo.PluginBase):
         If the garage door is locked, log a warning message and return.  No
         opening/closing actions are allowed when the door is locked.
 
-        If the door is moving (not in a stationary state), log a warning
-        message and return.  Remote door actions are not allowed when the door
-        is in motion.
-
         If the door is not closed, also log a warning message and return.  This
         prevents inadvertently toggling the door when it is already open or
         is stopped (obstructed).
+
+        If the door is moving (not in a stationary state), log a warning
+        message and return.  Remote door actions are not allowed when the door
+        is in motion.
 
         Otherwise (door is not locked and closed), execute optional user
         actions and then toggle the activation relay to open the garage door.
@@ -1262,13 +1263,13 @@ class Plugin(indigo.PluginBase):
             L.warning('"%s" attempt to open the garage door when it is '
                       'locked; door action ignored', opDev.name)
 
-        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
-            L.warning('"%s" attempt to open the garage door when it is '
-                      'moving; door action ignored', opDev.name)
-
         elif doorState != self.CLOSED:  # Door is not closed.
             L.warning('"%s" attempt to open the garage door when it is '
                       'not closed; door action ignored', opDev.name)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            L.warning('"%s" attempt to open the garage door when it is '
+                      'moving; door action ignored', opDev.name)
 
         else:  # Execute user actions and toggle the door open.
             self._executeOptionalActions(opDev)
@@ -1279,15 +1280,15 @@ class Plugin(indigo.PluginBase):
         If the garage door is locked, log a warning message and return.  No
         opening/closing actions are allowed when the door is locked.
 
-        If the door is moving (not in a stationary state), log a warning
-        message and return.  Remote door actions are not allowed when the door
-        is in motion.
-
         If the door is already closed, also log a warning message and return.
         This prevents inadvertently toggling the door to open with a close
         action.
 
-        Otherwise (door is not locked, moving, or closed), execute optional
+        If the door is moving (not in a stationary state), log a warning
+        message and return.  Remote door actions are not allowed when the door
+        is in motion.
+
+        Otherwise (door is not locked, closed, or moving), execute optional
         user actions and then toggle the activation relay to close the garage
         door.
         """
@@ -1300,13 +1301,13 @@ class Plugin(indigo.PluginBase):
             L.warning('"%s" attempt to close the garage door when it is '
                       'locked; door action ignored', opDev.name)
 
-        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
-            L.warning('"%s" attempt to close the garage door when it is '
-                      'moving; door action ignored', opDev.name)
-
         elif doorState == self.CLOSED:  # Door is closed.
             L.warning('"%s" attempt to close the garage door when it is '
                       'already closed; door action ignored', opDev.name)
+
+        elif doorState not in self.STATIONARY_STATES:  # Door is moving.
+            L.warning('"%s" attempt to close the garage door when it is '
+                      'moving; door action ignored', opDev.name)
 
         else:  # Execute user actions and toggle the door closed.
             self._executeOptionalActions(opDev, action='closing')

@@ -33,8 +33,8 @@ _monitored devices_ to best meet his specific needs.
 
 ## Optional Safety and Security Capabilities
 
-VGD v2 includes two optional capabilities that provide improved user safety and
-security:
+VGD v2.0 includes two optional capabilities that provide improved user safety
+and security:
 
 The first capability provides opening/closing action groups and delays. It
 allows users to optionally specify an action group and/or a delay to be
@@ -57,8 +57,8 @@ groups can also be configured to meet any other user security needs.
 
 | **Requirement**        | **Description**                                                                                                                            |
 |------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| Indigo Version         | 2022.1.0 or later                                                                                                                          |
-| Python Library (API)   | Official (3.x)                                                                                                                             |
+| Indigo Version         | v2022.1.0 or later                                                                                                                         |
+| Python Library (API)   | v3.0 or later                                                                                                                              |
 | HKLS Version           | v0.6.61 or later                                                                                                                           |
 | Requires Local Network | Yes                                                                                                                                        |
 | Requires Internet      | Yes                                                                                                                                        |
