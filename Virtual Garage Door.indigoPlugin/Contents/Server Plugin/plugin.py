@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.8
-    DATE:  September 14, 2024
+ VERSION:  1.3.9
+    DATE:  September 15, 2024
 
 UNLICENSE:
 
@@ -282,7 +282,11 @@ v1.3.8   9/14/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
                     execution of the optional actions.  If any exception
                     occurs, log a warning message and return without updating
                     the states.
-                    (2) Update comments and wiki table.
+                    (2) Update comments and table3.
+v1.3.9   9/15/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
+                    methods to check the lock device state before proceeding.
+                    Ignore action if there will be no change in the lock state.
+                    (2) Update comments and table3.
 """
 ###############################################################################
 #                                                                             #
@@ -291,8 +295,8 @@ v1.3.8   9/14/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.8'
-__date__ = 'September 14, 2024'
+__version__ = '1.3.9'
+__date__ = 'September 15, 2024'
 
 import indigo
 
@@ -1321,12 +1325,13 @@ class Plugin(indigo.PluginBase):
 
     def _lockGarageDoor(self, lkDev):
         """
-        If the doorState is not closed, log a warning message and return.  The
-        garage door can only be locked when it is closed.
+        If the lock state is LOCKED or door state is not CLOSED, log a warning
+        message and return.  The garage door can only be locked when it is
+        currently unlocked and closed.
 
         Optionally execute locking actions to (1) turn off the garage door
         opener power, (2) turn on (lock) a garage door mechanical lock, and
-        (3) execute a user-specified locking actin group.  Log a warning
+        (3) execute a user-specified locking action group.  Log a warning
         message and return if any of the optional actions fails to execute.
 
         If there are no exceptions, set the lock device states on the server to
@@ -1336,9 +1341,14 @@ class Plugin(indigo.PluginBase):
         opDevId = int(lkDev.pluginProps['opDevId'])  # Get opener device id.
         opDev = indigo.devices[opDevId]  # Get opener device object.
 
-        # Ensure that the door state is CLOSED.
+        # Ensure that the lock state is UNLOCKED and the door state is CLOSED.
 
-        if opDev.states['doorState'] != self.CLOSED:
+        if lkDev.onState:  # Door is locked.
+            L.warning('"%s" attempt to lock the garage door when it is '
+                      'already locked; door action ignored', lkDev.name)
+            return
+
+        if opDev.states['doorState'] != self.CLOSED:  # Door is not closed.
             L.warning('"%s" attempt to lock the garage door when it is not '
                       'closed; door action ignored', lkDev.name)
             return
@@ -1370,8 +1380,9 @@ class Plugin(indigo.PluginBase):
 
     def _unlockGarageDoor(self, lkDev):
         """
-        If the doorState is not closed, log a warning message and return.  The
-        garage door can only be unlocked when it is closed.
+        If the lock state is UNLOCKED or the door state is not closed, log a
+        warning message and return.  The garage door can only be unlocked when
+        it is both locked and closed.
 
         Optionally execute unlocking actions to (1) execute a user-specified
         unlocking actin group, (2) turn off (unlock) a garage door mechanical
@@ -1385,9 +1396,14 @@ class Plugin(indigo.PluginBase):
         opDevId = int(lkDev.pluginProps['opDevId'])  # Get opener device id.
         opDev = indigo.devices[opDevId]  # Get opener device object.
 
-        # Ensure that the door state is CLOSED.
+        # Ensure that the lock state is LOCKED and the door state is CLOSED.
 
-        if opDev.states['doorState'] != self.CLOSED:
+        if not lkDev.onState:  # Door is not locked.
+            L.warning('"%s" attempt to unlock the garage door when it is '
+                      'not locked; door action ignored', lkDev.name)
+            return
+
+        if opDev.states['doorState'] != self.CLOSED:  # Door is not closed.
             L.warning('"%s" attempt to unlock the garage door when it is not '
                       'closed; door action ignored', lkDev.name)
             return
