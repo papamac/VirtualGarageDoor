@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.9
-    DATE:  September 15, 2024
+ VERSION:  1.3.10
+    DATE:  October 5, 2024
 
 UNLICENSE:
 
@@ -287,6 +287,7 @@ v1.3.9   9/15/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
                     methods to check the lock device state before proceeding.
                     Ignore action if there will be no change in the lock state.
                     (2) Update comments and table3.
+v1.3.10  10/5/2024  Add apcpdu as a switch deviceTypeId.
 """
 ###############################################################################
 #                                                                             #
@@ -295,8 +296,8 @@ v1.3.9   9/15/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.9'
-__date__ = 'September 15, 2024'
+__version__ = '1.3.10'
+__date__ = 'October 5, 2024'
 
 import indigo
 
@@ -397,7 +398,7 @@ class Plugin(indigo.PluginBase):
     sensorDeviceTypeIds = (easyDaqComboTypeIds + easyDaqSensorTypeIds
                            + genericSensorTypeIds)
 
-    switchDeviceTypeIds = ('pseudoRelay', 'relay', 'zwRelayType')
+    switchDeviceTypeIds = ('apcpdu', 'pseudoRelay', 'relay', 'zwRelayType')
 
     # Device id selection dictionary keyed by device type:
 
