@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.3.10
-    DATE:  October 5, 2024
+ VERSION:  1.3.11
+    DATE:  October 11, 2024
 
 UNLICENSE:
 
@@ -288,6 +288,8 @@ v1.3.9   9/15/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
                     Ignore action if there will be no change in the lock state.
                     (2) Update comments and table3.
 v1.3.10  10/5/2024  Add apcpdu as a switch deviceTypeId.
+v1.3.11  10/11/2024 Allow switch devices to be selected as lock devices in
+                    ConfigUi's.
 """
 ###############################################################################
 #                                                                             #
@@ -296,8 +298,8 @@ v1.3.10  10/5/2024  Add apcpdu as a switch deviceTypeId.
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.3.10'
-__date__ = 'October 5, 2024'
+__version__ = '1.3.11'
+__date__ = 'October 11, 2024'
 
 import indigo
 
@@ -1104,10 +1106,13 @@ class Plugin(indigo.PluginBase):
 
         Select devices for the menu list based on the value of the filter_
         argument which is defined in the ConfigUi list specification.  filter_
-        values can be lock, relay, sensor, or switch.  For the lock filter
-        select devices that have a subType attribute whose value is 'Lock'. For
-        the relay, sensor, and switch filters select devices with a
-        deviceTypeId in the self.DEVICE_TYPE_IDs[filter_] tuple.
+        values can be relay, sensor, switch, or lock.  For the relay, sensor,
+        and switch filters select devices with a deviceTypeId in the
+        self.DEVICE_TYPE_IDs[filter_] tuple.  For the lock filter
+        select devices that have a subType attribute whose value is 'Lock' or
+        select switch devices.  Allowing switch devices to be selected for the
+        lock filter permits a switch to be used to control a powered custom
+        lock device.
 
         Return a sorted list of selected devices along with a 'None' option
         to enable the removal of an existing selection by the
@@ -1118,12 +1123,13 @@ class Plugin(indigo.PluginBase):
 
         devices = []
         for dev in indigo.devices:
-            if filter_ == 'lock':
-                selector = (hasattr(dev, 'subType')
-                            and dev.subType == 'Lock'
-                            and dev.id != devId)
-            else:
+            if filter_ != 'lock':
                 selector = dev.deviceTypeId in self.DEVICE_TYPE_IDs[filter_]
+            else:
+                selector = ((hasattr(dev, 'subType')
+                             and dev.subType == 'Lock'
+                             and dev.id != devId)
+                            or dev.deviceTypeId in self.DEVICE_TYPE_IDs['switch'])
             if selector:
                 devices.append(dev.name)
         return ['None'] + sorted(devices)
