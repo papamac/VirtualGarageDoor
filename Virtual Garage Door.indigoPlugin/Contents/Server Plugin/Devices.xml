@@ -15,8 +15,8 @@ FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.3.11
-    DATE:  October 11, 2024
+ VERSION:  1.4.0
+    DATE:  April 20, 2025
 
 CHANGE LOG:
 
@@ -65,6 +65,17 @@ v1.3.4   8/18/2024  (1) Reverse order of opener and lock devices to reverse the
                     (2) Remove the priorDoorState from the opener device.
 v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                     doorStatus state.
+v1.4.0   4/20/2025  This is a major release with a number of new capabilities
+                    and new ConfigUi's.  Consider it the first beta release of
+                    a forthcoming v2.0.  It includes the following changes:
+                    (1) Add optional capabilities to unlock before opening a
+                    door and lock after closing a door.
+                    (2) Add menu fields for lock and timer devices in the
+                    opener ConfigUi.
+                    (3) Add a menu field for an opener device in the lock
+                    ConfigUi.
+                    (4) Add optional lock devices and actions to the opener
+                    ConfigUi when a lock device is selected from the menu.
 -->
 
 <Devices>
@@ -100,6 +111,11 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
+            <Field id="lkConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
             <Field id="lkDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
@@ -117,7 +133,8 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
-            <Field id="tt" type="textfield" hidden="true">
+            <Field id="ttConfig" type="checkbox" defaultValue="false"
+                   hidden="true">
                 <Label> </Label>
             </Field>
 
@@ -139,23 +156,34 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
-            <!-- ############ Garage Door Travel Time (tTime) ############# -->
+            <!-- ################# 'NO SELECTION' Option ################## -->
 
-            <Field id="tTimeTitle" type="label" alignText="center">
-                <Label>Garage Door Travel Time</Label>
+            <Field id="nsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignText="left">
+                <Label>For menu fields, choose 'NO SELECTION' to remove (de-select) a previously selected item.</Label>
             </Field>
 
-            <Field id="tTimeSpacer" type="label">
+            <!-- ################### Lock Device (lk) ##################### -->
+
+            <Field id="lkSeparator" type="separator"> </Field>
+
+            <Field id="lkTitle" type="label" alignText="center">
+                <Label>Optional Lock Device</Label>
+            </Field>
+
+            <Field id="lkSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="tTime" type="textfield" defaultValue="12.0">
-                <Label>Open/Close Travel Time (8-20 sec):</Label>
+            <Field id="lk" type="menu">
+                <Label>Lock                                             Device Name:</Label>
+                <List class="self" filter="lk" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
-            <Field id="tTimeLabel" type="label" fontSize="small"
+            <Field id="lkLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Specify a time that is slightly longer than the door's nominal open/close travel time (see wiki 5.3).</Label>
+                <Label>Select an existing lock device or 'AUTOMATIC' to automatically create/use a standard lock.</Label>
             </Field>
 
             <!-- ################ Monitored Devices Header ################ -->
@@ -163,7 +191,7 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
             <Field id="monitoredDevicesSeparator" type="separator"> </Field>
 
             <Field id="monitoredDevicesTitle" type="label" alignText="center">
-                <Label>Garage Door Monitored Devices (select at least one)</Label>
+                <Label>Optional Monitored Devices (select at least two)</Label>
             </Field>
 
             <!-- ################## Activation Relay (ar) ################# -->
@@ -173,14 +201,14 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
             </Field>
 
             <Field id="ar" type="menu">
-                <Label>Activation Relay          Device Name:</Label>
-                <List class="self" filter="relay" method="getDeviceList"/>
+                <Label>Activation Relay                           Device Name:</Label>
+                <List class="self" filter="ar" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
             <Field id="arLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select a normally open relay that activates the garage door opener.</Label>
+                <Label>Select a normally open relay that activates the garage door opener.</Label>
             </Field>
 
             <Field id="arState" type="textfield" defaultValue="onOffState"
@@ -201,14 +229,14 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
             </Field>
 
             <Field id="cs" type="menu">
-                <Label>Closed Sensor            Device Name:</Label>
-                <List class="self" filter="sensor" method="getDeviceList"/>
+                <Label>Closed Sensor                             Device Name:</Label>
+                <List class="self" filter="cs" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
             <Field id="csLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that senses when the door is closed.</Label>
+                <Label>Select an on/off sensor that senses when the door is closed.</Label>
             </Field>
 
             <Field id="csState" type="textfield" defaultValue="onOffState"
@@ -240,14 +268,14 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
             </Field>
 
             <Field id="os" type="menu">
-                <Label>Open Sensor               Device Name:</Label>
-                <List class="self" filter="sensor" method="getDeviceList"/>
+                <Label>Open Sensor                                Device Name:</Label>
+                <List class="self" filter="os" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
             <Field id="osLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that senses when the door is open.</Label>
+                <Label>Select an on/off sensor that senses when the door is open.</Label>
             </Field>
 
             <Field id="osState" type="textfield" defaultValue="onOffState"
@@ -279,14 +307,14 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
             </Field>
 
             <Field id="vs" type="menu">
-                <Label>Vibration Sensor         Device Name:</Label>
-                <List class="self" filter="sensor" method="getDeviceList"/>
+                <Label>Vibration Sensor                          Device Name:</Label>
+                <List class="self" filter="vs" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
              <Field id="vsLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
-                <Label>Optionally select an on/off sensor that captures a ont-time vibration event.</Label>
+                <Label>Select an on/off sensor that captures a one-time vibration event.</Label>
             </Field>
 
             <Field id="vsState" type="textfield" defaultValue="onOffState"
@@ -316,53 +344,185 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label>Delay resetting the vs to prevent false vibration events from residual motion after the door stops (see wiki 5.2).</Label>
             </Field>
 
-            <!-- ########### Optional Closing/Opening Actions ############# -->
+            <!-- ################### Travel Timer (tt) #################### -->
 
-            <Field id="optionsSeparator" type="separator"> </Field>
-
-            <Field id="optionsTitle" type="label" alignText="center">
-                <Label>Optional Closing/Opening Actions</Label>
-            </Field>
-
-            <Field id="optionsSpacer" type="label">
+            <Field id="ttSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="optionsLabel" type="label" alignText="center"
-                   fontSize="small" fontColor="darkgray">
-                <Label>When closing or opening the door using plugin actions, optionally execute an action group and/or delay before toggling the activation relay.</Label>
-            </Field>
-
-            <!-- ######## Optional Closing Action Group and Delay ######### -->
-
-            <Field id="closingSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="closingActionGroup" type="menu">
-                <Label>Closing                         Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
+             <Field id="tt" type="menu">
+                <Label>Travel Timer                                 Device Name:</Label>
+                <List class="self" filter="tt" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
-            <Field id="closingDelayTime" type="textfield" defaultValue="0.0">
-                <Label>Delay (0-10 sec):</Label>
+             <Field id="ttLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an existing timer device or 'AUTOMATIC' to automatically create/use a standard timer.</Label>
             </Field>
 
-            <!-- ######## Optional Opening Action Group and Delay ######### -->
+            <Field id="tTime" type="textfield" defaultValue="12.0"
+                   visibleBindingId="ttConfig" visibleBindingValue="true">
+                <Label>Travel Time (8-20 sec):</Label>
+            </Field>
+
+            <Field id="tTimeLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="ttConfig" visibleBindingValue="true">
+                <Label>Specify a time that is slightly longer than the door's nominal open/close travel time (see wiki 5.3).</Label>
+            </Field>
+
+            <!-- ######### Optional Physical Lock Devices Header ########## -->
+
+            <Field id="pldSeparator" type="separator"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+            </Field>
+
+            <Field id="pldTitle" type="label"
+                   alignText="center"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Optional Physical Lock Devices</Label>
+            </Field>
+
+            <!-- ################### Power Switch (ps) #################### -->
+
+            <Field id="psSpacer" type="label"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ps" type="menu"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Power Switch                               Device Name:</Label>
+                <List class="self" filter="ps" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="psLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
+            </Field>
+
+            <!-- ################## Mechanical Lock (ml) ################## -->
+
+            <Field id="mlSpacer" type="label"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ml" type="menu"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Mechanical Lock                          Device Name:</Label>
+                <List class="self" filter="ml"
+                      method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="mlLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Optionally select a lock device that can physically lock the garage door.</Label>
+            </Field>
+
+            <!-- ########### Optional Opening/Closing Actions ############# -->
+
+            <Field id="openingOptionsSeparator" type="separator"> </Field>
+
+            <Field id="openingOptionsTitle" type="label" alignText="center">
+                <Label>Optional Opening/Closing Actions</Label>
+            </Field>
+
+            <!-- ################ Optional Opening Actions ################ -->
 
             <Field id="openingSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="openingActionGroup" type="menu">
-                <Label>Opening                       Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
+            <Field id="openingAG" type="menu">
+                <Label>Opening                         Execute Action Before:</Label>
+                <List class="self" filter="openingAG" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
-            <Field id="openingDelayTime" type="textfield" defaultValue="0.0">
-                <Label>Delay (0-10 sec):</Label>
+            <Field id="openingDT" type="textfield" defaultValue="0.0">
+                <Label>Delay Before (0-10 sec):</Label>
+            </Field>
+
+            <Field id="unlockBeforeOpening" type="checkbox"
+                   defaultValue="false"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Unlock Before:</Label>
+            </Field>
+
+            <!-- ################ Optional Closing Actions ################ -->
+
+            <Field id="closingSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="closingAG" type="menu">
+                <Label>Closing                          Execute Action Before:</Label>
+                <List class="self" filter="closingAG" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="closingDT" type="textfield" defaultValue="0.0">
+                <Label>Delay Before (0-10 sec):</Label>
+            </Field>
+
+            <Field id="lockAfterClosing" type="checkbox" defaultValue="false"
+                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Lock After:</Label>
+            </Field>
+
+            <!-- ########## Optional Locking/Unlocking Actions ########### -->
+
+            <Field id="lockingOptionsSeparator" type="separator"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            </Field>
+
+            <Field id="lockingOptionsTitle" type="label" alignText="center"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Optional Locking/Unlocking Actions</Label>
+            </Field>
+
+            <!-- ############# Optional Locking Action Group ############## -->
+
+            <Field id="lockingSpacer" type="label"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lockingAG" type="menu"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Locking                          Execute Action Before:</Label>
+                <List class="self" filter="lockingAG" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="lockingDT" type="textfield" defaultValue="0.0"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Delay After (0-10 sec):</Label>
+            </Field>
+
+            <!-- ############ Optional Unlocking Action Group ############# -->
+
+            <Field id="unlockingSpacer" type="label"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="unlockingAG" type="menu"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Unlocking                       Execute Action Group:</Label>
+                <List class="self" filter="unlockingAG" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="unlockingDT" type="textfield" defaultValue="0.0"
+                    visibleBindingId="lkConfig" visibleBindingValue="true">
+                <Label>Delay After (0-10 sec):</Label>
             </Field>
 
         </ConfigUI>
@@ -419,63 +579,85 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
-            <!-- ############ Optional Locking Devices Header ############# -->
+            <!-- ################# 'NO SELECTION' Option ################## -->
 
-            <Field id="lockingDevicesSeparator" type="separator"> </Field>
-
-            <Field id="lockingDevicesTitle" type="label" alignText="center">
-                <Label>Optional Garage Door Locking Devices</Label>
+            <Field id="nsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignText="left">
+                <Label>For menu fields, choose 'NO SELECTION' to remove (de-select) a previously selected item.</Label>
             </Field>
 
-            <!-- ###################### Power Switch ###################### -->
+            <!-- ################### Opener Device (op) ################### -->
 
-            <Field id="powerSwitchSpacer" type="label">
+            <Field id="opSeparator" type="separator"> </Field>
+
+            <Field id="opTitle" type="label" alignText="center">
+                <Label>Linked Opener Device (required)</Label>
+            </Field>
+
+            <Field id="opSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="powerSwitch" type="menu">
-                <Label>Power Switch:</Label>
-                <List class="self" filter="switch" method="getDeviceList"/>
+            <Field id="op" type="menu">
+                <Label>Opener                                     Device Name:</Label>
+                <List class="self" filter="op" method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
-            <Field id="powerSwitchLabel" type="label" fontSize="small"
+            <Field id="opLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an existing opener device.</Label>
+            </Field>
+
+            <!-- ######### Optional Physical Lock Devices Header ########## -->
+
+            <Field id="pldSeparator" type="separator"> </Field>
+
+            <Field id="pldTitle" type="label" alignText="center">
+                <Label>Optional Physical Lock Devices</Label>
+            </Field>
+
+            <!-- ################### Power Switch (ps) #################### -->
+
+            <Field id="psSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ps" type="menu">
+                <Label>Power Switch                               Device Name:</Label>
+                <List class="self" filter="ps" method="getMenuList"/>
+                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            </Field>
+
+            <Field id="psLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
                 <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
             </Field>
 
-            <!-- #################### Mechanical Lock ##################### -->
+            <!-- ################## Mechanical Lock (ml) ################## -->
 
-            <Field id="mechanicalLockSpacer" type="label">
+            <Field id="mlSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="mechanicalLock" type="menu">
-                <Label>Mechanical Lock:</Label>
-                <List class="self" filter="lock" method="getDeviceList"/>
+            <Field id="ml" type="menu">
+                <Label>Mechanical Lock                          Device Name:</Label>
+                <List class="self" filter="ml"
+                      method="getMenuList"/>
                 <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
             </Field>
 
-            <Field id="mechanicalLockLabel" type="label" fontSize="small"
+            <Field id="mlLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true">
                 <Label>Optionally select a lock device that can physically lock the garage door.</Label>
             </Field>
 
              <!-- ########## Optional Locking/Unlocking Actions ########### -->
 
-            <Field id="optionsSeparator" type="separator"> </Field>
+            <Field id="lockingOptionsSeparator" type="separator"> </Field>
 
-            <Field id="optionsTitle" type="label" alignText="center">
+            <Field id="lockingOptionsTitle" type="label" alignText="center">
                 <Label>Optional Locking/Unlocking Actions</Label>
-            </Field>
-
-            <Field id="optionsSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="optionsLabel" type="label" alignText="center"
-                   fontSize="small" fontColor="darkgray">
-                <Label>When locking or unlocking the door, optionally execute an action group before commanding the lock device.</Label>
             </Field>
 
             <!-- ############# Optional Locking Action Group ############## -->
@@ -484,10 +666,13 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
-            <Field id="lockingActionGroup" type="menu">
-                <Label>Locking                         Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="lockingAG" type="menu">
+                <Label>Locking                           Execute Action Before:</Label>
+                <List class="self" filter="lockingAG" method="getMenuList"/>
+            </Field>
+
+            <Field id="lockingDT" type="textfield" defaultValue="0.0">
+                <Label>Delay After (0-10 sec):</Label>
             </Field>
 
             <!-- ############ Optional Unlocking Action Group ############# -->
@@ -496,10 +681,13 @@ v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                 <Label> </Label>
             </Field>
 
-            <Field id="unlockingActionGroup" type="menu">
-                <Label>Unlocking                     Action Group:</Label>
-                <List class="self" method="getActionGroupList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="unlockingAG" type="menu">
+                <Label>Unlocking                        Execute Action Group:</Label>
+                <List class="self" filter="unlockingAG" method="getMenuList"/>
+            </Field>
+
+            <Field id="unlockingDT" type="textfield" defaultValue="0.0">
+                <Label>Delay After (0-10 sec):</Label>
             </Field>
 
         </ConfigUI>
