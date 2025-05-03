@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.4.0
-    DATE:  April 20, 2025
+ VERSION:  1.4.1
+    DATE:  May 3, 2025
 
 UNLICENSE:
 
@@ -312,6 +312,9 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                     (7) Add significant debug logging for debugging ConfigUi
                     menu interactions with the values dictionary.
                     (8) Add the ESPbuttonType to the relayDeviceTypeIds tuple.
+v1.4.1    5/3/2025  (1) Add the ESPbinarySensor to the sensorDeviceTypeIds
+                    tuple.
+                    (2) Add the ESPswitchType to the switchDeviceTypeIds tuple.
 """
 ###############################################################################
 #                                                                             #
@@ -320,8 +323,8 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.4.0'
-__date__ = 'April 20, 2025'
+__version__ = '1.4.1'
+__date__ = 'May 3, 2025'
 
 import indigo
 
@@ -439,13 +442,19 @@ class Plugin(indigo.PluginBase):
     # Relay, sensor, and switch device type id tuples used to generate device
     # selection menus in the getMenuList method (Part V).
 
+    # EasyDAQ devices:
+
     easyDaqComboTypeIds = ('easyDaq4r4io', 'easyDaq16r8io',
                            'easyDaq8ii4io4r')
     easyDaqRelayTypeIds = ('easyDaq8r', 'easyDaq24r',
                            'easyDaqDo24Stack', 'easyDaqOutputRelay')
     easyDaqSensorTypeIds = ('easyDaq24io',)
 
+    # ESPHome devices:
+
     espHomeRelayTypeIds = ('ESPbuttonType',)
+    espHomeSensorTypeIds = ('ESPbinarySensor',)
+    espHomeSwitchTypeIds = ('ESPswitchType',)
 
     shellyDirectRelayTypeIds = ('shelly1', 'shelly1l',
                                 'shelly1pm', 'shelly4pro,'
@@ -455,23 +464,26 @@ class Plugin(indigo.PluginBase):
                               'shelly-4-pro', 'shelly-em-relay',
                               'shelly-uni-relay')
 
+    # Generic devices:
+
     genericRelayTypeIds = ('digitalOutput', 'pseudoRelay',
                            'zwDimmerType', 'zwRelayType')
     genericSensorTypeIds = ('alarmZone', 'contactSensor',
                             'digitalInput', 'masqSensor',
                             'pseudoRelay', 'zwOnOffSensorType')
+    genericSwitchTypeIds = ('apcpdu', 'pseudoRelay', 'relay', 'zwRelayType')
+
+    # Relay, sensor, and switch devices:
 
     relayDeviceTypeIds = (easyDaqComboTypeIds + easyDaqRelayTypeIds
                           + espHomeRelayTypeIds
                           + shellyDirectRelayTypeIds + shellyMQTTRelayTypeIds
                           + genericRelayTypeIds)
-
     sensorDeviceTypeIds = (easyDaqComboTypeIds + easyDaqSensorTypeIds
-                           + genericSensorTypeIds)
+                           + espHomeSensorTypeIds + genericSensorTypeIds)
+    switchDeviceTypeIds = espHomeSwitchTypeIds + genericSwitchTypeIds
 
-    switchDeviceTypeIds = ('apcpdu', 'pseudoRelay', 'relay', 'zwRelayType')
-
-    # Device type id selection dictionary keyed by VGD field type.:
+    # Device type id selection dictionary keyed by VGD field type:
 
     DEVICE_TYPE_IDs = {'opener': ('opener',),
                        'lock':   ('lock',) + switchDeviceTypeIds,
