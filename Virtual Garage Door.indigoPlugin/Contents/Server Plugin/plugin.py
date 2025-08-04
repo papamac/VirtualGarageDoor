@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.4.1
-    DATE:  May 3, 2025
+ VERSION:  1.5.0
+    DATE:  August 4, 2025
 
 UNLICENSE:
 
@@ -133,14 +133,14 @@ v0.9.2   6/13/2022  Replace the activation sensor with a new vibration sensor.
                     activation control device.  Replace the full sensor names
                     with two character abbreviated names to simplify the state
                     processing code.
-v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUi
+v0.9.3   6/30/2022  Modify the deviceStartComm and validateDeviceConfigUI
                     methods to initialize and validate the travel timer in the
                     same way as other monitored devices.  Move the timer device
-                    creation from deviceStartComm to validateDeviceConfigUi and
+                    creation from deviceStartComm to validateDeviceConfigUI and
                     use a travel timer device name based on the opener device
                     name.  Add device selection menu callback methods for all
                     monitored device types to facilitate optional device
-                    selection in the opener ConfigaUi.
+                    selection in the opener ConfigUI.
 v0.9.4    7/2/2022  Change monitored device event names to be compatible with
                     the new wiki figures.
 v0.9.5   7/10/2022  Add debug logging of monitored device event sequences and
@@ -182,7 +182,7 @@ v1.1.0   12/18/2022 (1) Add an integer doorState to the device states
                     implement the new REVERSING state.  Immediately transition
                     the REVERSING state to OPENING to reflect the
                     auto-reversing behavior of the physical door.
-                    (3) Improve error detection and reporting during ConfigUi
+                    (3) Improve error detection and reporting during ConfigUI
                     validation, device startup, and runtime.
                     (4) Allow the openGarageDoor action (and indigo.device.
                     turnOff) regardless of the opener onOffState.  This enables
@@ -196,7 +196,7 @@ v1.1.1   1/22/2023  (1) Update the wiki to document the changes introduced in
                     pluginPrefs checkbox.
                     (4) Restore the restriction on the openGarageDoor action
                     that was removed in v1.1.0 (4).  Restoring this restriction
-                    requires that the door be closed before the open action is
+                    requires that the door be CLOSED before the open action is
                     performed.  The removal of the same restriction on the
                     device turnOff command remains to allow the HomeKit Home
                     application (via the HKB of HKLS plugin) to close the door
@@ -213,7 +213,7 @@ v1.1.4   7/26/2023  Add the pseudoRelay device type id to the
 v1.1.5   8/21/2023  (1) Ignore multiple consecutive reports for the same
                     monitored device event within a 1-second time interval.
                     (2) Eliminate the logMonitoredDeviceEvents
-                    checkbox in the pluginPrefs ConfigUi.  These events should
+                    checkbox in the pluginPrefs ConfigUI.  These events should
                     always be logged in the debug logging level.
 v1.2.0   9/24/2023  (1) Divide the Plugin class into two classes: Plugin which
                     encapsulates the Indigo device behavior and
@@ -229,7 +229,7 @@ v1.2.0   9/24/2023  (1) Divide the Plugin class into two classes: Plugin which
                     instead of the monitored device names.  This allows
                     monitored devices to be renamed if desired without
                     reconfiguring.
-                    (5) Consolidate multiple ConfigUi callback methods (one for
+                    (5) Consolidate multiple ConfigUI callback methods (one for
                     each monitored device type) into a single method
                     (setMDevConfig) that works for all types.
                     (6) Add method docstrings for most methods.
@@ -269,7 +269,7 @@ v1.3.1   6/21/2024  (1) Remove the toggleGarageDoor action because it is
 v1.3.2   7/12/2024  Add a new lock device to the plugin.
 v1.3.3   7/17/2024  (1) Fix a bug in the _initializeLockDevice method.
                     (2) Add validation code for lock devices in
-                    validateDeviceConfigUi.
+                    validateDeviceConfigUI.
 v1.3.4   8/18/2024  (1) Add a deviceTypeId check when looking for existing lock
                     and travel timer devices.
                     (2) Eliminate the LOCKED state from the door state
@@ -290,31 +290,61 @@ v1.3.9   9/15/2024  (1) Change the _lockGarageDoor and _unlockGarageDoor
                     (2) Update comments and table3.
 v1.3.10  10/5/2024  Add apcpdu as a switch deviceTypeId.
 v1.3.11 10/11/2024  Allow switch devices to be selected as lock devices in
-                    ConfigUi's.
+                    ConfigUIs.
 v1.4.0   4/20/2025  This is a major release with a number of new capabilities
-                    and new ConfigUi's.  Consider it the first beta release of
+                    and new ConfigUIs.  Consider it the first beta release of
                     a forthcoming v2.0.  It includes the following changes:
                     (1) Recover gracefully from missing or invalid lock, timer,
                     and monitored devices.
                     (2) Remove lock state constraints on lock/unlock actions.
                     (3) Add optional capabilities to unlock before opening a
                     door and lock after closing a door.
-                    (4) Set the initial lock device states based on the states
+                    (4) Set the startup lock device states based on the states
                     of any options power switch or mechanical lock devices.
-                    (5) Add an "AUTOMATIC" menu item to automatically create/
+                    (5) Add an 'AUTOMATIC' menu item to automatically create/
                     use lock and timer devices for an opener.  Make both lock
                     and timer devices optional.
-                    (6) Change the menu item "None" to "NO SELECTION" to allow
+                    (6) Change the menu item 'None' to 'NO SELECTION' to allow
                     the user to deselect a previously selected menu item.
                     Include this item in all menus except the opener device
-                    menu in the lock device ConfigUi.  The opener field is
+                    menu in the lock device ConfigUI.  The opener field is
                     mandatory for the lock device and cannot be deselected.
-                    (7) Add significant debug logging for debugging ConfigUi
+                    (7) Add significant debug logging for debugging ConfigUI
                     menu interactions with the values dictionary.
                     (8) Add the ESPbuttonType to the relayDeviceTypeIds tuple.
 v1.4.1    5/3/2025  (1) Add the ESPbinarySensor to the sensorDeviceTypeIds
                     tuple.
                     (2) Add the ESPswitchType to the switchDeviceTypeIds tuple.
+v1.5.0    8/4/2025  (1) Replace the opener device STOPPED and REVERSING states
+                    with a new OBSTRUCTED state.
+                    (2) Change the nomenclature for the VGD lock device to the
+                    virtual lock device.  Change lock references from lk,
+                    lkDevId, and lkDev to vl, vlDevId, and vlDev.
+                    (3) Add the virtual lock (vl), latch sensor (ls), power
+                    switch (ps), and mechanical lock to the monitored device
+                    types tuple, the menu types dictionary, and the monitored
+                    devices dictionary.
+                    (4) During opener device startup in the deviceStartComm
+                    method, log the monitored devices that were configured
+                    along with their startup states.
+                    (5) Add ls and lsConfig to the _getVirtualLockProps method.
+                    (6) Add an ignored events tuple used to bypass the updating
+                    of the door state for those events that do not trigger door
+                    state transitions.
+                    (7) Update the startup door status and lock state logic
+                    id the deviceStartComm method.
+                    (8) Add the IsLockSubType property to the plugin props when
+                    a lock device is created.
+                    (9) Implement the lock and unlock device actions for the
+                    lock device.
+                    (10) Deselect all physical lock devices (ls, ps, and ml)
+                    if the virtual lock device (vl) is deselected.
+                    (11) Replace the common updateDynamicConfigValues method
+                    with 13 simpler xxSelected methods, one for each ConfigUI
+                    field group id sans the opener group which has no callback
+                    method (see Devices.xml).
+                    (12) Optionally log lock state changes based on a new
+                    checkbox field in the lock device ConfigUI.
 """
 ###############################################################################
 #                                                                             #
@@ -323,8 +353,8 @@ v1.4.1    5/3/2025  (1) Add the ESPbinarySensor to the sensorDeviceTypeIds
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.4.1'
-__date__ = 'May 3, 2025'
+__version__ = '1.5.0'
+__date__ = 'August 4, 2025'
 
 import indigo
 
@@ -359,11 +389,11 @@ class Plugin(indigo.PluginBase):
 
     dev generally refers to an opener device, but may in some cases be an
     opener or a lock device (to be determined).
-    When more specificity is needed, lkDev and opDev refer to lock and opener
-    devices respectively.
-    ltDev is used to refer to a device that is either a lock device or a timer
-    device.
-    devId, lkDevId, opDevId, and ltDevId refer to the various device id's.
+    When more specificity is needed, vlDev and opDev refer to virtual lock and
+    opener devices respectively.
+    ltDev is used to refer to a device that is either a virtual lock device or
+    a timer device.
+    devId, vlDevId, opDevId, and ltDevId refer to the various device id's.
     """
 
     ###########################################################################
@@ -387,67 +417,71 @@ class Plugin(indigo.PluginBase):
     AR_CLOSURE_TIME = 0.8  # Activation relay momentary closure time (seconds).
     ON, OFF = (True, False)
 
-    # Door state enumeration, stationary state group, door status, and text
-    # door states.
+    # Door state/status definitions:
 
-    # The first five door states are the same as those defined in the
+    # The opener device doorState is an integer state variable with values
+    # defined by the following enumeration:
+
+    OPEN, CLOSED, OPENING, CLOSING, OBSTRUCTED = range(5)
+
+    # The doorState is used by the HomiKitLink Siri plugin (HKLS) as the
+    # preferred device state variable to track the door operation in Apple
+    # HomeKit.  The first four door states are the same as those defined in the
     # HMCharacteristicValueDoorState enumeration in the Apple developer HomeKit website:
     # https://developer.apple.com/documentation/homekit/hmcharacteristicvaluedoorstate
 
-    OPEN, CLOSED, OPENING, CLOSING, STOPPED, REVERSING = range(6)
-    STATIONARY_STATES = (OPEN, CLOSED, STOPPED)
-    DOOR_STATUS = ('open', 'closed', 'opening', 'closing', 'stopped',
-                   'reversing')
-    DOOR_STATES = [status.upper() for status in DOOR_STATUS]
+    # The fifth state, OBSTRUCTED, includes the Apple STOPPED state.  It is,
+    # however, broader in scope to include both the stopping/reversing actions
+    # of the physical door opener and various types of locking device actions
+    # when the door is not CLOSED.  In the OBSTRUCTED state the physical door
+    # can in any position.  It can be stationary, or it can be moving toward a
+    # stationary state.  Once in the OBSTRUCTED state, normal door operation
+    # can only be restored by automatically/manually moving the door to the
+    # CLOSED position and sometimes only by reloading the VGD plugin.
 
-    # Lock state enumeration, lock status, and text lock states.
+    # The opener device door status is a lower case text state variable with
+    # values of 'open', 'closed', 'opening', 'closing', 'obstructed', and
+    # 'closed-lk'.  It is used as the uiValue for the State in the device list
+    # of the Indigo home window.  It is also used to key the
+    # DOOR_STATE_TRANSITIONS data structure in the VirtualGarageDoor class and
+    # to provide the door state in logged messages.  The following tuple is
+    # used to set the startup door status using the startup door state.
+
+    DOOR_STATUS = ('open', 'closed', 'opening', 'closing', 'obstructed')
+
+    # Virtual lock state enumeration and lock status definition:
 
     UNLOCKED, LOCKED = (False, True)
     LOCK_STATUS = ('unlocked', 'locked')
-    LOCK_STATES = [status.upper() for status in LOCK_STATUS]
 
-    # Lock and timer constants.
+    # Timer and virtual lock constants.
 
-    LOCK_PLUGIN_ID = 'net.papamac.indigoplugin.virtualgaragedoor'
     TIMER_PLUGIN_ID = 'com.perceptiveautomation.indigoplugin.timersandpesters'
     TIMER = indigo.server.getPlugin(TIMER_PLUGIN_ID)
+    VIRTUAL_LOCK_PLUGIN_ID = 'net.papamac.indigoplugin.virtualgaragedoor'
 
-    # Monitored device types used in deviceStartComm and validateDeviceConfigUi
-    # methods.
+    # Monitored device types ids used in deviceStartComm and
+    # validateDeviceConfigUi methods.
 
-    MONITORED_DEVICE_TYPES = (
-        'ar',  # activation relay
-        'cs',  # closed sensor
-        'os',  # open sensor
-        'vs',  # vibration sensor
-        'tt')  # travel timer
-
-    # Menu types keyed by field id (Devices.xml).
-
-    MENU_TYPES = {
-        'lk': 'lock',             # lock device
-        'ar': 'relay',            # activation relay
-        'cs': 'sensor',           # closed sensor
-        'os': 'sensor',           # open sensor
-        'vs': 'sensor',           # vibration sensor
-        'tt': 'timer',            # travel timer
-        'op': 'opener',           # opener device
-        'ps': 'switch',           # physical power switch device
-        'ml': 'lock',             # mechanical lock device
-        'openingAG': 'action',    # opening action group
-        'closingAG': 'action',    # closing action group
-        'lockingAG': 'action',    # locking action group
-        'unlockingAG': 'action'}  # unlocking action group
+    MONITORED_DEVICE_TYPE_IDs = (
+        'ar',  # 1. activation relay
+        'cs',  # 2. closed sensor
+        'os',  # 3. open sensor
+        'vs',  # 4. vibration sensor
+        'tt',  # 5. travel timer
+        'vl',  # 6. virtual lock
+        'ls',  # 7. latch sensor
+        'ps',  # 8. power switch
+        'ml')  # 9. mechanical lock
 
     # Relay, sensor, and switch device type id tuples used to generate device
     # selection menus in the getMenuList method (Part V).
 
     # EasyDAQ devices:
 
-    easyDaqComboTypeIds = ('easyDaq4r4io', 'easyDaq16r8io',
-                           'easyDaq8ii4io4r')
-    easyDaqRelayTypeIds = ('easyDaq8r', 'easyDaq24r',
-                           'easyDaqDo24Stack', 'easyDaqOutputRelay')
+    easyDaqComboTypeIds = ('easyDaq4r4io', 'easyDaq16r8io', 'easyDaq8ii4io4r')
+    easyDaqRelayTypeIds = ('easyDaq8r', 'easyDaq24r', 'easyDaqDo24Stack',
+                           'easyDaqOutputRelay')
     easyDaqSensorTypeIds = ('easyDaq24io',)
 
     # ESPHome devices:
@@ -456,9 +490,10 @@ class Plugin(indigo.PluginBase):
     espHomeSensorTypeIds = ('ESPbinarySensor',)
     espHomeSwitchTypeIds = ('ESPswitchType',)
 
-    shellyDirectRelayTypeIds = ('shelly1', 'shelly1l',
-                                'shelly1pm', 'shelly4pro,'
-                                'shellyem', 'shellyem3')
+    # Shelly devices:
+
+    shellyDirectRelayTypeIds = ('shelly1', 'shelly1l', 'shelly1pm',
+                                'shelly4pro', 'shellyem', 'shellyem3')
     shellyMQTTRelayTypeIds = ('shelly-1', 'shelly-1pm',
                               'shelly-2-5-relay', 'shelly-2-5-roller',
                               'shelly-4-pro', 'shelly-em-relay',
@@ -483,14 +518,15 @@ class Plugin(indigo.PluginBase):
                            + espHomeSensorTypeIds + genericSensorTypeIds)
     switchDeviceTypeIds = espHomeSwitchTypeIds + genericSwitchTypeIds
 
-    # Device type id selection dictionary keyed by VGD field type:
+    # Device type id selection dictionary keyed by menu type:
 
-    DEVICE_TYPE_IDs = {'opener': ('opener',),
-                       'lock':   ('lock',) + switchDeviceTypeIds,
-                       'relay':  relayDeviceTypeIds,
-                       'sensor': sensorDeviceTypeIds,
-                       'switch': switchDeviceTypeIds,
-                       'timer':  ('timer',)}
+    DEVICE_TYPE_IDs = {'relay':       relayDeviceTypeIds,
+                       'sensor':      sensorDeviceTypeIds,
+                       'timer':       ('timer',),
+                       'virtualLock': ('lock',),
+                       'switch':      switchDeviceTypeIds,
+                       'lock':        ('lock',) + switchDeviceTypeIds,
+                       'opener':      ('opener',)}
 
     ###########################################################################
     #                                                                         #
@@ -506,83 +542,100 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                             UTILITY METHODS                             #
     #                                                                         #
-    #  def _getOpenerDevice(lkDev)                                            #
-    #  def _getLockDevice(opDev)                                              #
-    #  def getLockState(self, opDev)                                          #
-    #  def _updateLockStatesOnServer(self, lkDev, lockState)                  #
+    #  def _getOpenerDevice(vlDev)                                            #
+    #  def _getVirtualLockDevice(opDev)                                       #
+    #  def _getLatchSensorState(self, opDev)                                  #
+    #  def _getVirtualLockState(self, opDev)                                  #
+    #  def _updateVirtualLockStatesOnServer(self, vlDev, newLockState)        #
     #                                                                         #
     ###########################################################################
 
     @staticmethod
-    def _getOpenerDevice(lkDev):
+    def _getOpenerDevice(vlDev):
         """
         Return the opener device object associated with a lock device.  Use
         the opener device id link in the lock device pluginProps to find the
         opener device in the devices dictionary.  If the opener device id is
-        missing or null, or a valid opener device id is not in the devices
-        dictionary, return None.
+        null, or a valid opener device id is not in the devices dictionary,
+        return None.
         """
-        L.threaddebug(' _getOpenerDevice called "%s"', lkDev.name)
+        L.threaddebug(' _getOpenerDevice called "%s"', vlDev.name)
 
-        opDevId = lkDev.pluginProps.get('opDevId')  # Get link to opener dev.
-        opDevId = int(opDevId) if opDevId else ''  # Integer device id or ''.
-        return indigo.devices.get(opDevId)  # Valid opener device or None.
+        opDevId = vlDev.pluginProps['opDevId']  # Get link to opener dev.
+        return indigo.devices.get(int(opDevId)) if opDevId else None
 
     @staticmethod
-    def _getLockDevice(opDev):
+    def _getVirtualLockDevice(opDev):
         """
-        Return the lock device object associated with an opener device.  Use
-        the lock device id link in the opener device pluginProps to find the
-        lock device in the devices dictionary.  If the lock device id is
-        missing or null, or a valid lock device id is not in the devices
-        dictionary, return None.
+        Return the virtual lock (vl) device object associated with an opener
+        device.  Use the vl device id link in the opener device pluginProps to
+        find the vl device in the devices dictionary.  If the vl device id is
+        null, or a valid vl device id is not in the devices dictionary, return
+        None.
         """
-        L.threaddebug(' _getLockDevice called "%s"', opDev.name)
+        L.threaddebug('_getVirtualLockDevice called "%s"', opDev.name)
 
-        lkDevId = opDev.pluginProps.get('lkDevId')  # Get link to lock device.
-        lkDevId = int(lkDevId) if lkDevId else ''  # Integer device id or ''.
-        return indigo.devices.get(lkDevId)  # Valid lock device or None.
+        vlDevId = opDev.pluginProps['vlDevId']  # Get link to vl device.
+        return indigo.devices.get(int(vlDevId)) if vlDevId else None
 
-    def getLockState(self, opDev):
+    def _getLatchSensorState(self, dev):
         """
-        Return the lock state for the lock device associated with an opener
-        device.  Use the _getLockDevice method to get the lock device object
-        and then return the device onState.  If there is no lock device, then
-        return UNLOCKED.
+        Return the on/off state for a latch sensor (ls) device, if any,
+        associated with a linked lock device.  If there is no ls device,
+        return the normal operating state (ON) by default.
         """
-        L.threaddebug('getLockState called "%s"', opDev.name)
+        L.threaddebug('_getLatchSensorState called "%s"', dev.name)
 
-        lkDev = self._getLockDevice(opDev)
-        return lkDev.onState if lkDev else self.UNLOCKED
+        lsDevId = dev.pluginProps['lsDevId']
+        lsDev = indigo.devices.get(int(lsDevId)) if lsDevId else None
+        lsState = self.ON  # Default to ON if there is no ls.
+        if lsDev:  # ls exists; get the normalized state.
+            lsStateName = dev.pluginProps['lsStateName']
+            lsInvert = dev.pluginProps['lsInvert']
+            lsState = lsDev.states[lsStateName] ^ lsInvert
+        return lsState
 
-    def _updateLockStatesOnServer(self, lkDev, lockState):
+    def _getVirtualLockState(self, opDev):
         """
-        Update the lock states on the Indigo server for use by the Home window,
-        scripts, action groups, control pages, triggers, and other plugins.
+        Return the lock state for the virtual lock (vl) device associated with
+        an opener device.  Use the _getVirtualLockDevice method to get the vl
+        device object and then return the device onState.  If there is no vl
+        device, then return UNLOCKED.
+        """
+        L.threaddebug('_getVirtualLockState called "%s"', opDev.name)
 
-        The lock states include the onOffState and the lockStatus.  The
-        onOffState is the lockState with values UNLOCKED (off) and LOCKED (on).
-        The lockStatus is a lower case string representation of the lockState
-        enumeration (locked or unlocked).
+        vlDev = self._getVirtualLockDevice(opDev)
+        return vlDev.onState if vlDev else self.UNLOCKED
+
+    def _updateVirtualLockStatesOnServer(self, vlDev, newLockState):
+        """
+        Update and optionally log the virtual lock device states on the Indigo
+        server.  The states include the onOffState and the lockStatus.  The
+        onOffState is the lock state with values UNLOCKED (off) and LOCKED
+        (on).  The lockStatus is a lower case string representation of the lock
+        state ('locked' or 'unlocked').
 
         Also, set the state image on the Indigo Home window based on the value
-        of the lockState (onOffState).  Select a green lock image if the
-        lockState is LOCKED (on) and a red lock image if it is UNLOCKED (off).
+        of the lock state (onOffState).  Select a green lock image if the
+        lock state is LOCKED (on) and a red lock image if it is UNLOCKED (off).
         """
-        L.threaddebug('_updateLockStatesOnServer called "%s"', lkDev.name)
+        L.threaddebug('_updateVirtualLockStatesOnServer called "%s"',
+                      vlDev.name)
 
-        # Compute and update lock states.
+        # Compute, update, and optionally log the new lock device states.
 
-        lockStatus = self.LOCK_STATUS[lockState]
-        lkDev.updateStateOnServer('onOffState', lockState, uiValue=lockStatus)
-        lkDev.updateStateOnServer('lockStatus', lockStatus)
-        L.info('"%s" update to %s', lkDev.name, self.LOCK_STATES[lockState])
+        lockStatus = self.LOCK_STATUS[newLockState]
+        vlDev.updateStateOnServer('onOffState', newLockState,
+                                  uiValue=lockStatus)
+        vlDev.updateStateOnServer('lockStatus', lockStatus)
+        if vlDev.pluginProps['logLockStateChanges']:
+            L.info('"%s" update to %s', vlDev.name, lockStatus.upper())
 
-        # Compute and update state image.
+        # Compute and update the state image.
 
-        image = (indigo.kStateImageSel.Locked if lockState
+        image = (indigo.kStateImageSel.Locked if newLockState
                  else indigo.kStateImageSel.Unlocked)
-        lkDev.updateStateImageOnServer(image)
+        vlDev.updateStateImageOnServer(image)
 
     ###########################################################################
     #                                                                         #
@@ -613,8 +666,9 @@ class Plugin(indigo.PluginBase):
         Define the two local dictionaries needed by plugin methods: the
         monitored devices dictionary and the virtual garage doors dictionary.
         Set these to empty dictionaries to be initialized later by the
-        deviceStartComm method.  Set the logging level and subscribe to device
-        changes.
+        deviceStartComm method.  Define the field type instance attribute to
+        facilitate communication between ConfigUI callback methods.  Set the
+        logging level and subscribe to device changes.
         """
         indigo.PluginBase.__init__(self, pluginId, pluginDisplayName,
                                    pluginVersion, pluginPrefs)
@@ -623,24 +677,24 @@ class Plugin(indigo.PluginBase):
         # the device id's and properties of devices that are monitored by the
         # plugin.  It has the following structure:
         #
-        # self._monitoredDevices = {devId: {mDevId: {mDevState: mDevType}}}
+        # self._monitoredDevices = {devId: {mDevId: {mDevStateName: mDevTypeId}}}
         # where:
-        #   devId     is the device id of the opener device.
-        #   mDevId    is the device id of a timer, sensor, or relay device to
-        #             be monitored by the opener plugin to track the garage
-        #             door state.  All monitored devices must have an on/off
-        #             bool state defined in the devices xml by
-        #             <ValueType boolType="OnOff">Boolean</ValueType>,
-        #   mDevState is the on/off state name to be monitored by the plugin.
-        #             For most sensor devices it is typically "onOffState".
-        #             For EasyDAQ devices it is "channelnn" where nn is the
-        #             numeric channel number.  For timers the state name is
-        #             "timerStatus.active", and
-        #   mDevType  is the type of the monitored device that allows the
-        #             plugin to interpret state changes. Types are "ar"
-        #             (activation relay), "cs" (closed sensor), "os"
-        #             (open sensor), "vs" (vibration sensor), and "tt"
-        #             (travel timer).
+        #   devId         is the device id of the opener device.
+        #   mDevId        is the device id of a timer, sensor, relay or locking
+        #                 device to be monitored by the opener plugin to track
+        #                 the door state.  All monitored devices must have an
+        #                 on/off bool state defined in the devices xml by
+        #                 <ValueType boolType="OnOff">Boolean</ValueType>,
+        #   mDevStateName is the on/off state name to be monitored by the
+        #                 plugin.  For most devices it is typically
+        #                 'onOffState'.  For EasyDAQ devices it is 'channelnn'
+        #                 where nn is the numeric channel number.  For timers
+        #                 the state name is 'timerStatus.active', and
+        #   mDevTypeId    identifies the type of monitored device.  The
+        #                 monitored device type ids are listed in the
+        #                 self.MONITORED_DEVICE_TYPE_IDs tuple.  They are the
+        #                 same as the field group type ids in Devices.xml for
+        #                 field groups that define monitored devices.
 
         self._monitoredDevices = {}
 
@@ -681,18 +735,22 @@ class Plugin(indigo.PluginBase):
 
     def deviceStartComm(self, dev):
         """
-        Start door opener and lock devices.  For each opener device, create a
-        new monitored devices dictionary entry and a new virtual garage door
-        instance.  Set the initial opener device states based on the initial
-        monitored device states.  Check for inconsistency between the initial
-        monitored device states and the lock state.
+        For each opener device, create a new monitored devices dictionary entry
+        and a new virtual garage door instance.  Check the monitored device
+        properties and determine their startup states.  Reset the vibration
+        sensor, if selected and turned on.  Set the startup opener and virtual
+        lock states based on the startup monitored device states.  Check for
+        inconsistency between the startup door state and the virtual lock
+        state.
 
-        For each lock device, set the initial lock states based on the states
-        of any optional power switch or mechanical lock devices.
+        No startup processing is needed for a virtual lock device.  The opener
+        device pluginProps dictionary includes all virtual lock props.  The
+        virtual lock device startup processing is performed as an integral part
+        of the opener device startup.
         """
         L.threaddebug('deviceStartComm called "%s"', dev.name)
 
-        if dev.deviceTypeId == 'opener':  # Start opener device.
+        if dev.deviceTypeId == 'opener':  # Start opener/virtual lock devices.
 
             # Create a new monitored devices dictionary entry for the opener.
 
@@ -700,14 +758,16 @@ class Plugin(indigo.PluginBase):
             self._monitoredDevices[devId] = {}
 
             # Add all monitored devices that are selected in the opener device
-            # ConfigUi to the monitored devices dictionary.  Save the initial
-            # states of the devices for use in setting the initial opener
-            # device state.
+            # ConfigUI to the monitored devices dictionary.  Save the startup
+            # states of the devices for use in setting the startup door and
+            # virtual lock device states.
 
-            mDevStates = {}  # Initial states of monitored devices.
-            for mDevType in self.MONITORED_DEVICE_TYPES:
-                mDevId = dev.pluginProps[mDevType + 'DevId']
-                if mDevId:  # Monitored device is selected in the ConfigUi.
+            mDevCount = 0
+            mDevSelected = ''
+            mDevStates = {}  # Startup states of monitored devices.
+            for mDevTypeId in self.MONITORED_DEVICE_TYPE_IDs:
+                mDevId = dev.pluginProps[mDevTypeId + 'DevId']
+                if mDevId:  # Monitored device is selected in the ConfigUI.
                     mDevId = int(mDevId)
 
                     # Check the monitored device id and state name.  If there
@@ -716,84 +776,144 @@ class Plugin(indigo.PluginBase):
 
                     mDev = indigo.devices.get(mDevId)
                     if not mDev:
-                        L.warning('"%s" mDevId %s is not in the devices dict; '
-                                  '%s device will not be monitored',
-                                  dev.name, mDevId, mDevType)
+                        L.warning('"%s" mDevId %s is not in the devices '
+                                  'dictionary; %s device will not be '
+                                  'monitored', dev.name, mDevId, mDevTypeId)
                         continue
 
                     if not mDev.enabled:
                         L.warning('"%s" monitored device "%s" is not enabled; '
                                   '%s device will not be monitored',
-                                  dev.name, mDev.name, mDevType)
+                                  dev.name, mDev.name, mDevTypeId)
                         continue
 
-                    mDevStateName = dev.pluginProps[mDevType + 'State']
+                    mDevStateName = dev.pluginProps[mDevTypeId + 'StateName']
                     if mDevStateName not in mDev.states:
                         L.warning('"%s" "%s" state %s is not in the states '
                                   'dict; %s device will not be monitored',
-                                  dev.name, mDev.name, mDevStateName, mDevType)
+                                  dev.name, mDev.name, mDevStateName,
+                                  mDevTypeId)
                         continue
 
                     # Add a new entry in the monitored devices dictionary.
 
                     if not self._monitoredDevices[devId].get(mDevId):
                         self._monitoredDevices[devId][mDevId] = {}
-                    self._monitoredDevices[devId][mDevId][mDevStateName] = mDevType
+                    self._monitoredDevices[devId][mDevId][mDevStateName] = mDevTypeId
 
-                    # Get the normalized state of the monitored device.
+                    # Get the normalized state of monitored device and add it
+                    # to the startup states dictionary.  Increment the
+                    # monitored device count.  Add the device type and state
+                    # to the selected devices string.
 
-                    invert = dev.pluginProps.get(mDevType + 'Invert', False)
-                    mDevStates[mDevType] = mDev.states.get(mDevStateName) ^ invert
+                    mDevInvert = dev.pluginProps.get(mDevTypeId + 'Invert',
+                                                     False)
+                    mDevState = mDev.states[mDevStateName] ^ mDevInvert
+                    mDevStates[mDevTypeId] = mDevState
+                    mDevCount += 1
+                    mDevSelected += mDevTypeId + ('-off ', '-on ')[mDevState]
 
+                    # Reset the vibration sensor, if selected.
+
+                    if mDevTypeId == 'vs':
+                        if mDevState:  # The vibration sensor is on.
+                            indigo.device.turnOff(mDevId)  # Reset it.
+
+            L.info('"%s" %s devices selected: %s',
+                   dev.name, mDevCount, mDevSelected)
             L.debug(self._monitoredDevices[devId])
-            L.debug(mDevStates)
 
-            # Guess the starting door state.  Assume that door is not in motion
-            # and that it is closed unless the closed sensor is off and open
-            # sensor is on.  Update the door states on the server.
+            # Determine the startup door state based on the current closed
+            # sensor (cs) and open sensor (os) states (see Table 6 in the
+            # Design wiki).  Make prudent assumptions and warn the user when
+            # the sensor data does not completely determine the startup state.
 
-            csState = mDevStates.get('cs')
-            osState = mDevStates.get('os')
-            doorState = self.OPEN if not csState and osState else self.CLOSED
+            csState = mDevStates.get('cs')                 # None if no cs.
+            osState = mDevStates.get('os')                 # None of no os.
+            
+            startupDoorState = self.CLOSED                 # Default to CLOSED.
+            if csState and osState:                        # CLOSED and OPEN.
+                L.warning('"%s" closed and open sensors are both on; check '
+                          'sensors; assume that the door is CLOSED', dev.name)
+            elif csState and not osState:                  # Door is CLOSED.
+                pass  # startupDoorState = self.CLOSED
+            elif not csState and osState:                  # Door is OPEN.
+                startupDoorState = self.OPEN
+            elif (csState == self.OFF                      # Door is not CLOSED
+                  and osState == self.OFF):                # and not OPEN.
+                startupDoorState = self.OBSTRUCTED
+            elif csState is None and osState is None:      # No sensors.
+                L.warning('"%s" no closed sensor or open sensor; cannot '
+                          'determine state; assume that the door is CLOSED',
+                          dev.name)
+            elif csState is None and osState == self.OFF:  # Door is not OPEN.
+                L.warning('"%s" no closed sensor; open sensor reports not-'
+                          'OPEN; assume that the door is CLOSED', dev.name)
+            elif csState == self.OFF and osState is None:  # Door is not CLOSED
+                L.warning('"%s" no open sensor; closed sensor reports not-'
+                          'CLOSED; assume that the door is OPEN', dev.name)
+                startupDoorState = self.OPEN
 
-            # Check for inconsistency between the door and lock states.
+            # Update the startup door state, if necessary, based on the states
+            # of any associated physical lock devices.  Set the startup door
+            # state to OBSTRUCTED if the door is not CLOSED and one or more of
+            # the physical lock devices LOCKED.
 
-            if doorState is self.OPEN and self.getLockState(dev) is self.LOCKED:
-                L.warning('"%s" initial state is open and locked; close the '
-                          'door manually, or unlock it')
+            # Determine the aggregate state of the physical lock (pl)
+            # devices (ls, ps, and ml).
+
+            lsState = mDevStates.get('ls', self.ON)   # latch sensor (ls).
+            psState = mDevStates.get('ps', self.ON)   # power switch (ps).
+            mlState = mDevStates.get('ml', self.OFF)  # mechanical lock (ml).
+            plState = not lsState or not psState or mlState  # aggregate pl.
+
+            if startupDoorState != self.CLOSED and plState == self.LOCKED:
+                L.warning('"%s" door is not CLOSED and one or more physical '
+                          'lock devices are LOCKED; startup door state set to '
+                          'OBSTRUCTED', dev.name)
+                startupDoorState = self.OBSTRUCTED
+
+            # Set startup door status from the startup door state and the
+            # current lock state if any.
+
+            vlState = mDevStates.get('vl')  # None if no vl.
+            startupDoorStatus = self.DOOR_STATUS[startupDoorState]
+            if startupDoorState == self.CLOSED and vlState:
+                startupDoorStatus += '-lk'
 
             # Instantiate a VirtualGarageDoor object for the device and save
-            # the object in the virtual garage doors dictionary.
+            # the object in the virtual garage doors dictionary.  This
+            # completes the startup processing for the opener device.
 
-            vgd = VirtualGarageDoor(self, dev, doorState)
+            vgd = VirtualGarageDoor(dev, startupDoorStatus)
             self._virtualGarageDoors[devId] = vgd
 
-        elif dev.deviceTypeId == 'lock':  # Start lock device.
+            # The virtual lock normally retains its current state (the existing
+            # database state) at startup. If the virtual lock is UNLOCKED and
+            # one or more physical lock devices are LOCKED, however, there is
+            # a potential inconsistency among the locking device states.  This
+            # inconsistency is allowed only if the startup door state is
+            # not CLOSED (see above).  If the startup door state is CLOSED,
+            # lock the door to resolve the inconsistency.
 
-            # Get optional power switch state (defaults to ON).
+            if (vlState == self.UNLOCKED and plState == self.LOCKED
+                and startupDoorState == self.CLOSED):
+                    vlDevId = dev.pluginProps['vlDevId']
+                    indigo.device.lock(int(vlDevId))
 
-            ps = dev.pluginProps.get('ps')
-            psDev = indigo.devices.get(ps)
-            psState = (psDev.states.get('onOffState', self.ON) if psDev
-                       else self.ON)
+            # Warn the user if the startup door and lock states are
+            # inconsistent.
 
-            # Get optional mechanical lock state (defaults to OFF).
-
-            ml = dev.pluginProps.get('ml')
-            mlDev = indigo.devices.get(ml)
-            mlState = mlDev.states.get('onOffState') if mlDev else self.OFF
-
-            # Set lock state to ON if the power switch is OFF or the mechanical
-            # lock is ON.
-
-            lockState = not psState or mlState
-            self._updateLockStatesOnServer(dev, lockState)
+            if (startupDoorState != self.CLOSED
+                    and self._getVirtualLockState(dev)):  # Door is LOCKED.
+                L.warning('"%s" door is LOCKED, but not CLOSED; close the '
+                          'door manually, or unlock it')
 
     def deviceStopComm(self, dev):
         """
         Retire door opener devices by deleting the entries in the monitored
         devices dictionary and the virtual garage doors dictionary, if present.
-        Lock devices do not require any special action.
+        Virtual lock devices do not require any special action.
         """
         L.threaddebug('deviceStopComm called "%s"', dev.name)
 
@@ -813,25 +933,24 @@ class Plugin(indigo.PluginBase):
             if oldDev.id in self._monitoredDevices[devId]:
                 dev = indigo.devices[devId]
                 mDevId = oldDev.id
-                for mDevState in self._monitoredDevices[devId][mDevId]:
+                for mDevStateName in self._monitoredDevices[devId][mDevId]:
 
                     # Get the onOffStates for both the old (unchanged) device
                     # object and the new (updated) device object.  Invert the
                     # states if specified in the pluginProps.  Ignore the
                     # device object update if the mdevState is unchanged.
 
-                    mDevType = (self._monitoredDevices
-                                [devId][mDevId][mDevState])
-                    invert = dev.pluginProps.get(mDevType + 'Invert', False)
-                    oldState = oldDev.states[mDevState] ^ invert
-                    newState = newDev.states[mDevState] ^ invert
-                    if oldState == newState:
-                        continue  # No change, ignore it.
+                    mDevTypeId = (self._monitoredDevices
+                                  [devId][mDevId][mDevStateName])
+                    invert = dev.pluginProps.get(mDevTypeId + 'Invert', False)
+                    oldState = oldDev.states[mDevStateName] ^ invert
+                    newState = newDev.states[mDevStateName] ^ invert
+                    if oldState == newState: continue  # No change, ignore it.
 
                     # Create a monitored device event name and log it for
                     # debug.
 
-                    mDevEvent = mDevType + ('-off', '-on')[newState]
+                    mDevEvent = mDevTypeId + ('-off', '-on')[newState]
                     L.debug('"%s" event %s', dev.name, mDevEvent)
 
                     # Check for expired timer.
@@ -876,89 +995,80 @@ class Plugin(indigo.PluginBase):
 
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
         """
-        Validate opener and lock device ConfigUi's.  Complete device
+        Validate opener and virtual lock device ConfigUIs.  Complete device
         configuration by creating new devices and updating valuesDict/
         pluginProps values as needed.
 
-        For an opener device, initialize the optional lock device and travel
-        timer device if they are selected in the ConfigUi.  In both cases,
-        create a new device with a standard name if "New" is specified as the
-        device name.  Link the lock device bidirectionally with the opener
-        device and validate the locking/unlocking delay times.
+        For an opener device, initialize the optional travel timer and virtual
+        lock devices if they are selected in the ConfigUI.  In both cases,
+        create a new device if the selected device name is not in the Indigo
+        devices dictionary.  This occurs when the user selects 'AUTOMATIC' in
+        the ConfigUI and the getMenuList method creates a new device name, but
+        does not create the new device.  Link the virtual lock device
+        bidirectionally with the opener device and validate the locking/
+        unlocking delay times.
 
-        Validate all manual (non-menu) entries in the ConfigUi.  For each
-        monitored device that is selected in the ConfigUi, check the device and
+        Validate all manual (non-menu) entries in the ConfigUI.  For each
+        monitored device that is selected in the ConfigUI, check the device and
         its on/off state name to ensure that the device exists and its on/off
         state name is in the device's states dictionary. Also check to ensure
         that a particular device name/state name combination is not reused in
-        any other monitored device ConfigUi for all opener devices.  Add
-        configuration flags, monitored device id's, and initial monitored
-        device states to the values dictionary for use by other methods.
-        Validate the opening and closing delay times.
+        any other monitored device ConfigUI for all opener devices.  Add
+        monitored device id's to the values dictionary for use by other
+        methods.  Validate the opening and closing delay times.
 
-        For a lock device, if an opener device is selected, link the lock
-        device bidirectionally with the opener device.  If no opener device is
-        selected, the lock device will not constrain opener device operation
-        until it is subsequently linked by activating either an opener or lock
-        device ConfigUi.  In either case, validate the locking/unlocking delay
-        times.
+        For a virtual lock device, if an opener device is selected, link the
+        virtual lock device bidirectionally with the opener device.  If no
+        opener device is selected, the virtual lock device will not constrain
+        any opener device until it is subsequently linked by activating either
+        an opener or virtual lock device ConfigUI.  In either case, validate
+        the locking/unlocking delay times.
 
         Throughout the method, when errors are found, add an error message to
         the errors dictionary in keeping with the standard Indigo validation
         protocol.  Return the values dictionary and the errors dictionary.
         """
 
-        # Debug functions.
-
-        def _null(text):
-            return 'Null' if text == '' else text
-
-        def _logProps(lt='lk'):
-            """
-            Debug log device names, config flags and device id's for lock and
-            timer devices.  Log values from both the values dictionary and the
-            device plugin props.
-            """
-            ltName = _null(valuesDict.get(lt))
-            ltConfig = _null(valuesDict.get(lt + 'Config'))
-            ltDevId = _null(valuesDict.get(lt + 'DevId'))
-            L.debug('"%s" valuesDict %s "%s" %s %s',
-                    dev.name, lt, ltName, ltConfig, ltDevId)
-            ltName = _null(dev.pluginProps.get(lt))
-            ltConfig = _null(dev.pluginProps.get(lt + 'Config'))
-            ltDevId = _null(dev.pluginProps.get(lt + 'DevId'))
-            L.debug('"%s" pluginProps %s "%s" %s %s',
-                    dev.name, lt, ltName, ltConfig, ltDevId)
-
         # Local support functions:
 
-        def _getProps():
+        def _getVirtualLockProps():
             """
-            Get lock device plugin props from the opener or lock device values
-            dictionary.  Also include the device name and device id fields used
-            to link the opener device to the lock device and vice versa.  If
-            the typeId is opener include the opener device name and device id.
-            If the typeId is lock include the lock device name and device id.
+            Get virtual lock device plugin props from the opener or lock device
+            values dictionary.  Also include the device name and device id
+            fields used to link the opener device to the virtual lock device
+            and vice versa.  If the typeId is 'opener' include the opener
+            device name and device id. If the typeId is 'lock' include the
+            virtual lock device name and device id.
             """
-            fieldId = 'op' if typeId == 'opener' else 'lk'
+            groupId = 'op' if typeId == 'opener' else 'vl'
 
-            return {fieldId:           dev.name,
-                    fieldId + 'DevId': str(devId),
-                    'ps':              valuesDict.get('ps', ''),
-                    'ml':              valuesDict.get('ml', ''),
-                    'lockingAG':       valuesDict.get('lockingAG', ''),
-                    'lockingDT':       valuesDict.get('lockingDT', '0.0'),
-                    'unlockingAG':     valuesDict.get('unlockingAG', ''),
-                    'unlockingDT':     valuesDict.get('unlockingDT', '0.0')}
+            return {groupId + 'Name':      dev.name,
+                    groupId + 'DevId':     str(devId),
+                    'lsName':              valuesDict['lsName'],
+                    'lsSelected':          valuesDict['lsSelected'],
+                    'lsDevId':             valuesDict['lsDevId'],
+                    'lsStateName':         valuesDict['lsStateName'],
+                    'lsInvert':            valuesDict['lsInvert'],
+                    'psName':              valuesDict['psName'],
+                    'psDevId':             valuesDict['psDevId'],
+                    'psStateName':         valuesDict['psStateName'],
+                    'mlName':              valuesDict['mlName'],
+                    'mlDevId':             valuesDict['mlDevId'],
+                    'mlStateName':         valuesDict['mlStateName'],
+                    'laName':              valuesDict['laName'],
+                    'laDelay':             valuesDict['laDelay'],
+                    'uaName':              valuesDict['uaName'],
+                    'uaDelay':             valuesDict['uaDelay'],
+                    'logLockStateChanges': valuesDict['logLockStateChanges']}
 
-        def _validateActionDT(action, maxDT=10.0):
+        def _validateActionDelayTime(action, maxDT=10.0):
             """
             Validate the delay time value associated with a VGD action.  Add an
             error message to the errors dictionary if the delay time is less
-            than 0.0 or greater than maxDelay.  The action must be opening,
-            closing, locking, or unlocking.
+            than 0.0 or greater than maxDelay.  The action must be 'opening',
+            'closing', 'locking', or 'unlocking'.
             """
-            delayFieldId = action + 'DT'
+            delayFieldId = action[0] + 'aDelay'
             delayTime = -1  # Force an error if the try fails.
             try:
                 delayTime = float(valuesDict[delayFieldId])
@@ -974,75 +1084,74 @@ class Plugin(indigo.PluginBase):
         dev = indigo.devices[devId]
         L.threaddebug('validateDeviceConfigUi called "%s"', dev.name)
         L.debug(valuesDict)
-        _logProps('lk')
-        _logProps('tt')
         errorsDict = indigo.Dict()
 
         # Begin configuration and validation for opener and lock devices.
 
         if typeId == 'opener':  # Configure and validate an opener device.
 
-            # Optionally configure a lock device using the opener device plugin
-            # props.
-
-            valuesDict['lkDevId'] = ''  # Set default to no lock device.
-            lk = valuesDict['lk']
-            if lk:  # Existing lock device or automatic device.
-                props = _getProps()
-
-                lkDev = indigo.devices.get(lk)
-                if lkDev:  # Existing device; replace plugin props on server.
-                    lkProps = lkDev.pluginProps
-                    for prop in props:
-                        lkProps[prop] = props[prop]
-                    lkDev.replacePluginPropsOnServer(lkProps)
-
-                else:  # No device in dictionary; create a new one.
-                    description = ('Automatically generated lock device for '
-                                   '"%s"' % dev.name)
-                    lkDev = indigo.device.create(
-                                protocol=indigo.kProtocol.Plugin,
-                                name=lk,
-                                description=description,
-                                pluginId=self.LOCK_PLUGIN_ID,
-                                deviceTypeId='lock',
-                                props=props,
-                                folder='doors')
-
-                if lkDev.enabled:  # Lock device successfully configured.
-                    valuesDict['lkDevId'] = lkDev.id  # Add lk link to opener.
-                else:  # Lock device configuration error.
-                    errorsDict['lk'] = 'Lock configuration error.'
-
             # Optionally configure a travel timer (tt) device.
 
             valuesDict['ttDevId'] = ''  # Set default to no timer device.
-            tt = valuesDict['tt']
-            if tt:  # Existing timer device or automatic device.
-                ttDev = indigo.devices.get(tt)
+            ttName = valuesDict['ttName']
+            if ttName:  # Existing timer device or automatic device.
+                ttDev = indigo.devices.get(ttName)
                 if not ttDev:  # No existing device; create new auto device.
                     description = ('Automatically generated timer device for '
                                    '"%s"' % dev.name)
                     props = dict(amount=1.0, amountType='seconds')
                     indigo.device.create(
                         protocol=indigo.kProtocol.Plugin,
-                        name=tt,
+                        name=ttName,
                         description=description,
                         pluginId=self.TIMER_PLUGIN_ID,
                         deviceTypeId='timer',
                         props=props,
                         folder='doors')
 
-            # Optional configuration of lock and timer devices is complete;
-            # begin validation of monitored devices.
+            # Optionally configure a virtual lock device using the opener
+            # device plugin props.
+
+            valuesDict['vlDevId'] = ''  # Set default to no virtual lock.
+            vlName = valuesDict['vlName']
+            if vlName:  # Existing virtual lock device or automatic device.
+                props = _getVirtualLockProps()
+                props['IsLockSubType'] = True
+
+                vlDev = indigo.devices.get(vlName)
+                if vlDev:  # Existing device; replace plugin props on server.
+                    vlProps = vlDev.pluginProps
+                    for prop in props:
+                        vlProps[prop] = props[prop]
+                    vlDev.replacePluginPropsOnServer(vlProps)
+
+                else:  # No device in dictionary; create a new one.
+                    description = ('Automatically generated virtual lock '
+                                   'device for "%s"' % dev.name)
+                    vlDev = indigo.device.create(
+                        protocol=indigo.kProtocol.Plugin,
+                        name=vlName,
+                        description=description,
+                        pluginId=self.VIRTUAL_LOCK_PLUGIN_ID,
+                        deviceTypeId='lock',
+                        props=props,
+                        folder='doors')
+
+                if vlDev.enabled:  # Lock device successfully configured.
+                    valuesDict['vlDevId'] = vlDev.id  # Add vl link to opener.
+                else:  # Virtual lock configuration error.
+                    errorsDict['vlName'] = 'Virtual lock configuration error.'
+
+            # Optional configuration of timer and virtual lock devices is
+            # complete; begin validation of monitored devices.
 
             # Clear self._monitoredDevices for this opener to prevent previous
-            # device configurations from generating ConfigUi errors.
+            # device configurations from generating ConfigUI errors.
 
             self._monitoredDevices[devId] = {}
 
             # For each monitored device that is selected in the opener device
-            # ConfigUi:
+            # ConfigUI:
 
             # (1) Validate the device name.
             # (2) Ensure that the device is configured (enabled)
@@ -1052,33 +1161,31 @@ class Plugin(indigo.PluginBase):
             # (5) Validate unique fields for vs and tt devices.
             # (6) Set the device id field in the values dictionary.
 
-            mDevConfig = ''
-            for mDevType in self.MONITORED_DEVICE_TYPES:
-                valuesDict[mDevType + 'DevId'] = ''
-                mDevName = valuesDict[mDevType]
-                if mDevName:  # Monitored device is selected in the ConfigUi.
+            for mDevTypeId in self.MONITORED_DEVICE_TYPE_IDs:
+                valuesDict[mDevTypeId + 'DevId'] = ''
+                mDevName = valuesDict[mDevTypeId + 'Name']
+                if mDevName:  # Monitored device is selected in the ConfigUI.
 
                     # Validate the device name.
 
                     mDev = indigo.devices.get(mDevName)
                     if not mDev:
                         error = '"%s" not in the devices dictionary' % mDevName
-                        errorsDict[mDevType] = error
+                        errorsDict[mDevName] = error
                         continue
 
                     if not mDev.enabled:
                         error = '"%s" configuration error' % mDevName
-                        errorsDict[mDevType] = error
+                        errorsDict[mDevName] = error
                         continue
 
                     # Validate the state name.
 
-                    mDevStateKey = mDevType + 'State'
-                    mDevStateName = valuesDict[mDevStateKey]
+                    mDevStateName = valuesDict[mDevTypeId + 'StateName']
                     if mDevStateName not in mDev.states:
                         error = ('%s not in device states dictionary'
                                  % mDevStateName)
-                        errorsDict[mDevStateKey] = error
+                        errorsDict[mDevStateName] = error
                         continue
 
                     # Check to ensure that no device/state pairs are reused by
@@ -1090,13 +1197,13 @@ class Plugin(indigo.PluginBase):
                             for mDevStateName_ in self._monitoredDevices[devId_][mDevId_]:
                                 if mDevId == mDevId_ and mDevStateName == mDevStateName_:
                                     error = 'Device/state name already in use'
-                                    errorsDict[mDevType] = error
-                                    errorsDict[mDevStateKey] = error
+                                    errorsDict[mDevTypeId + 'Name'] = error
+                                    errorsDict[mDevTypeId + 'StateName'] = error
                                     continue
 
                     # Validate the vs reset delay time.
 
-                    if mDevType == 'vs':
+                    if mDevTypeId == 'vs':
                         vsResetDelay = -1  # Force an error if the try fails.
                         try:
                             vsResetDelay = int(valuesDict['vsResetDelay'])
@@ -1111,7 +1218,7 @@ class Plugin(indigo.PluginBase):
                     # Validate the travel time entry and update the timer start
                     # value.
 
-                    if mDevType == 'tt':
+                    if mDevTypeId == 'tt':
                         tTime = 0  # Force an error if try fails.
                         try:
                             tTime = float(valuesDict['tTime'])
@@ -1128,12 +1235,9 @@ class Plugin(indigo.PluginBase):
                                 props=dict(amount=tTime, amountType='seconds'))
 
                     # No error for this monitored device/state.  Set the
-                    # monitored device id in the values dictionary and add the
-                    # monitored device type to the monitored device
-                    # configuration.
+                    # monitored device id in the values dictionary.
 
-                    valuesDict[mDevType + 'DevId'] = str(mDevId)
-                    mDevConfig += mDevType + ' '
+                    valuesDict[mDevTypeId + 'DevId'] = str(mDevId)
 
                     # Add keys/values to self._monitoredDevices to mark this
                     # device/state combination as used.  Note that these
@@ -1142,47 +1246,40 @@ class Plugin(indigo.PluginBase):
 
                     if not self._monitoredDevices[devId].get(mDevId):
                         self._monitoredDevices[devId][mDevId] = {}
-                    self._monitoredDevices[devId][mDevId][mDevStateName] = mDevType
+                    self._monitoredDevices[devId][mDevId][mDevStateName] = mDevTypeId
                     L.debug(self._monitoredDevices[devId])
-
-            # All mDevTypes validated. Set the monitored device configuration
-            # in the values dictionary.
-
-            valuesDict['mDevConfig'] = mDevConfig
 
             # Validate action delay times.
 
             for action_ in ('opening', 'closing', 'locking', 'unlocking'):
-                _validateActionDT(action_)
+                _validateActionDelayTime(action_)
 
         elif typeId == 'lock':  # Configure and validate a lock device.
-            op = valuesDict['op']
-            if op:  # Opener device was selected.
+            opName = valuesDict['opName']
+            if opName:  # Opener device was selected.
 
                 # Replace opener device plugin props (including lock device
                 # name and device id).
 
-                props = _getProps()
-                opDev = indigo.devices[op]
+                props = _getVirtualLockProps()
+                opDev = indigo.devices[opName]
                 opProps = opDev.pluginProps
                 for prop in props:
                     opProps[prop] = props[prop]
                 opDev.replacePluginPropsOnServer(opProps)
 
             else:  # No opener device selected.
-                errorsDict['op'] = 'Opener device is required'
+                errorsDict['opName'] = 'Opener device is required'
 
             # Validate locking/unlocking delay times.
 
-            _validateActionDT('locking')
-            _validateActionDT('unlocking')
+            _validateActionDelayTime('locking')
+            _validateActionDelayTime('unlocking')
 
-        # validateDeviceConfigUi ending debug.
+        # validateDeviceConfigUI ending debug.
 
         L.debug(valuesDict)
         L.debug(errorsDict)
-        _logProps('lk')
-        _logProps('tt')
 
         # Return with or without errors.
 
@@ -1202,49 +1299,56 @@ class Plugin(indigo.PluginBase):
     #                                                                         #
     #                       CONFIG UI CALLBACK METHODS                        #
     #                                                                         #
-    #  def getMenuList(self, filter_, valuesDict, typeId, devId)              #
-    #  def updateDynamicConfigValues(self, valuesDict, typeId, devId)         #
+    #  def getMenuList(self, fieldId, valuesDict, typeId, devId)              #
+    #  def arSelected(valuesDict, typeId, devId):  # 1.  activation relay (ar)#
+    #  def csSelected(valuesDict, typeId, devId):  # 2.  closed sensor (cs)   #
+    #  def osSelected(valuesDict, typeId, devId):  # 3.  open sensor (os)     #
+    #  def vsSelected(valuesDict, typeId, devId):  # 4.  vibration sensor (vs)#
+    #  def ttSelected(valuesDict, typeId, devId):  # 5.  travel timer (tt)    #
+    #  def vlSelected(valuesDict, typeId, devId):  # 6.  virtual lock (vl)    #
+    #  def lsSelected(valuesDict, typeId, devId):  # 7.  latch sensor (ls)    #
+    #  def psSelected(valuesDict, typeId, devId):  # 8.  power switch (ps)    #
+    #  def mlSelected(valuesDict, typeId, devId):  # 9.  mechanical lock (ml) #
+    #  def oaSelected(valuesDict, typeId, devId):  # 10. opening action (oa)  #
+    #  def caSelected(valuesDict, typeId, devId):  # 11. closing action (ca)  #
+    #  def laSelected(valuesDict, typeId, devId):  # 12. locking action (la)  #
+    #  def uaSelected(valuesDict, typeId, devId):  # 13. unlocking action (ua)#
     #                                                                         #
     ###########################################################################
 
-    def getMenuList(self, fieldId, valuesDict, typeId, devId):
+    def getMenuList(self, filter_, valuesDict, typeId, devId):
         """
-        Create and return a menu list for the action group and device selection
-        menus in the opener and lock device ConfigUi's.
+        Create and return a menu list for the action group/device selection
+        menus in the opener and lock device ConfigUIs.
 
-        Select action group or device names based on the value of the filter_
-        argument passed by the ConfigUi list specification.  Valid filter_
-        arguments are 'action', 'relay', 'sensor', 'switch', 'timer', 'opener',
-        and 'lock'.
-
-        For the 'action' filter, select all action groups from the Indigo
-        action groups dictionary.
-
-        For the 'relay', 'sensor', 'switch', 'timer', and 'opener' filters,
-        select devices from the Indigo devices dictionary that have a
-        device type id in the self.DEVICE_TYPE_IDs[filter_] tuple.
-
-        For the 'lock' filter select devices that have a subType attribute with
-        a value of 'Lock' or select switch devices.  Allowing switch devices to
-        be selected for the 'lock' filter permits a switch to be used to
-        control a powered custom lock device.
+        The filter_ argument is a text string that contains the ConfigUI field
+        group id and the menu type in the form 'xx:menuType'.  The group ids
+        and menu types are listed in the Devices.xml file.
+        
+        After decoding the filter_ argument, create a list of action group/
+        device names for the menu list.  For the 'action' menu type, select all
+        action groups from the Indigo action groups dictionary.  For all other
+        menu types, select devices from the Indigo devices dictionary that 
+        have a device type id in the DEVICE_TYPE_IDs[menuType] tuple.
 
         Choose up to two user options to be added at the bottom of the menu
-        list following the selected action group or device names.  For the
-        opener filter do not include any user options.  For all other filters
-        include a 'None' option to let the user de-select a prior action group
-        or device selection.  For timer and lock filters, also add a 'New'
-        option to let the user create a new device.
+        list following the selected action group/device names.  For the opener
+        group (id 'op'), do not include any user options.  For all other groups
+        that have an 'xxName' field with a selected value, include a
+        'NO SELECTION' option to let the user deselect the prior selection.
+        Also, for the travel timer group (id 'tt') and the virtual lock group
+        (id 'vl'), add an 'AUTOMATIC' option to let the user automatically
+        create a new device.
 
-        Return a menu list consisting of user options followed by a sorted list
-        of action group or device names.
+        Return a menu list consisting of a sorted list of action group/device
+        names followed by any user options.
         """
         dev = indigo.devices[devId]
-        L.threaddebug('getMenuList called "%s" field id = %s',
-                      dev.name, fieldId)
+        L.threaddebug('getMenuList called "%s" filter = %s',
+                      dev.name, filter_)
 
+        groupId, menuType = filter_.split(':')  # Decode the filter_ argument.
         names = []  # Action group or device names.
-        menuType = self.MENU_TYPES[fieldId]
 
         if menuType == 'action':  # Select action groups.
             for actionGroup in indigo.actionGroups.iter('self'):
@@ -1255,15 +1359,15 @@ class Plugin(indigo.PluginBase):
                 if dev_.deviceTypeId in self.DEVICE_TYPE_IDs[menuType]:
                     names.append(dev_.name)
 
-        # Generate and return menu list with "AUTOMATIC" and "NO SELECTION"
-        # optionS.
+        # Generate and return menu list with 'AUTOMATIC' and 'NO SELECTION'
+        # options.
 
         menuList = [(name, name) for name in sorted(names)]
 
-        if fieldId in ('lk', 'tt'):  # "AUTOMATIC" option for lk and tt.
+        if groupId in ('tt', 'vl'):  # Add the 'AUTOMATIC' option.
 
             # Derive an automatic device name from the opener device name and
-            # the menu type ('lock' or 'timer').
+            # the menu type ('virtualLock' or 'timer').
 
             if dev.name == 'new device':  # Opener device is new.
                 autoDevName = 'new %s device' % menuType
@@ -1272,58 +1376,239 @@ class Plugin(indigo.PluginBase):
             else:
                 autoDevName = dev.name + '-' + menuType
 
-            # Add "AUTOMATIC" option.
-
             menuList.append((autoDevName, 'AUTOMATIC'))
 
-        if fieldId != 'op' and valuesDict.get(fieldId):  # "NO SELECTION"
+        if (groupId != 'op' and                   # Exclude opener group and
+              valuesDict.get(groupId + 'Name')):  # add 'NO SELECTION' option.
             menuList.append(('None', 'NO SELECTION'))
 
         return menuList
 
-    def updateDynamicConfigValues(self, valuesDict, typeId, devId):
+    @staticmethod
+    def arSelected(valuesDict, typeId, devId):  # 1.  activation relay (ar)
         """
-        Respond to a user selection of any value in a lock or opener ConfigUi
-        menu.  These can be either action group or device
-        selection menus that are generated by the getMenuList method.  The field id's for the dynamic
-        list fields must be included in the self.MENU_TYPES dictionary
-        tuple.  Two types of changes are made to the values dictionary for
-        fields associated with dynamic list fields:
+        Respond to a user selection from the dynamic list menu in the arName
+        field of the device ConfigUI.
 
-        (1) For all field ids in the self.DYNAMIC_CONFIG_FIELD_IDs tuple,
-        replace a user-selected value of 'None' with the null string.  This
-        allows a user to de-select a previously selected menu option by
-        selecting the 'None' option.
+        This method and the other xxSelected methods below complement the
+        getMenuList method.  getMenuList inserts a 'NO SELECTION' item into the
+        menu list for fields that already have a value selected.  The
+        xxSelected methods deselect the field if the user selects
+        'NO SELECTION'.
 
-        (2) For field ids that specify monitored devices (those in the
-        self.MONITORED_DEVICE_TYPES tuple) set the value of the 'xxConfig'
-        hidden checkbox field.  The value is set to 'true' if the xx field id
-        is selected, and 'false' otherwise.  This permits related field id's
-        to be dynamically hidden in the ConfigUi if the xx field id is
-        not selected, or displayed if it is selected.
-
-        If the initial value of a field is the null string leave the values
-        dictionary unchanged.
+        The xxSelected methods also set the 'xxSelected' hidden checkbox field.
+        This field is used to conditionally display other fields if the
+        'xxName' field is selected.
         """
         dev = indigo.devices[devId]
-        L.threaddebug('updateDynamicConfigValues called "%s"', dev.name)
+        L.threaddebug('arSelected called "%s"', dev.name)
 
-        # Deselect the first field with a value of 'None'.
-
-        for fieldId in self.MENU_TYPES:
-            if valuesDict.get(fieldId) == 'None':
-                valuesDict[fieldId] = ''
-                break
-
-        # For an opener device ConfigUi, update xxConfig fields for monitored
-        # devices and the lock device.
-
-        if typeId == 'opener':
-            for fieldId in self.MONITORED_DEVICE_TYPES + ('lk',):
-                valuesDict[fieldId + 'Config'] = (
-                    'true' if valuesDict[fieldId] else 'false')
-
+        if valuesDict['arName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['arName'] = ''           # Deselect arName.
+            valuesDict['arSelected'] = 'false'  # Disable conditional display.
+        else:                                   # Something else selected.
+            valuesDict['arSelected'] = 'true'   # Enable conditional display.
         return valuesDict
+
+    @staticmethod
+    def csSelected(valuesDict, typeId, devId):  # 2.  closed sensor (cs)
+        """
+        Respond to a user selection from the dynamic list menu in the csName
+        field of the device ConfigUI.  See the arSelected method for details.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('csSelected called "%s"', dev.name)
+
+        if valuesDict['csName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['csName'] = ''           # Deselect csName.
+            valuesDict['csSelected'] = 'false'  # Disable conditional display.
+        else:  # Something else selected.
+            valuesDict['csSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def osSelected(valuesDict, typeId, devId):  # 3.  open sensor (os)
+        """
+        Respond to a user selection from the dynamic list menu in the osName
+        field of the device ConfigUI.  See the arSelected method for details.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('osSelected called "%s"', dev.name)
+
+        if valuesDict['osName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['osName'] = ''           # Deselect osName.
+            valuesDict['osSelected'] = 'false'  # Disable conditional display.
+        else:  # Something else selected.
+            valuesDict['osSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def vsSelected(valuesDict, typeId, devId):  # 4.  vibration sensor (vs)
+        """
+        Respond to a user selection from the dynamic list menu in the vsName
+        field of the device ConfigUI.  See the arSelected method for details.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('vsSelected called "%s"', dev.name)
+
+        if valuesDict['vsName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['vsName'] = ''           # Deselect vsName.
+            valuesDict['vsSelected'] = 'false'  # Disable conditional display.
+        else:  # Something else selected.
+            valuesDict['vsSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def ttSelected(valuesDict, typeId, devId):  # 5.  travel timer (tt)
+        """
+        Respond to a user selection from the dynamic list menu in the ttName
+        field of the device ConfigUI.  See the arSelected method for details.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('ttSelected called "%s"', dev.name)
+
+        if valuesDict['ttName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['ttName'] = ''           # Deselect ttName.
+            valuesDict['ttSelected'] = 'false'  # Disable conditional display.
+        else:  # Something else selected.
+            valuesDict['ttSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def vlSelected(valuesDict, typeId, devId):  # 6.  virtual lock (vl)
+        """
+        Respond to a user selection from the dynamic list menu in the vlName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        In addition to the normal xxSelected actions, deselect the latch
+        sensor, the power switch, and the mechanical lock when the virtual lock
+        is deselected.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('vlSelected called "%s"', dev.name)
+
+        if valuesDict['vlName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['vlName'] = ''           # Deselect vlName.
+            valuesDict['vlSelected'] = 'false'  # Disable conditional display.
+            for groupId in ('ls', 'ps', 'ml'):  # Deselect ls, ps, and ml.
+                valuesDict[groupId + 'Name'] = ''
+                valuesDict[groupId + 'Selected'] = 'false'
+        else:  # Something else selected.
+            valuesDict['vlSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def lsSelected(valuesDict, typeId, devId):  # 7.  latch sensor (ls)
+        """
+        Respond to a user selection from the dynamic list menu in the lsName
+        field of the device ConfigUI.  See the arSelected method for details.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('lsSelected called "%s"', dev.name)
+
+        if valuesDict['lsName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['lsName'] = ''           # Deselect lsName.
+            valuesDict['lsSelected'] = 'false'  # Disable conditional display.
+        else:  # Something else selected.
+            valuesDict['lsSelected'] = 'true'   # Enable conditional display.
+        return valuesDict
+
+    @staticmethod
+    def psSelected(valuesDict, typeId, devId):  # 8.  power switch (ps)
+        """
+        Respond to a user selection from the dynamic list menu in the psName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'psSelected' hidden checkbox field is used in the ps
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('psSelected called "%s"', dev.name)
+
+        if valuesDict['psName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['psName'] = ''           # Deselect psName.
+        return valuesDict
+
+    @staticmethod
+    def mlSelected(valuesDict, typeId, devId):  # 9.  mechanical lock (ml)
+        """
+        Respond to a user selection from the dynamic list menu in the mlName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'mlSelected' hidden checkbox field is used in the ml
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('mlSelected called "%s"', dev.name)
+
+        if valuesDict['mlName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['mlName'] = ''           # Deselect mlName.
+        return valuesDict
+
+    @staticmethod
+    def oaSelected(valuesDict, typeId, devId):  # 10. opening action (oa)
+        """
+        Respond to a user selection from the dynamic list menu in the oaName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'oaSelected' hidden checkbox field is used in the oa
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('oaSelected called "%s"', dev.name)
+
+        if valuesDict['oaName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['oaName'] = ''           # Deselect oaName.
+        return valuesDict
+
+    @staticmethod
+    def caSelected(valuesDict, typeId, devId):  # 11. closing action (ca)
+        """
+        Respond to a user selection from the dynamic list menu in the caName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'caSelected' hidden checkbox field is used in the ca
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('caSelected called "%s"', dev.name)
+
+        if valuesDict['caName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['caName'] = ''           # Deselect caName.
+        return valuesDict
+
+    @staticmethod
+    def laSelected(valuesDict, typeId, devId):  # 12. locking action (la)
+        """
+        Respond to a user selection from the dynamic list menu in the laName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'laSelected' hidden checkbox field is used in the la
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('laSelected called "%s"', dev.name)
+
+        if valuesDict['laName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['laName'] = ''           # Deselect laName.
+        return valuesDict
+
+    @staticmethod
+    def uaSelected(valuesDict, typeId, devId):  # 13. unlocking action (ua)
+        """
+        Respond to a user selection from the dynamic list menu in the uaName
+        field of the device ConfigUI.  See the arSelected method for details.
+
+        Note that no 'uaSelected' hidden checkbox field is used in the ua
+        ConfigUI fields.
+        """
+        dev = indigo.devices[devId]
+        L.threaddebug('uaSelected called "%s"', dev.name)
+
+        if valuesDict['uaName'] == 'None':      # 'NO SELECTION' selected.
+            valuesDict['uaName'] = ''           # Deselect uaName.
+        return valuesDict
+
 
     ###########################################################################
     #                                                                         #
@@ -1345,8 +1630,9 @@ class Plugin(indigo.PluginBase):
     #  def _executeOptionalActions(dev, action='opening')                     #
     #  def _openGarageDoor(self, opDev)                                       #
     #  def _closeGarageDoor(self, opDev)                                      #
-    #  def _lockGarageDoor(self, lkDev)                                       #
-    #  def _unlockGarageDoor(self, lkDev)                                     #
+    #  def _turnOnOffPhysicalLockDevice(vlDev, plAction)                      #
+    #  def _lockGarageDoor(self, vlDev)                                       #
+    #  def _unlockGarageDoor(self, vlDev)                                     #
     #                                                                         #
     #                         Plugin Callback Methods                         #
     #                                                                         #
@@ -1393,8 +1679,8 @@ class Plugin(indigo.PluginBase):
     @staticmethod
     def _executeOptionalActions(dev, action='opening'):
         """
-        dev can be an opener or lock device.  action must be opening, closing,
-        locking, or unlocking.
+        dev can be an opener or lock device.  action must be 'opening',
+        'closing', 'locking', or 'unlocking'.
 
         Optionally execute an action group and delay based on opener or lock
         device pluginProps entries.  Do nothing if the action group or delay
@@ -1404,183 +1690,206 @@ class Plugin(indigo.PluginBase):
         """
         L.threaddebug('_executeOptionalActions called "%s"', dev.name)
 
-        actionGroup = dev.pluginProps.get(action + 'AG')
-        if actionGroup:
-            indigo.actionGroup.execute(actionGroup)
+        actionGroupName = dev.pluginProps.get(action[0] + 'aName')
+        if actionGroupName:
+            indigo.actionGroup.execute(actionGroupName)
 
-        delayTime = dev.pluginProps.get(action + 'DT')
+        delayTime = dev.pluginProps.get(action[0] + 'aDelay')
         if delayTime:
             sleep(float(delayTime))
 
     def _openGarageDoor(self, opDev):
         """
-        Execute optional opening actions and open the door if it is unlocked
-        and currently closed.  Unlock the door before opening if requested.
+        Warn the user and abort if the latch sensor (ls) exists and is OFF (not
+        latched).  Otherwise, execute optional opening actions and open the
+        door if it is UNLOCKED and CLOSED or CLOSING.  Unlock the door before
+        opening if requested.
         """
         L.threaddebug('_openGarageDoor called "%s"', opDev.name)
 
-        # Unlock before opening if requested.
+        vlState = self._getVirtualLockState(opDev)
 
-        if opDev.pluginProps.get('unlockBeforeOpening'):  # Unlock requested.
-            lkDev = self._getLockDevice(opDev)
-            if lkDev:  # Valid lock device; unlock it.
-                self._unlockGarageDoor(lkDev)
+        if not self._getLatchSensorState(opDev):  # Abort if the ls is OFF.
+            L.warning('"%s" attempt to open the garage door when the latch '
+                      'sensor is OFF; action ignored', opDev.name)
 
-                # Delay at least 5 seconds for the lock to unlock.  If an
-                # opening delay is specified, additional delay is needed only
-                # if the opening delay is less than 1 second.
-
-                openingDT = opDev.pluginProps.get('openingDT')
-                openingDT = float(openingDT) if openingDT else 0.0
-                if openingDT < 5.0:
-                    sleep(5.0 - openingDT)
-
-            else:  # No lock device linked to opener.
-                L.warning('"%s" no lock device linked to opener; unlock '
-                          'before opening ignored', opDev.name)
-
-        # Check the lock state.
-
-        if self.getLockState(opDev):  # Abort if locked.
+        elif (vlState  # Abort if LOCKED w/no unlock before opening (ubo).
+                and not opDev.pluginProps.get('unlockBeforeOpening')):
             L.warning('"%s" attempt to open the garage door when it is '
-                      'locked; action ignored', opDev.name)
-            return
+                      'LOCKED; action ignored', opDev.name)
 
-        # Check the door state.
-
-        doorState = opDev.states['doorState']
-        if doorState != self.CLOSED:  # Abort if not closed.
+        elif opDev.states['doorState'] not in (self.CLOSED, self.CLOSING):
             L.warning('"%s" attempt to open the garage door when it is '
-                      'not closed; action ignored', opDev.name)
+                      'not CLOSED or CLOSING; action ignored', opDev.name)
 
-        else:  # Execute optional opening actions and toggle the door open.
+        else:  # If LOCKED, unlock the door then open it.
+            if vlState:  # Door is locked, but ubo was requested.
+                vlDev = self._getVirtualLockDevice(opDev)
+                self._unlockGarageDoor(vlDev)
+
+            # Execute optional opening actions and toggle the door OPEN.
+
             self._executeOptionalActions(opDev)
             self._toggleActivationRelay(opDev)
 
     def _closeGarageDoor(self, opDev):
         """
-        Close the door and execute optional closing actions if it is unlocked
-        and currently open or stopped.  Lock the door after closing if
-        requested.
+        Warn the user and abort if the latch sensor (ls) exists and is OFF (not
+        latched).  Otherwise, execute optional closing actions and close the
+        door if it is UNLOCKED and OPEN, OPENING, or OBSTRUCTED.
         """
         L.threaddebug('_closeGarageDoor called "%s"', opDev.name)
 
-        doorState = opDev.states['doorState']
+        if not self._getLatchSensorState(opDev):  # Abort if the ls is OFF.
+            L.warning('"%s" attempt to close the garage door when the latch '
+                      'sensor is OFF; action ignored', opDev.name)
 
-        # Check the lock state.
-
-        if self.getLockState(opDev):  # Abort if locked.
+        elif self._getVirtualLockState(opDev):  # Abort if LOCKED.
             L.warning('"%s" attempt to close the garage door when it is '
-                      'locked; action ignored', opDev.name)
+                      'LOCKED; action ignored', opDev.name)
 
-        # Check the door state.
-
-        elif doorState == self.CLOSED:  # Abort if already closed.
+        elif opDev.states['doorState'] not in (self.OPEN, self.OPENING,
+                                               self.OBSTRUCTED):
             L.warning('"%s" attempt to close the garage door when it is '
-                      'already closed; door action ignored', opDev.name)
+                      'not OPEN, OPENING, or OBSTRUCTED; action ignored',
+                      opDev.name)
 
-        elif doorState not in self.STATIONARY_STATES:  # Abort if moving.
-            L.warning('"%s" attempt to close the garage door when it is '
-                      'moving; door action ignored', opDev.name)
-
-        else:  # Execute optional closing actions and toggle the door closed.
+        else:  # Execute optional closing actions and toggle the door CLOSED.
             self._executeOptionalActions(opDev, action='closing')
             self._toggleActivationRelay(opDev)
 
-    def _lockGarageDoor(self, lkDev):
+    def _turnOnOffPhysicalLockDevice(self, vlDev, plAction):
         """
-        Lock the garage door if it is closed.  If there is no link to an opener
-        device or, the door is not closed, log a warning message and return.
+        Turn on or turn off a physical lock (pl) device and wait for completion
+        of the operation.  The physical lock device may be a power switch (ps)
+        or a mechanical lock (ml) and is specified by the pl device type ('ps'
+        or 'ml').  The plAction argument is a string containing the pl device
+        type, a dash, and an on/off action (e.g., 'ps-on' or 'ml-off').
 
-        Optionally execute locking actions to (1) turn off the garage door
-        opener power, (2) turn on (lock) a garage door mechanical lock, and
-        (3) execute a user-specified locking action group.  Log a warning
-        message and return if any of the optional actions fails to execute.
+        Decode the plAction into a pl device type and a target state (either
+        self.ON or self.OFF).  Check to see if the pl device is available and
+        return if it is not.
 
-        If there are no exceptions, set the lock device states on the server to
-        locked.
+        Get the pl device state and compare it to the target state.  Return if
+        the device is already in the target state.  If it is not toggle the
+        device to get to the target state.
+
+        Wait for the toggle action to complete by sleeping and then checking
+        the state again.  Log a warning message if the device is not in the
+        target state after 100 milliseconds.
         """
-        L.threaddebug('_lockGarageDoor called "%s"', lkDev.name)
+        L.threaddebug('_turnOnOffPhysicalLockDevice called "%s" %s',
+                      vlDev.name, plAction)
 
-        opDev = self._getOpenerDevice(lkDev)
-        if not opDev:  # Abort if no opener device.
-            L.warning('"%s" lock device is not linked to an opener device; '
-                      'action ignored', lkDev.name)
-            return
+        plDevType = plAction[:2]
+        targetState = self.ON if plAction[3:] == 'on' else self.OFF
 
-        if opDev.states['doorState'] != self.CLOSED:  # Abort if not closed.
-            L.warning('"%s" attempt to lock the garage door when it is not '
-                      'closed; action ignored', lkDev.name)
-            return
+        plDevId = vlDev.pluginProps[plDevType + 'DevId']
+        if plDevId:  # pl device is available.
+            plDevId = int(plDevId)
 
-        # Execute optional locking actions in order (1) power switch off,
-        # (2) mechanical lock on, and (3) locking action group and delay.
+            # Get the current state for the pl device.
 
-        try:
-            ps = lkDev.pluginProps.get('ps')
-            if ps:
-                indigo.device.turnOff(ps)
+            plDev = indigo.devices[plDevId]
+            plStateName = vlDev.pluginProps[plDevType + 'StateName']
+            plState = plDev.states[plStateName]
 
-            ml = lkDev.pluginProps.get('ml')
-            if ml:
-                indigo.device.turnOn(ml)
+            # Toggle the pl device if it is not in the targetState.
 
-            self._executeOptionalActions(lkDev, action='locking')
+            if plState != targetState:
+                indigo.device.toggle(plDevId)
 
-        except Exception as warningMessage:
-            L.warning('"%s" optional locking action failed: %s',
-                      lkDev.name, warningMessage)
+                # Wait for toggle completion.
 
-        else:  # Update lock device states.
-            self._updateLockStatesOnServer(lkDev, self.LOCKED)
+                maxDelay = 100  # Max number of delays.
+                sleepTime = 0.001  # Delay increment in seconds.
+                for _ in range(maxDelay):
+                    sleep(sleepTime)
+                    plDev = indigo.devices[plDevId]
+                    plState = plDev.states[plStateName]
+                    if plState == targetState:  # Toggle completed.
+                        break
+                else:
+                    L.warning('"%s" %s device failed to turn %s after %s '
+                              'milliseconds', vlDev.name, plDevType,
+                              ('off', 'on')[targetState],
+                              1000 * maxDelay * sleepTime)
 
-    def _unlockGarageDoor(self, lkDev):
+    def _lockGarageDoor(self, vlDev):
         """
-        Unlock the garage door if it is closed.  If there is no link to an
-        opener device or, the door is not closed, log a warning message and
-        return.
+        Execute optional locking actions and lock the garage door if it is
+        UNLOCKED and CLOSED.  If there is no link to an opener device or the
+        door is not CLOSED, abort the lock request.
 
-        Optionally execute unlocking actions to (1) execute a user-specified
-        unlocking actin group, (2) turn off (unlock) a garage door mechanical
-        lock, and (3) turn on the garage door opener power.  Log a warning
-        message and return if any of the optional actions fails to execute.
+        Optionally execute locking actions to (1) execute a user-specified
+        locking action group and/or delay, (2) turn off the garage door opener
+        power, and (3) turn on (lock) a garage door mechanical lock.  Log a
+        warning message and return if any of the optional actions fails to
+        execute.
 
-        If there are no exceptions, set the lock device states on the server to
-        unlocked.
+        If there are no exceptions, set the virtual lock device states on the
+        server to LOCKED.
         """
-        L.threaddebug('unlockGarageDoor called "%s"', lkDev.name)
+        L.threaddebug('_lockGarageDoor called "%s"', vlDev.name)
 
-        opDev = self._getOpenerDevice(lkDev)
-        if not opDev:  # Abort if no opener device.
-            L.warning('"%s" lock device is not linked to an opener device;'
-                      'unlock action ignored', lkDev.name)
-            return
+        if not vlDev.onState:  # Lock door only if it is currently UNLOCKED.
+            opDev = self._getOpenerDevice(vlDev)
+            if not opDev:  # Abort if no opener device.
+                L.warning('"%s" lock device is not linked to an opener '
+                          'device; lock action ignored', vlDev.name)
 
-        if opDev.states['doorState'] != self.CLOSED:  # Abort if not closed.
-            L.warning('"%s" attempt to unlock the garage door when it is not '
-                      'closed; action ignored', lkDev.name)
-            return
+            elif opDev.states['doorState'] != self.CLOSED:  # Abort
+                L.warning('"%s" attempt to lock the garage door when it is '
+                          'not closed; action ignored', vlDev.name)
 
-        # Execute optional unlocking actions in order (1) mechanical lock off,
-        # (2) power switch on, and (3) unlocking action group and delay.
+            else:  # Lock it.
+                try:  # Execute optional actions.
+                    self._executeOptionalActions(vlDev, action='locking')
+                    self._turnOnOffPhysicalLockDevice(vlDev, 'ps-off')
+                    self._turnOnOffPhysicalLockDevice(vlDev, 'ml-on')
 
-        try:
-            ml = lkDev.pluginProps.get('ml')
-            if ml:
-                indigo.device.turnOff(ml)
+                except Exception as warningMessage:
+                    L.warning('"%s" optional locking action failed: %s',
+                              vlDev.name, warningMessage)
 
-            ps = lkDev.pluginProps.get('ps')
-            if ps:
-                indigo.device.turnOn(ps)
+                else:  # Update virtual lock device states.
+                    self._updateVirtualLockStatesOnServer(vlDev, self.LOCKED)
 
-            self._executeOptionalActions(lkDev, action='unlocking')
+    def _unlockGarageDoor(self, vlDev):
+        """
+        Execute optional unlocking actions and unlock the garage door if it is
+        LOCKED and the latch sensor (ls) is ON or nonexistent.
 
-        except Exception as warningMessage:
-            L.warning('"%s" optional unlocking action failed: %s',
-                      lkDev.name, warningMessage)
+        Optionally execute unlocking actions to (1) turn off (unlock) a garage
+        door mechanical lock, (2) turn on the garage door opener power, and (3)
+        execute a user-specified unlocking action group and/or delay.  Log a
+        warning message and return if any of the optional actions fails to
+        execute.
 
-        else:  # Update lock device states.
-            self._updateLockStatesOnServer(lkDev, self.UNLOCKED)
+        If there are no exceptions, set the virtual lock device states on the
+        server to UNLOCKED.
+        """
+        L.threaddebug('_unlockGarageDoor called "%s"', vlDev.name)
+
+        if vlDev.onState:  # Unlock only if the door is LOCKED.
+
+            if not self._getLatchSensorState(vlDev):  # Abort if the ls is OFF.
+                L.warning('"%s" attempt to unlock the garage door when the '
+                          'latch sensor is OFF; action ignored', vlDev.name)
+
+            else:  # ls is ON or nonexistent; unlock it.
+
+                try:   # Execute optional actions.
+                    self._turnOnOffPhysicalLockDevice(vlDev, 'ml-off')
+                    self._turnOnOffPhysicalLockDevice(vlDev, 'ps-on')
+                    self._executeOptionalActions(vlDev, action='unlocking')
+
+                except Exception as warningMessage:
+                    L.warning('"%s" optional unlocking action failed: %s',
+                              vlDev.name, warningMessage)
+
+                else:  # Update lock device states.
+                    self._updateVirtualLockStatesOnServer(vlDev, self.UNLOCKED)
 
     def openGarageDoor(self, pluginAction):
         """
@@ -1617,7 +1926,7 @@ class Plugin(indigo.PluginBase):
         Lock a garage door given either a lock device or an opener device.
         If a lock device is provided in the pluginAction argument, use the
         lock device from the argument.  If an opener device is provided, use
-        the lock device obtained from the _getLockDevice method.
+        the lock device obtained from the _getVirtualLockDevice method.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('lockGarageDoor called "%s"', dev.name)
@@ -1626,9 +1935,9 @@ class Plugin(indigo.PluginBase):
             self._lockGarageDoor(dev)
 
         elif dev.deviceTypeId == 'opener':  # dev is an opener device.
-            lkDev = self._getLockDevice(dev)
-            if lkDev:  # Valid lock device, lock it.
-                self._lockGarageDoor(lkDev)
+            vlDev = self._getVirtualLockDevice(dev)
+            if vlDev:  # Valid lock device, lock it.
+                self._lockGarageDoor(vlDev)
             else:  # Abort if no lock.
                 L.warning('"%s" no available lock device; action ignored',
                           dev.name)
@@ -1638,7 +1947,7 @@ class Plugin(indigo.PluginBase):
         Unlock a garage door given either a lock device or an opener device.
         If a lock device is provided in the pluginAction argument, use the
         lock device from the argument.  If an opener device is provided, use
-        the lock device obtained from the _getLockDevice method.
+        the lock device obtained from the _getVirtualLockDevice method.
         """
         dev = indigo.devices[pluginAction.deviceId]
         L.threaddebug('unlockGarageDoor called "%s"', dev.name)
@@ -1647,46 +1956,51 @@ class Plugin(indigo.PluginBase):
             self._unlockGarageDoor(dev)
 
         elif dev.deviceTypeId == 'opener':  # dev is an opener device.
-            lkDev = self._getLockDevice(dev)
-            if lkDev:  # Valid lock device, unlock it.
-                self._unlockGarageDoor(lkDev)
+            vlDev = self._getVirtualLockDevice(dev)
+            if vlDev:  # Valid lock device, unlock it.
+                self._unlockGarageDoor(vlDev)
             else:  # Abort if no lock.
                 L.warning('"%s" no available lock device; action ignored',
                           dev.name)
 
     def actionControlDevice(self, action, dev):
         """
-        Implement the device turnOn (close) and turnOff (open) using the
-        internal _closeGarageDoor and _openGarageDoor methods.  Log a warning
-        message if the device toggle action is selected.  Remote toggling of
-        the garage door is not allowed for safety reasons.
+        For an opener device, implement the device turnOn (close) and turnOff
+        (open) actions using the internal _closeGarageDoor and _openGarageDoor
+        methods.  Log a warning message if the device toggle action is
+        selected.  Remote toggling of the garage door is not allowed for safety
+        reasons.
+
+        For a virtual lock device, implement the device lock and unlock actions
+        using the internal _lockGarageDoor and _unlockGarageDoor methods.
+
+        Ignore requests for any other device actions.
         """
         L.threaddebug('actionControlDevice called "%s"', dev.name)
 
-        if action.deviceAction == indigo.kDeviceAction.TurnOn:
-            if dev.deviceTypeId == 'opener':  # dev is opener device; close it.
+        if dev.deviceTypeId == 'opener':
+            if action.deviceAction == indigo.kDeviceAction.TurnOn:
                 self._closeGarageDoor(dev)
-            elif dev.deviceTypeId == 'lock':  # dev is a lock device; lock it.
-                self._lockGarageDoor(dev)
-
-        elif action.deviceAction == indigo.kDeviceAction.TurnOff:
-            if dev.deviceTypeId == 'opener':  # dev is opener device; open it.
+            elif action.deviceAction == indigo.kDeviceAction.TurnOff:
                 self._openGarageDoor(dev)
-            elif dev.deviceTypeId == 'lock':  # dev is lock device; unlock it.
-                self._unlockGarageDoor(dev)
-
-        elif action.deviceAction == indigo.kDeviceAction.Toggle:
-            L.warning('"%s" toggling not allowed for opener or lock devices; '
+            elif action.deviceAction == indigo.kDeviceAction.Toggle:
+                L.warning('"%s" toggling not allowed for opener devices; '
                       'action ignored', dev.name)
+
+        elif dev.deviceTypeId == 'lock':
+            if action.deviceAction == indigo.kDeviceAction.Lock:
+                self._lockGarageDoor(dev)
+            elif action.deviceAction == indigo.kDeviceAction.Unlock:
+                self._unlockGarageDoor(dev)
 
     def actionControlUniversal(self, action, dev):
         """
         Implement the requestStatus command by logging the current door or lock
-        state.
+        status.
         """
         L.threaddebug('actionControlUniversal called "%s"', dev.name)
         if action.deviceAction == indigo.kUniversalAction.RequestStatus:
             if dev.deviceTypeId == 'opener':
                 L.info('"%s" is %s', dev.name, dev.states['doorStatus'].upper())
-            if dev.deviceTypeId == 'lock':
+            elif dev.deviceTypeId == 'lock':
                 L.info('"%s" is %s', dev.name, dev.states['lockStatus'].upper())

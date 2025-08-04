@@ -15,8 +15,8 @@ FUNCTION:  Devices.xml defines the structure of the device objects, specifies
            GUI labels, and sets default values.
    USAGE:  Devices.xml is read by the Indigo server during plugin startup.
   AUTHOR:  papamac
- VERSION:  1.4.0
-    DATE:  April 20, 2025
+ VERSION:  1.5.0
+    DATE:  August 4, 2025
 
 CHANGE LOG:
 
@@ -43,7 +43,7 @@ v0.9.2   6/13/2022  Add a new vibration sensor to the monitored devices. Change
 v0.9.3   6/30/2022  Add hidden travel timer fields to the opener device
                     ConfigUI to allow common initialization and validation
                     methods to be used for all monitored devices.  Add hidden
-                    xxConfig fields for other monitored device fields to
+                    xxSelected fields for other monitored device fields to
                     manage ConfigUI visibility for optional devices.
 v1.0.1   7/23/2022  Add a new vsResetDelay field to allow the user to set the
                     time available for residual shaking after the door stops.
@@ -57,7 +57,7 @@ v1.1.0  12/18/2022  Add an integer doorState to the device states dictionary to
 v1.1.1   1/22/2023  Change the default value for the vsResetDelay to an integer
                     value of 2 sec.
 v1.3.0   5/23/2024  Add optional closing/opening actions to the opener
-                    ConfigUi.
+                    ConfigUI.
 v1.3.2   7/12/2024  Add a new lock device to the plugin.
 v1.3.3   7/17/2024  Add priorDoorState to the opener device.
 v1.3.4   8/18/2024  (1) Reverse order of opener and lock devices to reverse the
@@ -66,16 +66,96 @@ v1.3.4   8/18/2024  (1) Reverse order of opener and lock devices to reverse the
 v1.3.11 10/11/2024  Remove the "locked" option from the opener device
                     doorStatus state.
 v1.4.0   4/20/2025  This is a major release with a number of new capabilities
-                    and new ConfigUi's.  Consider it the first beta release of
+                    and new ConfigUI's.  Consider it the first beta release of
                     a forthcoming v2.0.  It includes the following changes:
                     (1) Add optional capabilities to unlock before opening a
                     door and lock after closing a door.
                     (2) Add menu fields for lock and timer devices in the
-                    opener ConfigUi.
+                    opener ConfigUI.
                     (3) Add a menu field for an opener device in the lock
-                    ConfigUi.
+                    ConfigUI.
                     (4) Add optional lock devices and actions to the opener
-                    ConfigUi when a lock device is selected from the menu.
+                    ConfigUI when a lock device is selected from the menu.
+v1.5.0    8/4/2025  (1) Replace the opener device STOPPED and REVERSING states
+                    with a new OBSTRUCTED state.
+                    (2) Change the nomenclature for the VGD lock device to the
+                    virtual lock device.  Change lock references from lk and
+                    lkDevId to vl and  vlDevId.
+                    (3) Add latch sensor (ls) fields to both the opener and
+                    virtual lock devices.
+                    (4) Add xxSelected and xxDevId hidden fields in the opener
+                    device for the vl, ls, ps, and ml.
+                    (5) Add the IsLockSubType hidden field to the lock device.
+                    (6) Make the ls, ps, and ml fields visible in the opener
+                    device ConfigUI only if the virtual lock (vl) is selected.
+                    (7) Add "closed-lk" to the doorStatus state list for the
+                    opener device.
+                    (8) Change the xxState fields to xxStateName fields for all
+                    monitored devices.
+                    (9) Add the dynamicReload="true" qualifier to all dynamic
+                    list definitions.
+                    (10) Organize the opener and virtual lock ConfigUI field
+                    definitions in groups as described below.
+                    (11) Add logging options fields: logDoorStateChanges,
+                    logLockStateChanges, and logDoorStateTracks.
+
+
+###############################################################################
+#                                                                             #
+#                      Virtual Garage Door Indigo Plugin                      #
+#                               Group Overview                                #
+#                                                                             #
+###############################################################################
+
+The ConfigUI fields are organized into 14 primary groups, one for each of the
+devices/action groups that are used by the VGD plugin.  Each group has a
+two-character group id ('xx').  Field ids within the group are named
+'xxFieldId'.  Common field ids (sans the group id) are used across all groups.
+
+Each group includes an 'xxName' field id that names the device/action group
+that is the subject of the group.  This field is filled using a dynamic list
+menu that is generated by the getMenuList method.  The filter argument that is
+passed to getMenuList contains the group id and the menu type in the form
+'xx:menuType'.
+
+The table below lists the group, the group id, the menu type, and the menu
+list filter for all 14 primary groups.  Groups 1-13 are included in the opener
+device ConfigUI and groups 9-14 are included in the virtual lock device
+ConfigUI.  Groups are preceded by a numbered header comment for readability.
+
+               Group         Group      Menu Type       Filter
+                              Id
+
+    1.    activation relay    ar       relay           ar:relay
+    2.    closed sensor       cs       sensor          cs:sensor
+    3.    open sensor         os       sensor          os:sensor
+    4.    vibration sensor    vs       sensor          vs:sensor
+    5.    travel timer        tt       timer           tt:timer
+    6.    virtual lock        vl       virtualLock     vl:virtualLock
+    7.    latch sensor        ls       sensor          ls:sensor
+    8.    power switch        ps       switch          ps:switch
+    9.    mechanical lock     ml       lock            ml:lock
+    10.   opening action      oa       action          os:action
+    11.   closing action      ca       action          ca:action
+    12.   locking action      la       action          la:action
+    13:   unlocking action    ua       action          ua:action
+    14.   opener              op       opener          op:opener
+
+The following 9 common fields are included in most groups:
+
+          Field Id       Field Type                  Description
+
+    1.   xxSelected      checkbox      Value was selected from the xxName menu
+    2.   xxDevId         textfield     Text device id for the xxName device
+    3.   xxSpacer        label         Spacer to separate groups
+    4.   xxName          menu          Primary device name for the group
+    5.   xxLabel         label         Description of the primary device
+    6.   xxStateName     textfield     on/off state name for the primary device
+    7.   xxStateLabel    label         Description of the on/off state
+    8.   xxInvert        checkbox      The on/off state should be inverted
+    9.   xxInvertLabel   label         Description of inversion criteria
+
+Some groups also have fields that are unique to that group.
 -->
 
 <Devices>
@@ -91,9 +171,24 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
         <Name>Virtual Garage Door Opener</Name>
         <ConfigUI>
 
-            <!-- ##################### Hidden Fields ###################### -->
+            <!-- ################# 'NO SELECTION' Option ################## -->
 
-            <Field id="arConfig" type="checkbox" defaultValue="false"
+            <Field id="nsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignText="left">
+                <Label>For menu fields, choose 'NO SELECTION' to remove (deselect) a previously selected item.</Label>
+            </Field>
+
+            <!-- ################ Monitored Devices Header ################ -->
+
+            <Field id="monitoredDevicesSeparator" type="separator"> </Field>
+
+            <Field id="monitoredDevicesTitle" type="label" alignText="center">
+                <Label>Optional Door Tracking Devices (select at least two)</Label>
+            </Field>
+
+            <!-- ################ 1. activation relay (ar) ################ -->
+
+             <Field id="arSelected" type="checkbox" defaultValue="false"
                    hidden="true">
                 <Label> </Label>
             </Field>
@@ -102,7 +197,36 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label> </Label>
             </Field>
 
-            <Field id="csConfig" type="checkbox" defaultValue="false"
+            <Field id="arSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="arName" type="menu">
+                <Label>Activation Relay                           Device Name:</Label>
+                <List class="self" filter="ar:relay" method="getMenuList"
+                    dynamicReload="true"/>
+                <CallbackMethod>arSelected</CallbackMethod>
+            </Field>
+
+            <Field id="arLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select a normally open relay that activates the garage door opener.</Label>
+            </Field>
+
+            <Field id="arStateName" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="arSelected" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+            <Field id="arStateLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="arSelected" visibleBindingValue="true">
+                <Label>For EasyDAQ, use "channelnn".</Label>
+            </Field>
+
+            <!-- ################## 2. closed sensor (cs) ################# -->
+
+            <Field id="csSelected" type="checkbox" defaultValue="false"
                    hidden="true">
                 <Label> </Label>
             </Field>
@@ -111,20 +235,47 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label> </Label>
             </Field>
 
-            <Field id="lkConfig" type="checkbox" defaultValue="false"
-                   hidden="true">
+            <Field id="csSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="lkDevId" type="textfield" hidden="true">
-                <Label> </Label>
+            <Field id="csName" type="menu">
+                <Label>Closed Sensor                             Device Name:</Label>
+                <List class="self" filter="cs:sensor" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>csSelected</CallbackMethod>
             </Field>
 
-            <Field id="mDevConfig" type="textfield" hidden="true">
-                <Label> </Label>
+            <Field id="csLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an on/off sensor that senses when the door is closed.</Label>
             </Field>
 
-            <Field id="osConfig" type="checkbox" defaultValue="false"
+            <Field id="csStateName" type="textfield" defaultValue="onOffState"
+                    visibleBindingId="csSelected" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+            <Field id="csStateLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="csSelected" visibleBindingValue="true">
+                <Label>For EasyDAQ, use "channelnn".</Label>
+            </Field>
+
+            <Field id="csInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="csSelected" visibleBindingValue="true">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="csInvertLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="csSelected" visibleBindingValue="true">
+                <Label>Check if the sensor is "off" when the door is fully closed.</Label>
+            </Field>
+
+            <!-- ################## 3. open sensor (os) ################### -->
+
+            <Field id="osSelected" type="checkbox" defaultValue="false"
                    hidden="true">
                 <Label> </Label>
             </Field>
@@ -133,21 +284,47 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label> </Label>
             </Field>
 
-            <Field id="ttConfig" type="checkbox" defaultValue="false"
-                   hidden="true">
+            <Field id="osSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="ttDevId" type="textfield" hidden="true">
-                <Label> </Label>
+            <Field id="osName" type="menu">
+                <Label>Open Sensor                                Device Name:</Label>
+                <List class="self" filter="os:sensor" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>osSelected</CallbackMethod>
             </Field>
 
-            <Field id="ttState" type="textfield"
-                   defaultValue="timerStatus.active" hidden="true">
-                <Label> </Label>
+            <Field id="osLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an on/off sensor that senses when the door is open.</Label>
             </Field>
 
-            <Field id="vsConfig" type="checkbox" defaultValue="false"
+            <Field id="osStateName" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="osSelected" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+             <Field id="osStateLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="osSelected" visibleBindingValue="true">
+                <Label>For EasyDAQ, use "channelnn".</Label>
+            </Field>
+
+            <Field id="osInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="osSelected" visibleBindingValue="true">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="osInvertLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="osSelected" visibleBindingValue="true">
+                <Label>Check if the sensor is "off" when the door is fully open.</Label>
+            </Field>
+
+             <!-- ############### 4. vibration sensor (vs) ################ -->
+
+            <Field id="vsSelected" type="checkbox" defaultValue="false"
                    hidden="true">
                 <Label> </Label>
             </Field>
@@ -156,160 +333,15 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label> </Label>
             </Field>
 
-            <!-- ################# 'NO SELECTION' Option ################## -->
-
-            <Field id="nsLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignText="left">
-                <Label>For menu fields, choose 'NO SELECTION' to remove (de-select) a previously selected item.</Label>
-            </Field>
-
-            <!-- ################### Lock Device (lk) ##################### -->
-
-            <Field id="lkSeparator" type="separator"> </Field>
-
-            <Field id="lkTitle" type="label" alignText="center">
-                <Label>Optional Lock Device</Label>
-            </Field>
-
-            <Field id="lkSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="lk" type="menu">
-                <Label>Lock                                             Device Name:</Label>
-                <List class="self" filter="lk" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="lkLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Select an existing lock device or 'AUTOMATIC' to automatically create/use a standard lock.</Label>
-            </Field>
-
-            <!-- ################ Monitored Devices Header ################ -->
-
-            <Field id="monitoredDevicesSeparator" type="separator"> </Field>
-
-            <Field id="monitoredDevicesTitle" type="label" alignText="center">
-                <Label>Optional Monitored Devices (select at least two)</Label>
-            </Field>
-
-            <!-- ################## Activation Relay (ar) ################# -->
-
-            <Field id="arSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="ar" type="menu">
-                <Label>Activation Relay                           Device Name:</Label>
-                <List class="self" filter="ar" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="arLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Select a normally open relay that activates the garage door opener.</Label>
-            </Field>
-
-            <Field id="arState" type="textfield" defaultValue="onOffState"
-                   visibleBindingId="arConfig" visibleBindingValue="true">
-                <Label>on/off State Name:</Label>
-            </Field>
-
-            <Field id="arStateLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="arConfig" visibleBindingValue="true">
-                <Label>For EasyDAQ, use "channelnn".</Label>
-            </Field>
-
-            <!-- ################### Closed Sensor (cs) ################### -->
-
-            <Field id="csSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="cs" type="menu">
-                <Label>Closed Sensor                             Device Name:</Label>
-                <List class="self" filter="cs" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="csLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Select an on/off sensor that senses when the door is closed.</Label>
-            </Field>
-
-            <Field id="csState" type="textfield" defaultValue="onOffState"
-                    visibleBindingId="csConfig" visibleBindingValue="true">
-                <Label>on/off State Name:</Label>
-            </Field>
-
-            <Field id="csStateLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="csConfig" visibleBindingValue="true">
-                <Label>For EasyDAQ, use "channelnn".</Label>
-            </Field>
-
-            <Field id="csInvert" type="checkbox" defaultValue="false"
-                   visibleBindingId="csConfig" visibleBindingValue="true">
-                <Label>Invert on/off State:</Label>
-            </Field>
-
-            <Field id="csInvertLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="csConfig" visibleBindingValue="true">
-                <Label>Check if the sensor is "off" when the door is fully closed; uncheck if not.</Label>
-            </Field>
-
-            <!-- #################### Open Sensor (os) #################### -->
-
-            <Field id="osSpacer" type="label">
-                <Label> </Label>
-            </Field>
-
-            <Field id="os" type="menu">
-                <Label>Open Sensor                                Device Name:</Label>
-                <List class="self" filter="os" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
-            </Field>
-
-            <Field id="osLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true">
-                <Label>Select an on/off sensor that senses when the door is open.</Label>
-            </Field>
-
-            <Field id="osState" type="textfield" defaultValue="onOffState"
-                   visibleBindingId="osConfig" visibleBindingValue="true">
-                <Label>on/off State Name:</Label>
-            </Field>
-
-             <Field id="osStateLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="osConfig" visibleBindingValue="true">
-                <Label>For EasyDAQ, use "channelnn".</Label>
-            </Field>
-
-            <Field id="osInvert" type="checkbox" defaultValue="false"
-                   visibleBindingId="osConfig" visibleBindingValue="true">
-                <Label>Invert on/off State:</Label>
-            </Field>
-
-            <Field id="osInvertLabel" type="label" fontSize="small"
-                   fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="osConfig" visibleBindingValue="true">
-                <Label>Check if the sensor is "off" when the door is fully open; uncheck if not.</Label>
-            </Field>
-
-             <!-- ################# Vibration Sensor (vs) ################# -->
-
             <Field id="vsSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="vs" type="menu">
+            <Field id="vsName" type="menu">
                 <Label>Vibration Sensor                          Device Name:</Label>
-                <List class="self" filter="vs" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+                <List class="self" filter="vs:sensor" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>vsSelected</CallbackMethod>
             </Field>
 
              <Field id="vsLabel" type="label" fontSize="small"
@@ -317,43 +349,58 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label>Select an on/off sensor that captures a one-time vibration event.</Label>
             </Field>
 
-            <Field id="vsState" type="textfield" defaultValue="onOffState"
-                   visibleBindingId="vsConfig" visibleBindingValue="true">
+            <Field id="vsStateName" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="vsSelected" visibleBindingValue="true">
                 <Label>on/off State Name:</Label>
             </Field>
 
             <Field id="vsInvert" type="checkbox" defaultValue="false"
-                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                   visibleBindingId="vsSelected" visibleBindingValue="true">
                 <Label>Invert on/off State:</Label>
             </Field>
 
             <Field id="vsInvertLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                   visibleBindingId="vsSelected" visibleBindingValue="true">
                 <Label>Check if the sensor is "off" when vibration is detected; uncheck it if not.</Label>
             </Field>
 
             <Field id="vsResetDelay" type="textfield" defaultValue="2"
-                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                   visibleBindingId="vsSelected" visibleBindingValue="true">
                 <Label>Reset Delay (0-4 sec):</Label>
             </Field>
 
             <Field id="vsResetDelayLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="vsConfig" visibleBindingValue="true">
+                   visibleBindingId="vsSelected" visibleBindingValue="true">
                 <Label>Delay resetting the vs to prevent false vibration events from residual motion after the door stops (see wiki 5.2).</Label>
             </Field>
 
-            <!-- ################### Travel Timer (tt) #################### -->
+            <!-- ################## 5. travel timer (tt) ################## -->
+
+            <Field id="ttSelected" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ttDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="ttStateName" type="textfield"
+                   defaultValue="timerStatus.active" hidden="true">
+                <Label> </Label>
+            </Field>
 
             <Field id="ttSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-             <Field id="tt" type="menu">
-                <Label>Travel Timer                                 Device Name:</Label>
-                <List class="self" filter="tt" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+             <Field id="ttName" type="menu">
+                <Label>Travel Timer                                  Device Name:</Label>
+                <List class="self" filter="tt:timer" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>ttSelected</CallbackMethod>
             </Field>
 
              <Field id="ttLabel" type="label" fontSize="small"
@@ -362,167 +409,287 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
             </Field>
 
             <Field id="tTime" type="textfield" defaultValue="12.0"
-                   visibleBindingId="ttConfig" visibleBindingValue="true">
+                   visibleBindingId="ttSelected" visibleBindingValue="true">
                 <Label>Travel Time (8-20 sec):</Label>
             </Field>
 
             <Field id="tTimeLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="ttConfig" visibleBindingValue="true">
+                   visibleBindingId="ttSelected" visibleBindingValue="true">
                 <Label>Specify a time that is slightly longer than the door's nominal open/close travel time (see wiki 5.3).</Label>
             </Field>
 
-            <!-- ######### Optional Physical Lock Devices Header ########## -->
+            <!-- ############# Optional Locking Devices Header ############ -->
 
-            <Field id="pldSeparator" type="separator"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="ldSeparator" type="separator"> </Field>
+
+            <Field id="ldTitle" type="label" alignText="center">
+                <Label>Optional Locking Devices</Label>
             </Field>
 
-            <Field id="pldTitle" type="label"
-                   alignText="center"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Optional Physical Lock Devices</Label>
-            </Field>
+            <!-- ################## 6. virtual lock (vl) ################## -->
 
-            <!-- ################### Power Switch (ps) #################### -->
-
-            <Field id="psSpacer" type="label"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="vlSelected" type="checkbox" defaultValue="false"
+                   hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="ps" type="menu"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="vlDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="vlStateName" type="textfield"
+                   defaultValue="onOffState" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="vlSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="vlName" type="menu">
+                <Label>Virtual Lock                                  Device Name:</Label>
+                <List class="self" filter="vl:virtualLock" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>vlSelected</CallbackMethod>
+            </Field>
+
+            <Field id="vlLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an existing virtual lock device or 'AUTOMATIC' to automatically create/use a standard virtual lock.</Label>
+            </Field>
+
+            <!-- ################# 7. latch sensor (ls) ################### -->
+
+            <Field id="lsSelected" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsSpacer" type="label"
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsName" type="menu"
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Latch Sensor                                Device Name:</Label>
+                <List class="self" filter="ls:sensor" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>lsSelected</CallbackMethod>
+            </Field>
+
+            <Field id="lsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Select an on/off sensor that senses when the door latch is connected.</Label>
+            </Field>
+
+            <Field id="lsStateName" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+             <Field id="lsStateLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>For EasyDAQ, use "channelnn".</Label>
+            </Field>
+
+            <Field id="lsInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="lsInvertLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>Check if the sensor is "off" when the door latch is connected; uncheck if not.</Label>
+            </Field>
+
+            <!-- ################## 8. power switch (ps) ################## -->
+
+            <Field id="psDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="psStateName" type="textfield"
+                   defaultValue="onOffState" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="psSpacer" type="label"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="psName" type="menu"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label>Power Switch                               Device Name:</Label>
-                <List class="self" filter="ps" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+                <List class="self" filter="ps:switch" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>psSelected</CallbackMethod>
             </Field>
 
             <Field id="psLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
             </Field>
 
-            <!-- ################## Mechanical Lock (ml) ################## -->
+            <!-- ################ 9. mechanical lock (ml) ################# -->
 
-            <Field id="mlSpacer" type="label"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="mlDevId" type="textfield" hidden="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="ml" type="menu"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="mlStateName" type="textfield"
+                   defaultValue="onOffState" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="mlSpacer" type="label"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="mlName" type="menu"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label>Mechanical Lock                          Device Name:</Label>
-                <List class="self" filter="ml"
-                      method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+                <List class="self" filter="ml:lock" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>mlSelected</CallbackMethod>
             </Field>
 
             <Field id="mlLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignWithControl="true"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label>Optionally select a lock device that can physically lock the garage door.</Label>
             </Field>
 
-            <!-- ########### Optional Opening/Closing Actions ############# -->
+            <!-- ################### Optional Actions ##################### -->
 
-            <Field id="openingOptionsSeparator" type="separator"> </Field>
+            <Field id="actionsSeparator" type="separator"> </Field>
 
-            <Field id="openingOptionsTitle" type="label" alignText="center">
-                <Label>Optional Opening/Closing Actions</Label>
+            <Field id="actionsTitle" type="label" alignText="center">
+                <Label>Optional Actions</Label>
             </Field>
 
-            <!-- ################ Optional Opening Actions ################ -->
+            <!-- ################## opening action (oa) ################### -->
 
-            <Field id="openingSpacer" type="label">
+            <Field id="oaSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="openingAG" type="menu">
-                <Label>Opening                         Execute Action Before:</Label>
-                <List class="self" filter="openingAG" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="oaName" type="menu">
+                <Label>Opening                          Execute Action Group:</Label>
+                <List class="self" filter="oa:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>oaSelected</CallbackMethod>
             </Field>
 
-            <Field id="openingDT" type="textfield" defaultValue="0.0">
-                <Label>Delay Before (0-10 sec):</Label>
+            <Field id="oaDelay" type="textfield" defaultValue="0.0">
+                <Label>Delay (0-10 sec):</Label>
             </Field>
 
             <Field id="unlockBeforeOpening" type="checkbox"
                    defaultValue="false"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Unlock Before:</Label>
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Unlock Before Opening:</Label>
             </Field>
 
-            <!-- ################ Optional Closing Actions ################ -->
+            <!-- ################### closing action (ca) ################## -->
 
-            <Field id="closingSpacer" type="label">
+            <Field id="caSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="closingAG" type="menu">
-                <Label>Closing                          Execute Action Before:</Label>
-                <List class="self" filter="closingAG" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="caName" type="menu">
+                <Label>Closing                            Execute Action Group:</Label>
+                <List class="self" filter="ca:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>caSelected</CallbackMethod>
             </Field>
 
-            <Field id="closingDT" type="textfield" defaultValue="0.0">
-                <Label>Delay Before (0-10 sec):</Label>
+            <Field id="caDelay" type="textfield" defaultValue="0.0">
+                <Label>Delay (0-10 sec):</Label>
             </Field>
 
             <Field id="lockAfterClosing" type="checkbox" defaultValue="false"
-                   visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Lock After:</Label>
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Lock After Closing:</Label>
             </Field>
 
-            <!-- ########## Optional Locking/Unlocking Actions ########### -->
+            <!-- ################## locking action (la) ################### -->
 
-            <Field id="lockingOptionsSeparator" type="separator"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-            </Field>
-
-            <Field id="lockingOptionsTitle" type="label" alignText="center"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Optional Locking/Unlocking Actions</Label>
-            </Field>
-
-            <!-- ############# Optional Locking Action Group ############## -->
-
-            <Field id="lockingSpacer" type="label"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="laSpacer" type="label"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="lockingAG" type="menu"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Locking                          Execute Action Before:</Label>
-                <List class="self" filter="lockingAG" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="laName" type="menu"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Locking                           Execute Action Group:</Label>
+                <List class="self" filter="la:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>laSelected</CallbackMethod>
             </Field>
 
-            <Field id="lockingDT" type="textfield" defaultValue="0.0"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Delay After (0-10 sec):</Label>
+            <Field id="laDelay" type="textfield" defaultValue="0.0"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Delay (0-10 sec):</Label>
             </Field>
 
-            <!-- ############ Optional Unlocking Action Group ############# -->
+            <!-- ################# unlocking action (ua) ################## -->
 
-            <Field id="unlockingSpacer" type="label"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
+            <Field id="uaSpacer" type="label"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
                 <Label> </Label>
             </Field>
 
-            <Field id="unlockingAG" type="menu"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Unlocking                       Execute Action Group:</Label>
-                <List class="self" filter="unlockingAG" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="uaName" type="menu"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Unlocking                        Execute Action Group:</Label>
+                <List class="self" filter="ua:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>uaSelected</CallbackMethod>
             </Field>
 
-            <Field id="unlockingDT" type="textfield" defaultValue="0.0"
-                    visibleBindingId="lkConfig" visibleBindingValue="true">
-                <Label>Delay After (0-10 sec):</Label>
+            <Field id="uaDelay" type="textfield" defaultValue="0.0"
+                    visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Delay (0-10 sec):</Label>
+            </Field>
+
+            <!-- #################### Logging Options ##################### -->
+
+            <Field id="loggingOptionsSeparator" type="separator"> </Field>
+
+            <Field id="loggingOptionsTitle" type="label" alignText="center">
+                <Label>Logging Options</Label>
+            </Field>
+
+            <Field id="loggingOptionsSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="logDoorStateChanges" type="checkbox"
+                   defaultValue="false">
+                <Label>Log Door State Changes</Label>
+            </Field>
+
+            <Field id="logLockStateChanges" type="checkbox"
+                   defaultValue="false"
+                   visibleBindingId="vlSelected" visibleBindingValue="true">
+                <Label>Log Lock State Changes</Label>
+            </Field>
+
+            <Field id="logDoorStateTracks" type="checkbox"
+                   defaultValue="false">
+                <Label>Log Door State Tracks</Label>
             </Field>
 
         </ConfigUI>
@@ -546,8 +713,8 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                         <Option value="closed">Closed</Option>
                         <Option value="opening">Opening</Option>
                         <Option value="closing">Closing</Option>
-                        <Option value="stopped">Stopped</Option>
-                        <Option value="reversing">Reversing</Option>
+                        <Option value="obstructed">Obstructed</Option>
+                        <Option value="closed-lk">Closed-Locked</Option>
                     </List>
                 </ValueType>
                 <TriggerLabel>Door Status</TriggerLabel>
@@ -573,9 +740,10 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
         <Name>Virtual Garage Door Lock</Name>
         <ConfigUI>
 
-            <!-- ###################### Hidden Field ###################### -->
+            <!-- ############### Hidden IsLockSubType Field ############### -->
 
-            <Field id="opDevId" type="textfield" hidden="true">
+            <Field id="IsLockSubType" type="checkbox" defaultValue="true"
+                   hidden="true">
                 <Label> </Label>
             </Field>
 
@@ -583,10 +751,14 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
 
             <Field id="nsLabel" type="label" fontSize="small"
                    fontColor="darkgray" alignText="left">
-                <Label>For menu fields, choose 'NO SELECTION' to remove (de-select) a previously selected item.</Label>
+                <Label>For menu fields, choose 'NO SELECTION' to remove (deselect) a previously selected item.</Label>
             </Field>
 
-            <!-- ################### Opener Device (op) ################### -->
+            <!-- ################### opener device (op) ################### -->
+
+            <Field id="opDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
 
             <Field id="opSeparator" type="separator"> </Field>
 
@@ -598,10 +770,9 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label> </Label>
             </Field>
 
-            <Field id="op" type="menu">
-                <Label>Opener                                     Device Name:</Label>
-                <List class="self" filter="op" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+            <Field id="opName" type="menu">
+                <Label>Opener                                         Device Name:</Label>
+                <List class="self" filter="op:opener" method="getMenuList"/>
             </Field>
 
             <Field id="opLabel" type="label" fontSize="small"
@@ -609,24 +780,83 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label>Select an existing opener device.</Label>
             </Field>
 
-            <!-- ######### Optional Physical Lock Devices Header ########## -->
+             <!-- ############# Optional Locking Devices Header ############ -->
 
-            <Field id="pldSeparator" type="separator"> </Field>
+            <Field id="ldSeparator" type="separator"> </Field>
 
-            <Field id="pldTitle" type="label" alignText="center">
-                <Label>Optional Physical Lock Devices</Label>
+            <Field id="ldTitle" type="label" alignText="center">
+                <Label>Optional Locking Devices</Label>
             </Field>
 
-            <!-- ################### Power Switch (ps) #################### -->
+            <!-- ################# 7. latch sensor (ls) ################### -->
+
+            <Field id="lsSelected" type="checkbox" defaultValue="false"
+                   hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="lsName" type="menu">
+                <Label>Latch Sensor                                Device Name:</Label>
+                <List class="self" filter="ls:sensor" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>lsSelected</CallbackMethod>
+            </Field>
+
+            <Field id="lsLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true">
+                <Label>Select an on/off sensor that senses when the door latch is connected.</Label>
+            </Field>
+
+            <Field id="lsStateName" type="textfield" defaultValue="onOffState"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>on/off State Name:</Label>
+            </Field>
+
+             <Field id="lsStateLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>For EasyDAQ, use "channelnn".</Label>
+            </Field>
+
+            <Field id="lsInvert" type="checkbox" defaultValue="false"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>Invert on/off State:</Label>
+            </Field>
+
+            <Field id="lsInvertLabel" type="label" fontSize="small"
+                   fontColor="darkgray" alignWithControl="true"
+                   visibleBindingId="lsSelected" visibleBindingValue="true">
+                <Label>Check if the sensor is "off" when the door latch is connected; uncheck if not.</Label>
+            </Field>
+
+            <!-- ################## 8. power switch (ps) ################## -->
+
+            <Field id="psDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="psStateName" type="textfield"
+                   defaultValue="onOffState" hidden="true">
+                <Label> </Label>
+            </Field>
 
             <Field id="psSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="ps" type="menu">
+            <Field id="psName" type="menu">
                 <Label>Power Switch                               Device Name:</Label>
-                <List class="self" filter="ps" method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+                <List class="self" filter="ps:switch" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>psSelected</CallbackMethod>
             </Field>
 
             <Field id="psLabel" type="label" fontSize="small"
@@ -634,17 +864,26 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label>Optionally select a switch device that can physically turn on/off the garage door opener.</Label>
             </Field>
 
-            <!-- ################## Mechanical Lock (ml) ################## -->
+            <!-- ################ 9. mechanical lock (ml) ################# -->
+
+            <Field id="mlDevId" type="textfield" hidden="true">
+                <Label> </Label>
+            </Field>
+
+            <Field id="mlStateName" type="textfield"
+                   defaultValue="onOffState" hidden="true">
+                <Label> </Label>
+            </Field>
 
             <Field id="mlSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="ml" type="menu">
+            <Field id="mlName" type="menu">
                 <Label>Mechanical Lock                          Device Name:</Label>
-                <List class="self" filter="ml"
-                      method="getMenuList"/>
-                <CallbackMethod>updateDynamicConfigValues</CallbackMethod>
+                <List class="self" filter="ml:lock" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>mlSelected</CallbackMethod>
             </Field>
 
             <Field id="mlLabel" type="label" fontSize="small"
@@ -660,34 +899,55 @@ v1.4.0   4/20/2025  This is a major release with a number of new capabilities
                 <Label>Optional Locking/Unlocking Actions</Label>
             </Field>
 
-            <!-- ############# Optional Locking Action Group ############## -->
+            <!-- ################## locking action (la) ################### -->
 
-            <Field id="lockingSpacer" type="label">
+            <Field id="laSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="lockingAG" type="menu">
-                <Label>Locking                           Execute Action Before:</Label>
-                <List class="self" filter="lockingAG" method="getMenuList"/>
+            <Field id="laName" type="menu">
+                <Label>Locking                           Execute Action Group:</Label>
+                <List class="self" filter="la:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>laSelected</CallbackMethod>
             </Field>
 
-            <Field id="lockingDT" type="textfield" defaultValue="0.0">
-                <Label>Delay After (0-10 sec):</Label>
+            <Field id="laDelay" type="textfield" defaultValue="0.0">
+                <Label>Delay (0-10 sec):</Label>
             </Field>
 
-            <!-- ############ Optional Unlocking Action Group ############# -->
+            <!-- ################# unlocking action (ua) ################## -->
 
-            <Field id="unlockingSpacer" type="label">
+            <Field id="uaSpacer" type="label">
                 <Label> </Label>
             </Field>
 
-            <Field id="unlockingAG" type="menu">
+            <Field id="uaName" type="menu">
                 <Label>Unlocking                        Execute Action Group:</Label>
-                <List class="self" filter="unlockingAG" method="getMenuList"/>
+                <List class="self" filter="ua:action" method="getMenuList"
+                      dynamicReload="true"/>
+                <CallbackMethod>uaSelected</CallbackMethod>
             </Field>
 
-            <Field id="unlockingDT" type="textfield" defaultValue="0.0">
-                <Label>Delay After (0-10 sec):</Label>
+            <Field id="uaDelay" type="textfield" defaultValue="0.0">
+                <Label>Delay (0-10 sec):</Label>
+            </Field>
+
+            <!-- #################### Logging Option ###################### -->
+
+            <Field id="loggingOptionSeparator" type="separator"> </Field>
+
+            <Field id="loggingOptionTitle" type="label" alignText="center">
+                <Label>Logging Option</Label>
+            </Field>
+
+            <Field id="loggingOptionSpacer" type="label">
+                <Label> </Label>
+            </Field>
+
+            <Field id="logLockStateChanges" type="checkbox"
+                   defaultValue="false">
+                <Label>Log Lock State Changes</Label>
             </Field>
 
         </ConfigUI>
