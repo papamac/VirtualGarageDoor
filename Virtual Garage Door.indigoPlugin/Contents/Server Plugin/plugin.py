@@ -16,8 +16,8 @@ FUNCTION:  plugin.py defines the Plugin class, with standard methods that
    USAGE:  plugin.py is included in the Virtual Garage Door.indigoPlugin bundle
            and its methods are called by the Indigo server.
   AUTHOR:  papamac
- VERSION:  1.5.0
-    DATE:  August 4, 2025
+ VERSION:  1.5.1
+    DATE:  August 31, 2025
 
 UNLICENSE:
 
@@ -345,6 +345,8 @@ v1.5.0    8/4/2025  (1) Replace the opener device STOPPED and REVERSING states
                     method (see Devices.xml).
                     (12) Optionally log lock state changes based on a new
                     checkbox field in the lock device ConfigUI.
+v1.5.1   8/31/2025  Fix bug in monitored device validation for the device name
+                    and state name.
 """
 ###############################################################################
 #                                                                             #
@@ -353,8 +355,8 @@ v1.5.0    8/4/2025  (1) Replace the opener device STOPPED and REVERSING states
 ###############################################################################
 
 __author__ = 'papamac'
-__version__ = '1.5.0'
-__date__ = 'August 4, 2025'
+__version__ = '1.5.1'
+__date__ = 'August 31, 2025'
 
 import indigo
 
