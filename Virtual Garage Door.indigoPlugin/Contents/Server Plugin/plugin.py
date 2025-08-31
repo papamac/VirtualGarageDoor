@@ -1171,12 +1171,12 @@ class Plugin(indigo.PluginBase):
                     mDev = indigo.devices.get(mDevName)
                     if not mDev:
                         error = '"%s" not in the devices dictionary' % mDevName
-                        errorsDict[mDevName] = error
+                        errorsDict[mDevTypeId + 'Name'] = error
                         continue
 
                     if not mDev.enabled:
                         error = '"%s" configuration error' % mDevName
-                        errorsDict[mDevName] = error
+                        errorsDict[mDevTypeId + 'Name'] = error
                         continue
 
                     # Validate the state name.
@@ -1185,7 +1185,7 @@ class Plugin(indigo.PluginBase):
                     if mDevStateName not in mDev.states:
                         error = ('%s not in device states dictionary'
                                  % mDevStateName)
-                        errorsDict[mDevStateName] = error
+                        errorsDict[mDevTypeId + 'StateName'] = error
                         continue
 
                     # Check to ensure that no device/state pairs are reused by
