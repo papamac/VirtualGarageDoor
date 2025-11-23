@@ -44,7 +44,7 @@ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-For more information, please refer to <http://unlicense.org/>
+For more information, please refer to <https://unlicense.org/>
 
 VIRTUAL GARAGE DOOR PLUGIN BUNDLE DESCRIPTION:
 
@@ -899,9 +899,9 @@ class Plugin(indigo.PluginBase):
             # lock the door to resolve the inconsistency.
 
             if (vlState == self.UNLOCKED and plState == self.LOCKED
-                and startupDoorState == self.CLOSED):
-                    vlDevId = dev.pluginProps['vlDevId']
-                    indigo.device.lock(int(vlDevId))
+                    and startupDoorState == self.CLOSED):
+                vlDevId = dev.pluginProps['vlDevId']
+                indigo.device.lock(int(vlDevId))
 
             # Warn the user if the startup door and lock states are
             # inconsistent.
@@ -947,7 +947,8 @@ class Plugin(indigo.PluginBase):
                     invert = dev.pluginProps.get(mDevTypeId + 'Invert', False)
                     oldState = oldDev.states[mDevStateName] ^ invert
                     newState = newDev.states[mDevStateName] ^ invert
-                    if oldState == newState: continue  # No change, ignore it.
+                    if oldState == newState:  # No change, ignore it.
+                        continue
 
                     # Create a monitored device event name and log it for
                     # debug.
@@ -1380,9 +1381,8 @@ class Plugin(indigo.PluginBase):
 
             menuList.append((autoDevName, 'AUTOMATIC'))
 
-        if (groupId != 'op' and                   # Exclude opener group and
-              valuesDict.get(groupId + 'Name')):  # add 'NO SELECTION' option.
-            menuList.append(('None', 'NO SELECTION'))
+        if groupId != 'op' and valuesDict.get(groupId + 'Name'):
+            menuList.append(('None', 'NO SELECTION'))  # Add 'NO SELECTION'.
 
         return menuList
 
@@ -1610,7 +1610,6 @@ class Plugin(indigo.PluginBase):
         if valuesDict['uaName'] == 'None':      # 'NO SELECTION' selected.
             valuesDict['uaName'] = ''           # Deselect uaName.
         return valuesDict
-
 
     ###########################################################################
     #                                                                         #

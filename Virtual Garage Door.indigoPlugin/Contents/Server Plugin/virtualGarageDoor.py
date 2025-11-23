@@ -44,7 +44,7 @@ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-For more information, please refer to <http://unlicense.org/>
+For more information, please refer to <https://unlicense.org/>
 
 VIRTUAL GARAGE DOOR PLUGIN BUNDLE DESCRIPTION:
 
@@ -280,7 +280,9 @@ class VirtualGarageDoor:
 
     DOOR_STATE_TRANSITIONS = {
 
-        'open':  # Transitions from the 'open' door status (door state is OPEN):
+        # Transitions from the 'open' door status (door state is OPEN):
+
+        'open':
 
             {'ar-on':          ('closing',    ('_start',)),                       # normal closing
              'os-off':         ('closing',    ('_start',)),                       # normal closing
@@ -293,7 +295,9 @@ class VirtualGarageDoor:
              'ps-on':          ('open',       ()),                                # tracking only
              'ml-off':         ('open',       ())},                               # tracking only
 
-        'closed':  # Transitions from the 'closed' door status (door state is CLOSED):
+        # Transitions from the 'closed' door status (door state is CLOSED):
+
+        'closed':
 
             {'ar-on':          ('opening',    ('_start',)),                       # normal opening
              'cs-off':         ('opening',    ('_start',)),                       # normal opening
@@ -307,7 +311,9 @@ class VirtualGarageDoor:
              'ps-on':          ('closed',     ()),                                # tracking only
              'ml-off':         ('closed',     ())},                               # tracking only
 
-        'opening':  # Transitions from the 'opening' door status (door state is OPENING):
+        # Transitions from the 'opening' door status (door state is OPENING):
+
+        'opening':
 
             {'os-on':          ('open',       ('_log', '_stop')),                 # normal open
              'tt-exp&os-none': ('open',       ('_log', '_stop')),                 # normal open if no os
@@ -323,7 +329,9 @@ class VirtualGarageDoor:
              'ps-on':          ('opening',    ()),                                # tracking only
              'ml-off':         ('opening',    ())},                               # tracking only
 
-        'closing':  # Transitions from the 'closing' door status (door state is CLOSING):
+        # Transitions from the 'closing' door status (door state is CLOSING):
+
+        'closing':
 
             {'cs-on':          ('closed',     ('_log', '_stop', '_lock_ac')),     # normal closed
              'tt-exp&cs-none': ('closed',     ('_log', '_stop', '_lock_ac')),     # normal closed if no cs
@@ -339,7 +347,9 @@ class VirtualGarageDoor:
              'ps-on':          ('closing',    ()),                                # tracking only
              'ml-off':         ('closing',    ())},                               # tracking only
 
-    'obstructed':  # Transitions from the 'obstructed' door status (door state is OBSTRUCTED):
+        # Transitions from the 'obstructed' door status (door state is OBSTRUCTED):
+
+        'obstructed':
 
             {'ar-on':          ('closing',    ('_start',)),                       # recovery activation
              'vs-on':          ('closing',    ('_start',)),                       # recovery activation
@@ -356,7 +366,9 @@ class VirtualGarageDoor:
              'ps-on':          ('obstructed', ()),                                # tracking only
              'ml-off':         ('obstructed', ())},                               # tracking only
 
-        'closed-lk':  # Transitions from the 'closed-lk' door status (door state is CLOSED):
+        # Transitions from the 'closed-lk' door status (door state is CLOSED):
+
+        'closed-lk':
 
             {'vl-off':         ('closed',    ('_log',)),                         # normal unlocking
              'ls-off':         ('closed-lk', ()),                                # redundant event
@@ -441,7 +453,8 @@ class VirtualGarageDoor:
         # status.
 
         doorStatus = self._dev.states['doorStatus']
-        if newDoorStatus == doorStatus: return
+        if newDoorStatus == doorStatus:
+            return
 
         # Compute, update, and optionally log the new opener states.
 
@@ -454,7 +467,7 @@ class VirtualGarageDoor:
         self._dev.updateStateOnServer('onOffState', onOffState,
                                       uiValue=newDoorStatus)
         if self._dev.pluginProps['logDoorStateChanges']:
-            L.info('"%s" update to %s',self._dev.name, newDoorStatus.upper())
+            L.info('"%s" update to %s', self._dev.name, newDoorStatus.upper())
 
         # Select and update the state image.
 
@@ -564,8 +577,10 @@ class VirtualGarageDoor:
             L.threaddebug('_start called "%s" %s%s',
                           self._dev.name, doorStatus.upper(), transition)
 
-            if newDoorStatus == 'opening': self._openerDirection = 0
-            elif newDoorStatus == 'closing': self._openerDirection = 1
+            if newDoorStatus == 'opening':
+                self._openerDirection = 0
+            elif newDoorStatus == 'closing':
+                self._openerDirection = 1
 
             self._timerAction('restartTimer')
 
@@ -630,7 +645,8 @@ class VirtualGarageDoor:
 
         # Ignore events that can't affect the door state.
 
-        if event in self.IGNORED_EVENTS: return
+        if event in self.IGNORED_EVENTS:
+            return
 
         # Compute the time since the last event.
 
@@ -694,4 +710,3 @@ class VirtualGarageDoor:
         transitionFunctions = self.DOOR_STATE_TRANSITIONS[doorStatus][event][1]
         for transitionFunction in transitionFunctions:
             locals()[transitionFunction]()
-
